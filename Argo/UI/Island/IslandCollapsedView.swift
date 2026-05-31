@@ -1,0 +1,176 @@
+//
+//  IslandCollapsedView.swift
+//  Argo
+//
+//  Author: everettjf
+//
+
+import SwiftUI
+
+struct IslandCollapsedView: View {
+    @ObservedObject var state: IslandNotificationState
+    var notchWidth: CGFloat = 0
+    var pixelAnimationStyle: IslandPixelAnimationStyle = .random
+
+    /// Padding added to each side of the notch gap to keep content clear of the notch edges.
+    private let notchEdgePadding: CGFloat = 8
+
+    private var hasNotch: Bool { notchWidth > 0 }
+
+    var body: some View {
+        if hasNotch {
+            notchedLayout
+        } else {
+            standardLayout
+        }
+    }
+
+    /// Layout for screens with a notch: content is split into left and right areas
+    /// around a transparent gap matching the physical notch width.
+    private var notchedLayout: some View {
+        HStack(spacing: 0) {
+            // Left side — status icon + title
+            HStack(spacing: 8) {
+                if let item = state.latestItem {
+                    islandStatusIcon(for: item)
+                        .font(.system(size: 14))
+
+                    Text(item.title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                } else {
+                    Image(systemName: "macwindow.on.rectangle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.6))
+
+                    Text("ARGO")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, notchEdgePadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Notch gap
+            Spacer()
+                .frame(width: notchWidth)
+
+            // Right side — badge / animation
+            HStack(spacing: 8) {
+                if state.latestItem != nil {
+                    if state.badgeCount > 1 {
+                        Text("\(state.badgeCount)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .frame(width: 22, height: 22)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(.white.opacity(0.15))
+                            )
+                    }
+                } else {
+                    if pixelAnimationStyle != .none {
+                        IslandPixelAnimationView(style: pixelAnimationStyle)
+                            .frame(width: 20, height: 14)
+                            .fixedSize()
+                    }
+                }
+            }
+            .padding(.leading, notchEdgePadding)
+            .padding(.trailing, 16)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(red: 0.08, green: 0.08, blue: 0.09))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(.white.opacity(0.08), lineWidth: 0.5)
+        )
+    }
+
+    /// Standard layout for screens without a notch.
+    private var standardLayout: some View {
+        HStack(spacing: 10) {
+            if let item = state.latestItem {
+                islandStatusIcon(for: item)
+                    .font(.system(size: 14))
+
+                Text(item.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer(minLength: 4)
+
+                if state.badgeCount > 1 {
+                    Text("\(state.badgeCount)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 22, height: 22)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(.white.opacity(0.15))
+                        )
+                }
+            } else {
+                Image(systemName: "macwindow.on.rectangle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                Text("ARGO")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .fixedSize()
+
+                Spacer()
+
+                if pixelAnimationStyle != .none {
+                    IslandPixelAnimationView(style: pixelAnimationStyle)
+                        .frame(width: 20, height: 14)
+                        .fixedSize()
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(red: 0.08, green: 0.08, blue: 0.09))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(.white.opacity(0.08), lineWidth: 0.5)
+        )
+    }
+}
+
+@ViewBuilder
+func islandStatusIcon(for item: IslandNotificationItem) -> some View {
+    switch item.status {
+    case .running:
+        Circle()
+            .fill(.green)
+            .frame(width: 8, height: 8)
+    case .done:
+        Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(.green)
+    case .error:
+        Image(systemName: "exclamationmark.circle.fill")
+            .foregroundStyle(.red)
+    case .waitingForInput:
+        Image(systemName: "questionmark.circle.fill")
+            .foregroundStyle(.cyan)
+    }
+}

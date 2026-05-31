@@ -1,0 +1,33 @@
+{
+  "originHash" : "bd229738e40b66b274934c55674cb8f7977f165240ee96d74b6c4a36bd36a137",
+  "pins" : [
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa",
+      "state" : {
+        "revision" : "05d3ce8332097ff0b2347231ac66476fd7d2f4d8",
+        "version" : "9.8.0"
+      }
+    },
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "06beff60e3b609a485290e4d5d2d1e2eedb1e55d",
+        "version" : "2.7.3"
+      }
+    },
+    {
+      "identity" : "yitong",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/YiTong.git",
+      "state" : {
+        "revision" : "9fe06046fc894440c664406ec1585995c6f08906",
+        "version" : "0.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}

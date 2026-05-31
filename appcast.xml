@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+    <channel>
+        <title>Argo Updates</title>
+        <link>https://github.com/everettjf/argo/releases</link>
+        <description>Signed Sparkle updates for Argo.</description>
+        <language>en</language>
+        <item>
+            <title>1.0.73</title>
+            <pubDate>Wed, 27 May 2026 22:26:56 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.73</sparkle:fullReleaseNotesLink>
+            <sparkle:version>150</sparkle:version>
+            <sparkle:shortVersionString>1.0.73</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.73/Argo-1.0.73.app.zip" length="29560317" type="application/octet-stream" sparkle:edSignature="IURpCk7JyRuz1Q6MuU/CpYRiecYW6lyPr1GYQSWKfDY67/aylaC/l61RdWHDwAeGaXmxNTDEOkNDQVZ60CIzAw=="/>
+        </item>
+        <item>
+            <title>1.0.72</title>
+            <pubDate>Wed, 27 May 2026 22:16:11 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.72</sparkle:fullReleaseNotesLink>
+            <sparkle:version>139</sparkle:version>
+            <sparkle:shortVersionString>1.0.72</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.72/Argo-1.0.72.app.zip" length="29559356" type="application/octet-stream" sparkle:edSignature="c1JpAorclJA8Eoaz4dn1BIMTfSI52QdU3gzl0kZKZ4+YoaOm2Ofsn6r0J0EyzEnTt9VmrYNH0iUf8vXh+slrCg=="/>
+        </item>
+        <item>
+            <title>1.0.71</title>
+            <pubDate>Tue, 26 May 2026 10:14:04 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.71</sparkle:fullReleaseNotesLink>
+            <sparkle:version>138</sparkle:version>
+            <sparkle:shortVersionString>1.0.71</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.71/Argo-1.0.71.app.zip" length="29554909" type="application/octet-stream" sparkle:edSignature="wcpYHiPsv71Eflb+iYw+nAqxqy9iQBuNL3zzIp80PLpoqu+5cedJr1xv0xVZoQDBGmZWjWI1q0W/ToCl3TPfDQ=="/>
+        </item>
+        <item>
+            <title>1.0.69</title>
+            <pubDate>Fri, 22 May 2026 09:22:28 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.69</sparkle:fullReleaseNotesLink>
+            <sparkle:version>136</sparkle:version>
+            <sparkle:shortVersionString>1.0.69</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.69/Argo-1.0.69.app.zip" length="29473405" type="application/octet-stream" sparkle:edSignature="EeBp/WFQxX2OEE02VBpVcSKLnHk5PsF2u/RkHEthqwVSgrzmwxVqrbkC+Ut7LOCNAaIdwCXLf/jGcv6MRKmUAQ=="/>
+        </item>
+        <item>
+            <title>1.0.68</title>
+            <pubDate>Thu, 14 May 2026 08:35:15 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.68</sparkle:fullReleaseNotesLink>
+            <sparkle:version>135</sparkle:version>
+            <sparkle:shortVersionString>1.0.68</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.68/Argo-1.0.68.app.zip" length="29074165" type="application/octet-stream" sparkle:edSignature="op8QlO6w/xO94C6BatsXpq75Ci+Rco0aJr8f2wW56pqGBUMOTUhwkRFUScb5SgFt2oF77jY+Vmu/MgKtXAEEAA=="/>
+        </item>
+        <item>
+            <title>1.0.67</title>
+            <pubDate>Mon, 11 May 2026 22:14:47 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.67</sparkle:fullReleaseNotesLink>
+            <sparkle:version>133</sparkle:version>
+            <sparkle:shortVersionString>1.0.67</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.67/Argo-1.0.67.app.zip" length="29074476" type="application/octet-stream" sparkle:edSignature="JxKvIDRbNSQk7fK3M0CKZmEsY+IM7YXmo0ApZlPnqBP1kauZUNqZLPUjHYT46GpUq5vhaxqPSY1Ij56JV2kfCw=="/>
+        </item>
+        <item>
+            <title>1.0.66</title>
+            <pubDate>Sat, 09 May 2026 15:23:04 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.66</sparkle:fullReleaseNotesLink>
+            <sparkle:version>132</sparkle:version>
+            <sparkle:shortVersionString>1.0.66</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.66/Argo-1.0.66.app.zip" length="29067793" type="application/octet-stream" sparkle:edSignature="9URvQbJnKPe1uPIKoNVzTB3oXXxG1Li+oFRH31ZnnOwnpbHfRcE8H5S9RRRh31XYJ41k91GO/KfSHKqAVyYyCg=="/>
+        </item>
+        <item>
+            <title>1.0.65</title>
+            <pubDate>Sat, 02 May 2026 23:22:58 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.65</sparkle:fullReleaseNotesLink>
+            <sparkle:version>131</sparkle:version>
+            <sparkle:shortVersionString>1.0.65</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.65/Argo-1.0.65.app.zip" length="28862597" type="application/octet-stream" sparkle:edSignature="kOnbDEHsOgUstRkRhmwCfNbmbJFLHVIkk0BS2B/ybBJOixg1qL7iMhXIRPnRi8YUB1QqAALdkupH0hzObhFdAQ=="/>
+        </item>
+        <item>
+            <title>1.0.63</title>
+            <pubDate>Tue, 28 Apr 2026 23:11:16 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.63</sparkle:fullReleaseNotesLink>
+            <sparkle:version>130</sparkle:version>
+            <sparkle:shortVersionString>1.0.63</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.63/Argo-1.0.63.app.zip" length="28707364" type="application/octet-stream" sparkle:edSignature="zBzMd5mpGyBSY6ZxYtStpaqklKZ/cLQPlefEqgeE0nRzK0VH34hw5YsMDMtARmgA1Xh18etZ5slu3/RPyOd8AQ=="/>
+        </item>
+        <item>
+            <title>1.0.62</title>
+            <pubDate>Sun, 26 Apr 2026 21:32:30 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.62</sparkle:fullReleaseNotesLink>
+            <sparkle:version>129</sparkle:version>
+            <sparkle:shortVersionString>1.0.62</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.62/Argo-1.0.62.app.zip" length="28701164" type="application/octet-stream" sparkle:edSignature="lDw3kVhbcd2FbmEmOCzHi+vULeVwalI1hr3ge5CRe6IjC0CYUN984bVXMuFTSccBhPKpEm6sX/7NXaRwxb0gCA=="/>
+        </item>
+        <item>
+            <title>1.0.17</title>
+            <pubDate>Mon, 23 Mar 2026 22:44:44 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.17</sparkle:fullReleaseNotesLink>
+            <sparkle:version>16</sparkle:version>
+            <sparkle:shortVersionString>1.0.17</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.17/Argo-1.0.17.app.zip" length="20960624" type="application/octet-stream" sparkle:edSignature="4Lg0/Nix7cEsuD0HKlthLSX9U1c1ss9LiyiPB84o8Bi68rOj+tKTc6KXg7AmMl1pSsGq2UQcVyKDTuSiaeiCCg=="/>
+        </item>
+        <item>
+            <title>1.0.16</title>
+            <pubDate>Sun, 22 Mar 2026 22:38:49 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.16</sparkle:fullReleaseNotesLink>
+            <sparkle:version>15</sparkle:version>
+            <sparkle:shortVersionString>1.0.16</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.16/Argo-1.0.16.app.zip" length="20920019" type="application/octet-stream" sparkle:edSignature="iLCHfSw6Ghz5v7zONFeVqsZdx9EcykwyvKn056fMwVKxKmqGRb/gzRz2oconldO4OE3rY5Dzq/Sm8M/oMeeDBQ=="/>
+        </item>
+        <item>
+            <title>1.0.15</title>
+            <pubDate>Sun, 22 Mar 2026 21:45:43 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.15</sparkle:fullReleaseNotesLink>
+            <sparkle:version>14</sparkle:version>
+            <sparkle:shortVersionString>1.0.15</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.15/Argo-1.0.15.app.zip" length="20920021" type="application/octet-stream" sparkle:edSignature="4f0xfaEtW5GLh4/JlsNGkEkYIIalBk3L+Hpk9gSBoy/yHCNe8a9GSHpyRGRgFwWtLGvY8jVKXE/28yi4kExRCQ=="/>
+        </item>
+        <item>
+            <title>1.0.13</title>
+            <pubDate>Sun, 22 Mar 2026 16:54:26 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.13</sparkle:fullReleaseNotesLink>
+            <sparkle:version>13</sparkle:version>
+            <sparkle:shortVersionString>1.0.13</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.13/Argo-1.0.13.app.zip" length="20914971" type="application/octet-stream" sparkle:edSignature="4E4O2qjEq9Gu2bch4uFagjL49QxdwzbhciygIQFp/4mpbnEZrN2YpdtTcfCLqCtQXi8pbyyUNLypL8iV4NhCAQ=="/>
+        </item>
+        <item>
+            <title>1.0.12</title>
+            <pubDate>Sat, 21 Mar 2026 23:04:09 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.12</sparkle:fullReleaseNotesLink>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.0.12</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.12/Argo-1.0.12.app.zip" length="20843602" type="application/octet-stream" sparkle:edSignature="7UlJGj1dSAobeP1jb4/2wqrOtABMavQJ+37g86+EK38JbsX+P7Z8Vh+DFYxCbtlGxAPOmR9MTVMofQvCS+RBCA=="/>
+        </item>
+        <item>
+            <title>1.0.11</title>
+            <pubDate>Sat, 21 Mar 2026 20:42:57 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.11</sparkle:fullReleaseNotesLink>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>1.0.11</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.11/Argo-1.0.11.app.zip" length="20927598" type="application/octet-stream" sparkle:edSignature="8mz0FNb0KqIIQiTVGfEMA48xN8dzw9MPaKNLHDw+9tU7mOYDnjDdnGDYPNJnFFLnu3pPRynNHRGS3VS3Qsr6DA=="/>
+        </item>
+        <item>
+            <title>1.0.10</title>
+            <pubDate>Sat, 21 Mar 2026 20:33:43 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.10</sparkle:fullReleaseNotesLink>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.0.10</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.10/Argo-1.0.10.app.zip" length="20927604" type="application/octet-stream" sparkle:edSignature="zutS/TUNTTPiixMNCuS8d9SqKetQHreLMoK6qxjOIdr2afrc6TF75hGORjVqW9K1txicRP9AsrIOMvFFXkSECw=="/>
+        </item>
+        <item>
+            <title>1.0.9</title>
+            <pubDate>Sat, 21 Mar 2026 20:13:58 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.9</sparkle:fullReleaseNotesLink>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.0.9</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.9/Argo-1.0.9.app.zip" length="20927603" type="application/octet-stream" sparkle:edSignature="r1idaUbQthk0DdOaAflOLdwYu/aO7VhHF5BGKbaK6KmpR9hanbCl+6wpmZziVm6gl3VteQHZkTzdNqWotnR6Bw=="/>
+        </item>
+        <item>
+            <title>1.0.8</title>
+            <pubDate>Sat, 21 Mar 2026 01:59:03 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.8</sparkle:fullReleaseNotesLink>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.8/Argo-1.0.8.app.zip" length="19884364" type="application/octet-stream" sparkle:edSignature="3N+vouEzui33+mb2nLqCFNjBvDDQD9XSBjtY6/RVx/AW6UCiWT8euXx0h7SJJtGehH3cXXRaU0ltfXyMbOsQAg=="/>
+        </item>
+        <item>
+            <title>1.0.7</title>
+            <pubDate>Sat, 21 Mar 2026 01:48:23 -0700</pubDate>
+            <link>https://github.com/everettjf/argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/everettjf/argo/releases/tag/v1.0.7</sparkle:fullReleaseNotesLink>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>1.0.7</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/everettjf/argo/releases/download/v1.0.7/Argo-1.0.7.app.zip" length="19882622" type="application/octet-stream" sparkle:edSignature="GwK2xG7+03ycp4iboXxM7dPeCx9MFh6ZBPbQMVwAH7JmWqV9uV2l3WpeL23YIqf9G5+up0A/NGvVLbUfWE/ZCg=="/>
+        </item>
+    </channel>
+</rss>

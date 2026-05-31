@@ -1,0 +1,15 @@
+.DS_Store
+.claude/
+.build/
+.swiftpm/
+.worktrees/
+dist/
+tmp/
+DerivedData/
+*.xcarchive
+*.dSYM
+*.dSYM.zip
+*.pkg
+Argo.xcodeproj/project.xcworkspace/xcuserdata/
+Argo.xcodeproj/xcuserdata/
+website/

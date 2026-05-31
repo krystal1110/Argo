@@ -1,0 +1,1295 @@
+//
+//  WorkspaceRuntime.swift
+//  Argo
+//
+//  Author: everettjf
+//
+
+import Combine
+import Foundation
+
+@MainActor
+final class WorkspaceModel: ObservableObject, Identifiable {
+    let id: UUID
+    let kind: WorkspaceKind
+    let repositoryRoot: String
+
+    @Published var name: String
+    @Published var activeWorktreePath: String
+    @Published var currentBranch: String
+    @Published var head: String
+    @Published var hasUncommittedChanges: Bool
+    @Published var changedFileCount: Int
+    @Published var aheadCount: Int
+    @Published var behindCount: Int
+    @Published var localBranches: [String]
+    @Published var remoteBranches: [String]
+    @Published var worktrees: [WorktreeModel]
+    @Published var worktreeStatuses: [String: RepositoryStatusSnapshot]
+    @Published var gitHubStatuses: [String: GitHubWorktreeStatus]
+    @Published var activeTabID: UUID?
+    @Published var layout: SessionLayoutNode?
+    @Published var isSidebarExpanded: Bool
+    @Published var settings: WorkspaceSettings
+    @Published var activityLog: [WorkspaceActivityEntry]
+    @Published var sessionController: WorkspaceSessionController
+    @Published var zoomedPaneID: UUID?
+    @Published var sshTarget: SSHSessionConfiguration?
+
+    /// TCP ports the focused pane (and its descendants) are listening on.
+    /// Refreshed every 10 seconds while the workspace is active. Empty when
+    /// no panes hold a listener — most panes won't.
+    @Published var listeningPorts: [Int] = []
+
+    /// Process names that own those listeners. Same lifecycle as
+    /// `listeningPorts`; used for tooltips ("vite, node :3000").
+    @Published var listeningPortProcessNames: [String] = []
+
+    private var listeningPortRefreshTask: Task<Void, Never>?
+
+    /// Whether the left-hand directory tree column is shown. The tree follows
+    /// the focused pane's working directory. Ephemeral per session.
+    @Published var isFileTreePresented: Bool = false
+
+    /// What the preview tab is showing, if anything: a rendered Markdown/HTML
+    /// file or a live web page served on the host. `nil` means no preview tab.
+    @Published var previewPanel: WorkspacePreviewContent?
+
+    /// Whether the center content area is currently showing the preview tab
+    /// (vs. the terminal panes). Transient — never persisted.
+    @Published var isPreviewActive = false
+
+    /// Whether the file-tree default from app settings has been applied to this
+    /// workspace yet. Seeding happens once, the first time the workspace is
+    /// shown, so a later manual toggle is never overridden.
+    private var didSeedFileTreeVisibility = false
+
+    /// Flipped to true by WorkspaceStore when this workspace becomes the
+    /// selected one. Sessions are started lazily: at launch every workspace's
+    /// sessionController is bootstrapped with idle panes, and only the active
+    /// workspace spins up Ghostty surfaces. Once true, this stays true — a
+    /// workspace the user has visited keeps its panes running in the
+    /// background so switching back is instant.
+    var isActive: Bool = false {
+        didSet {
+            guard isActive, !oldValue else { return }
+            sessionController.startAllIfNeeded()
+            startListeningPortRefreshLoop()
+        }
+    }
+
+    var isRemote: Bool { sshTarget != nil }
+
+    private var worktreeStates: [String: WorktreeSessionStateRecord]
+    private var worktreeControllers: [String: [UUID: WorkspaceSessionController]]
+
+    init(record: WorkspaceRecord) {
+        self.id = record.id
+        self.kind = record.kind
+        self.repositoryRoot = record.repositoryRoot
+        self.sshTarget = record.sshTarget
+        self.name = record.name
+        self.activeWorktreePath = record.activeWorktreePath
+        self.currentBranch = "-"
+        self.head = "-"
+        self.hasUncommittedChanges = false
+        self.changedFileCount = 0
+        self.aheadCount = 0
+        self.behindCount = 0
+        self.localBranches = []
+        self.remoteBranches = []
+        self.worktrees = record.worktrees
+        self.worktreeStatuses = [:]
+        self.gitHubStatuses = [:]
+        self.activeTabID = nil
+        self.zoomedPaneID = nil
+        self.settings = record.settings
+        self.activityLog = record.activityLog.sorted { $0.timestamp > $1.timestamp }
+        self.worktreeStates = Dictionary(uniqueKeysWithValues: record.worktreeStates.map { ($0.worktreePath, $0) })
+        let activeState = self.worktreeStates[record.activeWorktreePath] ?? WorktreeSessionStateRecord.makeDefault(for: record.activeWorktreePath)
+        let activeTab = activeState.selectedTab ?? WorkspaceTabStateRecord.makeDefault(for: record.activeWorktreePath)
+        self.activeTabID = activeState.selectedTabID ?? activeTab.id
+        self.layout = activeTab.layout
+        self.isSidebarExpanded = record.isSidebarExpanded
+        let activeController = WorkspaceSessionController(workspaceID: record.id, paneSnapshots: activeTab.panes)
+        activeController.focusedPaneID = activeTab.focusedPaneID
+        self.worktreeControllers = [record.activeWorktreePath: [activeTab.id: activeController]]
+        self.sessionController = activeController
+        self.zoomedPaneID = activeTab.zoomedPaneID
+        if record.kind == .localTerminal || record.kind == .sshTerminal {
+            currentBranch = "local"
+            head = "shell"
+            worktrees = [
+                WorktreeModel(
+                    path: record.activeWorktreePath,
+                    branch: "local",
+                    head: "shell",
+                    isMainWorktree: true,
+                    isLocked: false,
+                    lockReason: nil
+                )
+            ]
+        }
+        bootstrapIfNeeded()
+    }
+
+    convenience init(snapshot: RepositorySnapshot) {
+        let initialPane = PaneSnapshot.makeDefault(cwd: snapshot.rootPath)
+        self.init(
+            record: WorkspaceRecord(
+                id: UUID(),
+                kind: .repository,
+                name: URL(fileURLWithPath: snapshot.rootPath).lastPathComponent,
+                repositoryRoot: snapshot.rootPath,
+                activeWorktreePath: snapshot.rootPath,
+                worktreeStates: [
+                    WorktreeSessionStateRecord(
+                        worktreePath: snapshot.rootPath,
+                        layout: .pane(PaneLeaf(paneID: initialPane.id)),
+                        panes: [initialPane],
+                        focusedPaneID: initialPane.id,
+                        zoomedPaneID: nil
+                    )
+                ],
+                isSidebarExpanded: false,
+                settings: WorkspaceSettings(),
+                activityLog: []
+            )
+        )
+        apply(snapshot: snapshot)
+    }
+
+    convenience init(localDirectoryPath: String, name: String = "Terminal") {
+        let normalizedPath = URL(fileURLWithPath: localDirectoryPath).standardizedFileURL.path
+        self.init(
+            record: WorkspaceRecord(
+                id: UUID(),
+                kind: .localTerminal,
+                name: name,
+                repositoryRoot: normalizedPath,
+                activeWorktreePath: normalizedPath,
+                worktreeStates: [
+                    WorktreeSessionStateRecord.makeDefault(for: normalizedPath)
+                ],
+                isSidebarExpanded: false,
+                settings: WorkspaceSettings(),
+                activityLog: []
+            )
+        )
+        currentBranch = "local"
+        head = "shell"
+        localBranches = []
+        remoteBranches = []
+        worktrees = [
+            WorktreeModel(
+                path: normalizedPath,
+                branch: "local",
+                head: "shell",
+                isMainWorktree: true,
+                isLocked: false,
+                lockReason: nil
+            )
+        ]
+    }
+
+    convenience init(sshConfiguration: SSHSessionConfiguration, name: String? = nil) {
+        let placeholderPath = NSHomeDirectory()
+        let workspaceName = name ?? sshConfiguration.destination
+        let initialPane = PaneSnapshot(
+            id: UUID(),
+            preferredWorkingDirectory: placeholderPath,
+            preferredEngine: .libghosttyPreferred,
+            backendConfiguration: .ssh(sshConfiguration)
+        )
+        self.init(
+            record: WorkspaceRecord(
+                id: UUID(),
+                kind: .sshTerminal,
+                name: workspaceName,
+                repositoryRoot: placeholderPath,
+                activeWorktreePath: placeholderPath,
+                worktreeStates: [
+                    WorktreeSessionStateRecord(
+                        worktreePath: placeholderPath,
+                        layout: .pane(PaneLeaf(paneID: initialPane.id)),
+                        panes: [initialPane],
+                        focusedPaneID: initialPane.id
+                    )
+                ],
+                isSidebarExpanded: false,
+                settings: WorkspaceSettings(sshConfiguration: sshConfiguration),
+                activityLog: []
+            )
+        )
+        currentBranch = "ssh"
+        head = sshConfiguration.destination
+        localBranches = []
+        remoteBranches = []
+        worktrees = [
+            WorktreeModel(
+                path: placeholderPath,
+                branch: "ssh",
+                head: sshConfiguration.destination,
+                isMainWorktree: true,
+                isLocked: false,
+                lockReason: nil
+            )
+        ]
+    }
+
+    var supportsRepositoryFeatures: Bool {
+        kind == .repository || kind == .remoteServer || (kind == .sshTerminal && worktrees.count > 1)
+    }
+
+    var supportsLocalRepositoryFeatures: Bool {
+        kind == .repository
+    }
+
+    var defaultPaneBackendConfiguration: SessionBackendConfiguration {
+        if kind == .sshTerminal, let sshConfig = settings.sshConfiguration {
+            if worktrees.count > 1 {
+                var config = sshConfig
+                config.remoteWorkingDirectory = activeWorktreePath
+                return .ssh(config)
+            }
+            return .ssh(sshConfig)
+        }
+        if let sshConfig = sshTarget {
+            var config = sshConfig
+            config.remoteWorkingDirectory = activeWorktreePath
+            return .ssh(config)
+        }
+        return .local()
+    }
+
+    var activeWorktree: WorktreeModel? {
+        worktrees.first(where: { $0.path == activeWorktreePath })
+    }
+
+    var activeSessionCount: Int {
+        sessionController.activeSessionCount
+    }
+
+    var quitConfirmationSessionCount: Int {
+        worktreeControllers.values.reduce(0) { partialResult, controllers in
+            partialResult + controllers.values.reduce(0) { $0 + $1.quitConfirmationSessionCount }
+        }
+    }
+
+    var isPinned: Bool {
+        get { settings.isPinned }
+        set { settings.isPinned = newValue }
+    }
+
+    var isArchived: Bool {
+        get { settings.isArchived }
+        set { settings.isArchived = newValue }
+    }
+
+    var workspaceIconOverride: SidebarItemIcon? {
+        get { settings.workspaceIcon }
+        set { settings.workspaceIcon = newValue }
+    }
+
+    var runScript: String {
+        get { settings.runScript }
+        set { settings.runScript = newValue }
+    }
+
+    var setupScript: String {
+        get { settings.setupScript }
+        set { settings.setupScript = newValue }
+    }
+
+    var agentPresets: [AgentPreset] {
+        get { settings.agentPresets }
+        set { settings.agentPresets = newValue }
+    }
+
+    var preferredAgentPresetID: UUID? {
+        get { settings.preferredAgentPresetID }
+        set { settings.preferredAgentPresetID = newValue }
+    }
+
+    var preferredAgentPreset: AgentPreset? {
+        if let preferredAgentPresetID,
+           let match = agentPresets.first(where: { $0.id == preferredAgentPresetID }) {
+            return match
+        }
+        return agentPresets.first
+    }
+
+    var remoteTargets: [RemoteWorkspaceTarget] {
+        get { settings.remoteTargets }
+        set { settings.remoteTargets = newValue }
+    }
+
+    var workflows: [WorkspaceWorkflow] {
+        get { settings.workflows }
+        set { settings.workflows = newValue }
+    }
+
+    var preferredWorkflowID: UUID? {
+        get { settings.preferredWorkflowID }
+        set { settings.preferredWorkflowID = newValue }
+    }
+
+    var preferredWorkflow: WorkspaceWorkflow? {
+        if let preferredWorkflowID,
+           let match = workflows.first(where: { $0.id == preferredWorkflowID }) {
+            return match
+        }
+        return workflows.first
+    }
+
+    func iconOverride(for worktreePath: String) -> SidebarItemIcon? {
+        settings.worktreeIconOverrides[worktreePath]
+    }
+
+    func setIconOverride(_ icon: SidebarItemIcon?, for worktreePath: String) {
+        settings.worktreeIconOverrides[worktreePath] = icon
+    }
+
+    func worktreeNote(for worktreePath: String) -> String? {
+        let note = settings.worktreeNotes[worktreePath]
+        if let note, note.isEmpty { return nil }
+        return note
+    }
+
+    func setWorktreeNote(_ note: String?, for worktreePath: String) {
+        if let note, !note.isEmpty {
+            settings.worktreeNotes[worktreePath] = note
+        } else {
+            settings.worktreeNotes[worktreePath] = nil
+        }
+    }
+
+    func pruneWorktreeCustomizations() {
+        let validPaths = Set(worktrees.map(\.path))
+        let prunedIcons = settings.worktreeIconOverrides.filter { validPaths.contains($0.key) }
+        if prunedIcons.count != settings.worktreeIconOverrides.count {
+            settings.worktreeIconOverrides = prunedIcons
+        }
+        let prunedNotes = settings.worktreeNotes.filter { validPaths.contains($0.key) }
+        if prunedNotes.count != settings.worktreeNotes.count {
+            settings.worktreeNotes = prunedNotes
+        }
+    }
+
+    var paneOrder: [UUID] {
+        layout?.paneIDs ?? []
+    }
+
+    var tabs: [WorkspaceTabStateRecord] {
+        activeWorktreeState.tabs
+    }
+
+    var selectedTab: WorkspaceTabStateRecord? {
+        activeWorktreeState.selectedTab
+    }
+
+    func bootstrapIfNeeded() {
+        ensureActiveWorktreeState()
+        guard !isArchived else { return }
+        loadActiveWorktreeState()
+    }
+
+    /// Returns true if any @Published value actually changed. Callers can use
+    /// this to skip downstream work (objectWillChange.send, persist, etc.)
+    /// when the refresh was a no-op — the auto-refresh timer fires this path
+    /// every 30s per workspace and most ticks have no real change.
+    @discardableResult
+    func apply(snapshot: RepositorySnapshot) -> Bool {
+        guard kind == .repository else { return false }
+        saveActiveWorktreeState()
+        let previousActiveWorktreePath = activeWorktreePath
+        var changed = false
+        if currentBranch != snapshot.currentBranch { currentBranch = snapshot.currentBranch; changed = true }
+        if head != snapshot.head { head = snapshot.head; changed = true }
+        if hasUncommittedChanges != snapshot.status.hasUncommittedChanges {
+            hasUncommittedChanges = snapshot.status.hasUncommittedChanges
+            changed = true
+        }
+        if changedFileCount != snapshot.status.changedFileCount {
+            changedFileCount = snapshot.status.changedFileCount
+            changed = true
+        }
+        if aheadCount != snapshot.status.aheadCount { aheadCount = snapshot.status.aheadCount; changed = true }
+        if behindCount != snapshot.status.behindCount { behindCount = snapshot.status.behindCount; changed = true }
+        if localBranches != snapshot.status.localBranches {
+            localBranches = snapshot.status.localBranches
+            changed = true
+        }
+        if remoteBranches != snapshot.status.remoteBranches {
+            remoteBranches = snapshot.status.remoteBranches
+            changed = true
+        }
+        if worktreeStatuses[activeWorktreePath] != snapshot.status {
+            worktreeStatuses[activeWorktreePath] = snapshot.status
+            changed = true
+        }
+        if worktrees != snapshot.worktrees { worktrees = snapshot.worktrees; changed = true }
+        if !worktrees.contains(where: { $0.path == activeWorktreePath }) {
+            activeWorktreePath = snapshot.rootPath
+            changed = true
+        }
+        ensureKnownWorktreeStates()
+        pruneWorktreeCustomizations()
+        if previousActiveWorktreePath != activeWorktreePath || layout == nil {
+            loadActiveWorktreeState()
+        }
+        return changed
+    }
+
+    func applyRemoteWorktrees(_ remoteWorktrees: [WorktreeModel], remoteRoot: String) {
+        guard kind == .sshTerminal else { return }
+        saveActiveWorktreeState()
+        let previousActiveWorktreePath = activeWorktreePath
+        worktrees = remoteWorktrees
+        settings.remoteRepositoryRoot = remoteRoot
+        if !remoteWorktrees.contains(where: { $0.path == activeWorktreePath }) {
+            activeWorktreePath = remoteRoot
+        }
+        ensureKnownWorktreeStates()
+        pruneWorktreeCustomizations()
+        if previousActiveWorktreePath != activeWorktreePath || layout == nil {
+            loadActiveWorktreeState()
+        }
+    }
+
+    func createPane(splitAxis: PaneSplitAxis?, snapshot: PaneSnapshot? = nil) {
+        createPane(splitAxis: splitAxis, snapshot: snapshot, placement: .after)
+    }
+
+    func createPane(splitAxis: PaneSplitAxis?, snapshot: PaneSnapshot? = nil, placement: PaneSplitPlacement) {
+        // Creating a session/pane means the user wants the terminals, so leave
+        // the preview tab if it was showing.
+        isPreviewActive = false
+        let targetPane = sessionController.focusedPaneID ?? layout?.firstPaneID
+        let defaultSnapshot: PaneSnapshot = {
+            if kind == .sshTerminal {
+                return PaneSnapshot(
+                    id: UUID(),
+                    preferredWorkingDirectory: activeWorktreePath,
+                    preferredEngine: .libghosttyPreferred,
+                    backendConfiguration: defaultPaneBackendConfiguration
+                )
+            }
+            var s = PaneSnapshot.makeDefault(cwd: activeWorktreePath)
+            if let sshConfig = sshTarget {
+                s.backendConfiguration = .ssh(sshConfig)
+            }
+            return s
+        }()
+        let newPaneID = sessionController.createPane(
+            from: snapshot ?? defaultSnapshot
+        )
+        zoomedPaneID = nil
+
+        guard let splitAxis, let layout else {
+            self.layout = .pane(PaneLeaf(paneID: newPaneID))
+            sessionController.focus(newPaneID)
+            wireWorkspaceActions()
+            saveActiveWorktreeState()
+            return
+        }
+
+        var updatedLayout = layout
+        if updatedLayout.split(
+            paneID: targetPane ?? layout.firstPaneID ?? newPaneID,
+            axis: splitAxis,
+            newPaneID: newPaneID,
+            placement: placement
+        ) {
+            self.layout = updatedLayout
+        } else {
+            self.layout = .split(
+                PaneSplitNode(
+                    axis: splitAxis,
+                    first: placement == .before ? .pane(PaneLeaf(paneID: newPaneID)) : layout,
+                    second: placement == .before ? layout : .pane(PaneLeaf(paneID: newPaneID))
+                )
+            )
+        }
+        sessionController.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        sessionController.focus(newPaneID)
+        wireWorkspaceActions()
+        saveActiveWorktreeState()
+    }
+
+    func closePane(_ paneID: UUID) {
+        guard var layout else {
+            sessionController.closePane(paneID)
+            return
+        }
+
+        if case .pane(let leaf) = layout, leaf.paneID == paneID {
+            self.layout = nil
+            sessionController.closePane(paneID)
+            if zoomedPaneID == paneID {
+                zoomedPaneID = nil
+            }
+            saveActiveWorktreeState()
+            return
+        }
+
+        _ = layout.removePane(paneID)
+        self.layout = layout
+        sessionController.closePane(paneID)
+        if zoomedPaneID == paneID {
+            zoomedPaneID = sessionController.focusedPaneID
+        }
+        sessionController.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        wireWorkspaceActions()
+        if let first = paneOrder.first {
+            sessionController.focus(first)
+        }
+        saveActiveWorktreeState()
+    }
+
+    func focusPane(_ paneID: UUID) {
+        sessionController.focus(paneID)
+        saveActiveWorktreeState()
+    }
+
+    // MARK: - Preview panel & file tree
+
+    /// Working directory the file tree and "open in preview" actions resolve
+    /// against — the focused pane's reported cwd, or the active worktree path.
+    var focusedWorkingDirectory: String {
+        if let paneID = sessionController.focusedPaneID,
+           let session = sessionController.session(for: paneID) {
+            return session.effectiveWorkingDirectory
+        }
+        return activeWorktreePath
+    }
+
+    /// Shows `content` in the center preview tab and brings it to the front.
+    func openPreview(_ content: WorkspacePreviewContent) {
+        previewPanel = content
+        isPreviewActive = true
+    }
+
+    /// Opens a localhost web page for a detected listening port.
+    func openPreviewForPort(_ port: Int) {
+        guard let url = WorkspacePreviewContent.localhostURL(port: port) else { return }
+        previewPanel = .web(url)
+        isPreviewActive = true
+    }
+
+    func closePreview() {
+        previewPanel = nil
+        isPreviewActive = false
+    }
+
+    /// Brings the preview tab to the front (no-op when nothing is loaded).
+    func showPreviewTab() {
+        guard previewPanel != nil else { return }
+        isPreviewActive = true
+    }
+
+    /// Returns the center area to the terminal panes, keeping any loaded
+    /// preview available behind its tab.
+    func showTerminals() {
+        isPreviewActive = false
+    }
+
+    func toggleFileTree() {
+        isFileTreePresented.toggle()
+    }
+
+    /// Applies the app-settings file-tree default the first time this workspace
+    /// is shown. Idempotent and never overrides a manual toggle.
+    func applyDefaultFileTreeVisibilityIfNeeded(_ enabled: Bool) {
+        guard !didSeedFileTreeVisibility else { return }
+        didSeedFileTreeVisibility = true
+        isFileTreePresented = enabled
+    }
+
+    func updateSplitFraction(splitID: UUID, fraction: Double) {
+        guard var layout else { return }
+        if layout.updateFraction(splitID: splitID, fraction: fraction) {
+            self.layout = layout
+            saveActiveWorktreeState()
+        }
+    }
+
+    func resizeFocusedSplit(toward direction: PaneFocusDirection, amount: UInt16, paneID: UUID? = nil) {
+        guard var layout else { return }
+        let targetPaneID = paneID ?? sessionController.focusedPaneID
+        guard let targetPaneID,
+              layout.resizeSplit(containing: targetPaneID, toward: direction, amount: amount) else { return }
+        self.layout = layout
+        saveActiveWorktreeState()
+    }
+
+    func equalizeLayout() {
+        guard var layout else { return }
+        layout.equalizeSplits()
+        self.layout = layout
+        saveActiveWorktreeState()
+    }
+
+    func duplicateFocusedPane() {
+        guard let focusedPaneID = sessionController.focusedPaneID else { return }
+        let newPaneID = sessionController.duplicatePane(focusedPaneID, defaultWorkingDirectory: activeWorktreePath)
+        guard let newPaneID else { return }
+        zoomedPaneID = nil
+        guard let currentLayout = layout else {
+            layout = .pane(PaneLeaf(paneID: newPaneID))
+            wireWorkspaceActions()
+            saveActiveWorktreeState()
+            return
+        }
+
+        var updatedLayout = currentLayout
+        if updatedLayout.split(paneID: focusedPaneID, axis: .vertical, newPaneID: newPaneID) {
+            layout = updatedLayout
+        } else {
+            layout = .split(PaneSplitNode(axis: .vertical, first: currentLayout, second: .pane(PaneLeaf(paneID: newPaneID))))
+        }
+        sessionController.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        sessionController.focus(newPaneID)
+        wireWorkspaceActions()
+        saveActiveWorktreeState()
+    }
+
+    func switchToWorktree(path: String, restartRunning: Bool) {
+        saveActiveWorktreeState()
+        activeWorktreePath = path
+        ensureActiveWorktreeState()
+        loadActiveWorktreeState()
+        if restartRunning {
+            sessionController.restartAll()
+        }
+    }
+
+    func snapshot() -> WorkspaceRecord {
+        saveActiveWorktreeState()
+        return WorkspaceRecord(
+            id: id,
+            kind: kind,
+            name: name,
+            repositoryRoot: repositoryRoot,
+            activeWorktreePath: activeWorktreePath,
+            worktreeStates: worktreeStates.values.sorted { $0.worktreePath < $1.worktreePath },
+            isSidebarExpanded: isSidebarExpanded,
+            worktrees: worktrees,
+            settings: settings,
+            activityLog: activityLog,
+            sshTarget: sshTarget
+        )
+    }
+
+    var recentActivity: [WorkspaceActivityEntry] {
+        activityLog.sorted { $0.timestamp > $1.timestamp }
+    }
+
+    func recordActivity(_ entry: WorkspaceActivityEntry, limit: Int = 120) {
+        activityLog.insert(entry, at: 0)
+        if activityLog.count > limit {
+            activityLog = Array(activityLog.prefix(limit))
+        }
+    }
+
+    func clearActivityLog() {
+        activityLog.removeAll()
+    }
+
+    var activeWorktreeState: WorktreeSessionStateRecord {
+        var state = worktreeStates[activeWorktreePath] ?? WorktreeSessionStateRecord.makeDefault(for: activeWorktreePath)
+        state.ensureTabs()
+        return state
+    }
+
+    @discardableResult
+    func mergeWorktreeStatuses(_ statuses: [String: RepositoryStatusSnapshot]) -> Bool {
+        var changed = false
+        for (path, status) in statuses {
+            if worktreeStatuses[path] != status {
+                worktreeStatuses[path] = status
+                changed = true
+            }
+        }
+        guard changed, let activeStatus = worktreeStatuses[activeWorktreePath] else { return changed }
+        if hasUncommittedChanges != activeStatus.hasUncommittedChanges { hasUncommittedChanges = activeStatus.hasUncommittedChanges }
+        if changedFileCount != activeStatus.changedFileCount { changedFileCount = activeStatus.changedFileCount }
+        if aheadCount != activeStatus.aheadCount { aheadCount = activeStatus.aheadCount }
+        if behindCount != activeStatus.behindCount { behindCount = activeStatus.behindCount }
+        return changed
+    }
+
+    func status(for worktreePath: String) -> RepositoryStatusSnapshot? {
+        worktreeStatuses[worktreePath]
+    }
+
+    func gitHubStatus(for worktreePath: String) -> GitHubWorktreeStatus? {
+        gitHubStatuses[worktreePath]
+    }
+
+    func updateGitHubStatus(_ status: GitHubWorktreeStatus?, for worktreePath: String) {
+        gitHubStatuses[worktreePath] = status
+    }
+
+    func savedPaneCount(for worktreePath: String) -> Int {
+        worktreeStates[worktreePath]?.tabs.reduce(0) { $0 + $1.panes.count } ?? 0
+    }
+
+    func paneCount(for tabID: UUID) -> Int {
+        if activeTabID == tabID {
+            return paneOrder.count
+        }
+        return activeWorktreeState.tabs.first(where: { $0.id == tabID })?.panes.count ?? 0
+    }
+
+    func paneCount(for tabID: UUID, worktreePath: String) -> Int {
+        if activeWorktreePath == worktreePath, activeTabID == tabID {
+            return paneOrder.count
+        }
+        return worktreeStates[worktreePath]?.tabs.first(where: { $0.id == tabID })?.panes.count ?? 0
+    }
+
+    func tabController(for tabID: UUID) -> WorkspaceSessionController? {
+        guard let tab = activeWorktreeState.tabs.first(where: { $0.id == tabID }) else { return nil }
+        return controller(for: activeWorktreePath, tabState: tab)
+    }
+
+    func existingTabController(for worktreePath: String, tabID: UUID) -> WorkspaceSessionController? {
+        worktreeControllers[worktreePath]?[tabID]
+    }
+
+    func canvasStates() -> [WorktreeSessionStateRecord] {
+        worktreeStates.values.sorted { lhs, rhs in
+            if lhs.worktreePath == activeWorktreePath, rhs.worktreePath != activeWorktreePath {
+                return true
+            }
+            if lhs.worktreePath != activeWorktreePath, rhs.worktreePath == activeWorktreePath {
+                return false
+            }
+            return lhs.worktreePath.localizedStandardCompare(rhs.worktreePath) == .orderedAscending
+        }
+    }
+
+    func isActiveCanvasCard(worktreePath: String, tabID: UUID) -> Bool {
+        activeWorktreePath == worktreePath && activeTabID == tabID
+    }
+
+    func canvasCardIDs() -> [GlobalCanvasCardID] {
+        canvasStates().flatMap { state in
+            state.tabs.map { tab in
+                GlobalCanvasCardID(
+                    workspaceID: id,
+                    worktreePath: state.worktreePath,
+                    tabID: tab.id
+                )
+            }
+        }
+    }
+
+    func activeSessionCount(forWorktreePath path: String) -> Int {
+        worktreeControllers[path]?.values.reduce(0) { partialResult, controller in
+            partialResult + controller.activeSessionCount(using: path)
+        } ?? 0
+    }
+
+    func runningSessionCount(forWorktreePath path: String) -> Int {
+        worktreeControllers[path]?.values.reduce(0) { partialResult, controller in
+            partialResult + controller.runningSessionCount(using: path)
+        } ?? 0
+    }
+
+    func createTab() {
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+        let newIndex = state.tabs.count + 1
+        let initialPane = PaneSnapshot(
+            id: UUID(),
+            preferredWorkingDirectory: activeWorktreePath,
+            preferredEngine: .libghosttyPreferred,
+            backendConfiguration: defaultPaneBackendConfiguration
+        )
+        let newTab = WorkspaceTabStateRecord(
+            title: "Tab \(newIndex)",
+            layout: .pane(PaneLeaf(paneID: initialPane.id)),
+            panes: [initialPane],
+            focusedPaneID: initialPane.id
+        )
+        state.upsertTab(newTab, selecting: true)
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+        // Defer firstResponder until SwiftUI has mounted the new pane's
+        // surface — without it, SSH-backed surfaces never grab input focus
+        // on Cmd+T because their bootstrap is async and the logical
+        // setFocused flag alone doesn't issue makeFirstResponder.
+        let newPaneID = initialPane.id
+        DispatchQueue.main.async { [weak self] in
+            self?.sessionController.focus(newPaneID)
+        }
+    }
+
+    func selectTab(_ tabID: UUID) {
+        // Selecting any terminal tab (mouse, keyboard, or programmatic) leaves
+        // the preview tab and returns the center area to the terminals.
+        isPreviewActive = false
+        guard tabID != activeTabID else { return }
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+        state.setSelectedTabID(tabID)
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+    }
+
+    func selectTab(at index: Int) {
+        let state = activeWorktreeState
+        guard let tabID = state.tabID(at: index) else { return }
+        selectTab(tabID)
+    }
+
+    func selectNextTab() {
+        let state = activeWorktreeState
+        guard !state.tabs.isEmpty else { return }
+        guard let activeTabID,
+              let index = state.tabs.firstIndex(where: { $0.id == activeTabID }) else {
+            selectTab(state.tabs[0].id)
+            return
+        }
+        selectTab(state.tabs[(index + 1) % state.tabs.count].id)
+    }
+
+    func selectPreviousTab() {
+        let state = activeWorktreeState
+        guard !state.tabs.isEmpty else { return }
+        guard let activeTabID,
+              let index = state.tabs.firstIndex(where: { $0.id == activeTabID }) else {
+            selectTab(state.tabs[0].id)
+            return
+        }
+        selectTab(state.tabs[(index - 1 + state.tabs.count) % state.tabs.count].id)
+    }
+
+    func closeTab(_ tabID: UUID) {
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+
+        guard state.tabs.contains(where: { $0.id == tabID }) else { return }
+        if state.tabs.count == 1 {
+            let replacement = WorkspaceTabStateRecord.makeDefault(for: activeWorktreePath)
+            state = WorktreeSessionStateRecord(
+                worktreePath: activeWorktreePath,
+                layout: replacement.layout,
+                panes: replacement.panes,
+                focusedPaneID: replacement.focusedPaneID,
+                zoomedPaneID: replacement.zoomedPaneID,
+                tabs: [replacement],
+                selectedTabID: replacement.id
+            )
+        } else {
+            let tabs = state.tabs
+            let currentIndex = tabs.firstIndex(where: { $0.id == tabID }) ?? 0
+            state.removeTab(tabID)
+            let fallbackIndex = min(currentIndex, max(state.tabs.count - 1, 0))
+            state.setSelectedTabID(state.tabs[fallbackIndex].id)
+        }
+
+        if var controllers = worktreeControllers[activeWorktreePath] {
+            controllers.removeValue(forKey: tabID)?.sessions.values.forEach { $0.terminate() }
+            worktreeControllers[activeWorktreePath] = controllers
+        }
+
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+    }
+
+    func renameTab(_ tabID: UUID, title: String) {
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+        state.renameTab(tabID, title: title)
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+    }
+
+    func moveTabLeft(_ tabID: UUID) {
+        moveTab(tabID, by: -1)
+    }
+
+    func moveTabRight(_ tabID: UUID) {
+        moveTab(tabID, by: 1)
+    }
+
+    func moveTab(_ tabID: UUID, to index: Int) {
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+        state.moveTab(tabID, to: index)
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+    }
+
+    func focusPane(in direction: PaneFocusDirection) {
+        guard let layout, let current = sessionController.focusedPaneID else { return }
+        guard let target = layout.paneID(in: direction, from: current) else { return }
+        focusPane(target)
+    }
+
+    func toggleZoom(on paneID: UUID? = nil) {
+        let target = paneID ?? sessionController.focusedPaneID
+        guard let target else { return }
+        if zoomedPaneID == target {
+            zoomedPaneID = nil
+        } else {
+            zoomedPaneID = target
+            focusPane(target)
+        }
+        saveActiveWorktreeState()
+    }
+
+    func focusLastPane() {
+        guard let previousFocusedPaneID = sessionController.previousFocusedPaneID else { return }
+        focusPane(previousFocusedPaneID)
+    }
+
+    func closeAllPanes() {
+        sessionController.sessions.keys.forEach { sessionController.closePane($0) }
+        let snapshot = PaneSnapshot(
+            id: UUID(),
+            preferredWorkingDirectory: activeWorktreePath,
+            preferredEngine: .libghosttyPreferred,
+            backendConfiguration: defaultPaneBackendConfiguration
+        )
+        let initialPane = sessionController.createPane(from: snapshot)
+        layout = .pane(PaneLeaf(paneID: initialPane))
+        zoomedPaneID = nil
+        sessionController.sync(with: [initialPane], defaultWorkingDirectory: activeWorktreePath)
+        sessionController.focus(initialPane)
+        wireWorkspaceActions()
+        saveActiveWorktreeState()
+    }
+
+    func restartAllPanes() {
+        sessionController.restartAll()
+        saveActiveWorktreeState()
+    }
+
+    func resetLayout() {
+        closeAllPanes()
+    }
+
+    func forgetWorktrees(paths: [String]) {
+        let targets = Set(paths)
+        guard !targets.isEmpty else { return }
+
+        if targets.contains(activeWorktreePath) {
+            activeWorktreePath = repositoryRoot
+        }
+
+        for path in targets {
+            worktreeStates.removeValue(forKey: path)
+            let controllers = worktreeControllers.removeValue(forKey: path)?.map(\.value) ?? []
+            for controller in controllers {
+                controller.sessions.values.forEach { $0.terminate() }
+            }
+            worktreeStatuses.removeValue(forKey: path)
+        }
+
+        ensureActiveWorktreeState()
+        loadActiveWorktreeState()
+        saveActiveWorktreeState()
+    }
+
+    func prepareForWorktreeRemoval(paths: [String]) {
+        let targets = Set(paths)
+        guard !targets.isEmpty else { return }
+
+        saveActiveWorktreeState()
+
+        if targets.contains(activeWorktreePath) {
+            activeWorktreePath = repositoryRoot
+            ensureActiveWorktreeState()
+            loadActiveWorktreeState()
+        }
+
+        for path in targets {
+            let controllers = worktreeControllers[path]?.map(\.value) ?? []
+            for controller in controllers {
+                controller.sessions.values.forEach { $0.terminate() }
+            }
+        }
+    }
+
+    private func saveActiveWorktreeState() {
+        var state = activeWorktreeState
+        let tabID = activeTabID ?? state.selectedTabID ?? state.tabs.first?.id ?? UUID()
+        let existingTab = state.tabs.first(where: { $0.id == tabID })
+        let preferredTitle = suggestedTitle(for: sessionController, existingTab: existingTab)
+        state.upsertTab(
+            WorkspaceTabStateRecord(
+                id: tabID,
+                title: preferredTitle,
+                isManuallyNamed: existingTab?.isManuallyNamed == true,
+                layout: layout,
+                panes: sessionController.sessionSnapshots(in: paneOrder),
+                focusedPaneID: sessionController.focusedPaneID,
+                zoomedPaneID: zoomedPaneID
+            ),
+            selecting: true
+        )
+        worktreeStates[activeWorktreePath] = state
+    }
+
+    private func loadActiveWorktreeState() {
+        ensureActiveWorktreeState()
+        let state = activeWorktreeState
+        let tab = state.selectedTab ?? WorkspaceTabStateRecord.makeDefault(for: activeWorktreePath)
+        activeTabID = tab.id
+        layout = tab.layout
+        let controller = controller(for: activeWorktreePath, tabState: tab)
+        sessionController = controller
+        zoomedPaneID = tab.zoomedPaneID
+        if layout == nil {
+            let initialSnapshot: PaneSnapshot = {
+                if kind == .sshTerminal {
+                    return PaneSnapshot(
+                        id: UUID(),
+                        preferredWorkingDirectory: activeWorktreePath,
+                        preferredEngine: .libghosttyPreferred,
+                        backendConfiguration: defaultPaneBackendConfiguration
+                    )
+                }
+                var s = PaneSnapshot.makeDefault(cwd: activeWorktreePath)
+                if let sshConfig = sshTarget {
+                    s.backendConfiguration = .ssh(sshConfig)
+                }
+                return s
+            }()
+            let initialPane = controller.createPane(from: initialSnapshot)
+            layout = .pane(PaneLeaf(paneID: initialPane))
+        }
+        if !isArchived {
+            controller.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        }
+        if isActive {
+            controller.startAllIfNeeded()
+        }
+        wireWorkspaceActions()
+        saveActiveWorktreeState()
+    }
+
+    private func ensureActiveWorktreeState() {
+        if worktreeStates[activeWorktreePath] == nil {
+            if let initialPane = makeInitialSSHPane(for: activeWorktreePath) {
+                worktreeStates[activeWorktreePath] = WorktreeSessionStateRecord(
+                    worktreePath: activeWorktreePath,
+                    layout: .pane(PaneLeaf(paneID: initialPane.id)),
+                    panes: [initialPane],
+                    focusedPaneID: initialPane.id
+                )
+            } else {
+                worktreeStates[activeWorktreePath] = WorktreeSessionStateRecord.makeDefault(for: activeWorktreePath)
+            }
+        }
+        worktreeStates[activeWorktreePath]?.ensureTabs()
+    }
+
+    func ensureKnownWorktreeStates() {
+        for worktree in worktrees {
+            if worktreeStates[worktree.path] == nil {
+                if let initialPane = makeInitialSSHPane(for: worktree.path) {
+                    worktreeStates[worktree.path] = WorktreeSessionStateRecord(
+                        worktreePath: worktree.path,
+                        layout: .pane(PaneLeaf(paneID: initialPane.id)),
+                        panes: [initialPane],
+                        focusedPaneID: initialPane.id
+                    )
+                } else {
+                    worktreeStates[worktree.path] = WorktreeSessionStateRecord.makeDefault(for: worktree.path)
+                }
+            }
+            worktreeStates[worktree.path]?.ensureTabs()
+        }
+    }
+
+    private func makeInitialSSHPane(for worktreePath: String) -> PaneSnapshot? {
+        let sshConfig: SSHSessionConfiguration
+        if kind == .sshTerminal, let cfg = settings.sshConfiguration {
+            sshConfig = cfg
+        } else if let cfg = sshTarget {
+            sshConfig = cfg
+        } else {
+            return nil
+        }
+        var config = sshConfig
+        config.remoteWorkingDirectory = worktreePath
+        return PaneSnapshot(
+            id: UUID(),
+            preferredWorkingDirectory: worktreePath,
+            preferredEngine: .libghosttyPreferred,
+            backendConfiguration: .ssh(config)
+        )
+    }
+
+    private func controller(for worktreePath: String, tabState: WorkspaceTabStateRecord) -> WorkspaceSessionController {
+        if let existing = worktreeControllers[worktreePath]?[tabState.id] {
+            existing.sync(with: tabState.layout?.paneIDs ?? tabState.panes.map(\.id), defaultWorkingDirectory: worktreePath)
+            if let focusedPaneID = tabState.focusedPaneID {
+                existing.focusedPaneID = focusedPaneID
+            }
+            wireWorkspaceActions()
+            return existing
+        }
+
+        let controller = WorkspaceSessionController(workspaceID: id, paneSnapshots: tabState.panes)
+        controller.focusedPaneID = tabState.focusedPaneID
+        var controllers = worktreeControllers[worktreePath] ?? [:]
+        controllers[tabState.id] = controller
+        worktreeControllers[worktreePath] = controllers
+        wireWorkspaceActions()
+        return controller
+    }
+
+    private func moveTab(_ tabID: UUID, by offset: Int) {
+        saveActiveWorktreeState()
+        var state = activeWorktreeState
+        state.moveTab(tabID, by: offset)
+        worktreeStates[activeWorktreePath] = state
+        loadActiveWorktreeState()
+    }
+
+    private func suggestedTitle(for controller: WorkspaceSessionController, existingTab: WorkspaceTabStateRecord?) -> String {
+        if existingTab?.isManuallyNamed == true {
+            return existingTab?.title ?? "Tab"
+        }
+        if let focusedPaneID = controller.focusedPaneID,
+           let session = controller.session(for: focusedPaneID) {
+            let title = session.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty {
+                return title
+            }
+            let directory = session.effectiveWorkingDirectory.lastPathComponentValue
+            if !directory.isEmpty {
+                return directory
+            }
+        }
+        return existingTab?.title.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "Tab"
+    }
+
+    private func wireWorkspaceActions() {
+        for (paneID, session) in sessionController.sessions {
+            session.onWorkspaceAction = { [weak self] action in
+                self?.handleWorkspaceAction(action, paneID: paneID)
+            }
+            session.onFocus = { [weak self] in
+                guard let self, self.sessionController.focusedPaneID != paneID else { return }
+                self.focusPane(paneID)
+            }
+        }
+    }
+
+    private func handleWorkspaceAction(_ action: TerminalWorkspaceAction, paneID: UUID) {
+        switch action {
+        case .createSplit(let axis, let placement):
+            focusPane(paneID)
+            createPane(splitAxis: axis, placement: placement)
+        case .focusPane(let direction):
+            focusPane(in: direction)
+        case .focusNextPane:
+            sessionController.focusNext(using: paneOrder)
+            saveActiveWorktreeState()
+        case .focusPreviousPane:
+            sessionController.focusPrevious(using: paneOrder)
+            saveActiveWorktreeState()
+        case .resizeFocusedSplit(let direction, let amount):
+            focusPane(paneID)
+            resizeFocusedSplit(toward: direction, amount: amount, paneID: paneID)
+        case .equalizeSplits:
+            equalizeLayout()
+        case .togglePaneZoom:
+            toggleZoom(on: paneID)
+        case .closePane:
+            closePane(paneID)
+        case .desktopNotification(let title, let body):
+            postAgentNotification(
+                title: title,
+                body: body,
+                paneID: paneID,
+                agentName: nil
+            )
+        }
+    }
+
+    func postAgentNotification(
+        title: String,
+        body: String?,
+        paneID: UUID?,
+        agentName: String?
+    ) {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = body?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle: String
+        let resolvedBody: String?
+        if trimmedTitle.isEmpty, let trimmedBody, !trimmedBody.isEmpty {
+            resolvedTitle = trimmedBody
+            resolvedBody = nil
+        } else {
+            resolvedTitle = trimmedTitle.isEmpty ? "Argo" : trimmedTitle
+            resolvedBody = (trimmedBody?.isEmpty == false) ? trimmedBody : nil
+        }
+        let terminalTag = paneID?.uuidString.lowercased()
+        let item = IslandNotificationItem(
+            id: UUID(),
+            workspaceID: id,
+            worktreePath: activeWorktreePath,
+            title: resolvedTitle,
+            agentName: agentName,
+            terminalTag: terminalTag,
+            status: .running,
+            startedAt: Date(),
+            body: resolvedBody,
+            prompt: nil
+        )
+        IslandNotificationState.shared.post(item: item)
+        IslandPanelController.shared.show()
+    }
+
+    // MARK: - Listening port discovery
+
+    /// Idempotent: starts the periodic refresh loop the first time the
+    /// workspace is activated, no-ops thereafter. Stops itself when the
+    /// workspace is deinitialised (Task captures `self` weakly).
+    func startListeningPortRefreshLoop() {
+        guard listeningPortRefreshTask == nil else { return }
+        listeningPortRefreshTask = Task { [weak self] in
+            // Initial probe is fast — the user just switched to this
+            // workspace, so they want to see ports without a 10s wait.
+            await self?.refreshListeningPortsOnce()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                if Task.isCancelled { break }
+                await self?.refreshListeningPortsOnce()
+            }
+        }
+    }
+
+    private func refreshListeningPortsOnce() async {
+        let pids = sessionController.sessions.values.compactMap(\.pid)
+        guard !pids.isEmpty else {
+            if !listeningPorts.isEmpty || !listeningPortProcessNames.isEmpty {
+                listeningPorts = []
+                listeningPortProcessNames = []
+            }
+            return
+        }
+        var union = ListeningPortInspector.Result(ports: [], processNames: [])
+        for pid in pids {
+            let result = await ListeningPortInspector.inspect(rootPID: pid)
+            union.ports.append(contentsOf: result.ports)
+            union.processNames.append(contentsOf: result.processNames)
+        }
+        let dedupedPorts = Array(Set(union.ports)).sorted()
+        let dedupedNames = Array(Set(union.processNames)).sorted()
+        if dedupedPorts != listeningPorts {
+            listeningPorts = dedupedPorts
+        }
+        if dedupedNames != listeningPortProcessNames {
+            listeningPortProcessNames = dedupedNames
+        }
+    }
+}

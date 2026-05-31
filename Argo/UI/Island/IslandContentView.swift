@@ -1,0 +1,40 @@
+//
+//  IslandContentView.swift
+//  Argo
+//
+//  Author: everettjf
+//
+
+import SwiftUI
+
+struct IslandContentView: View {
+    @ObservedObject var state: IslandNotificationState
+    let controller: IslandPanelController
+
+    var body: some View {
+        Group {
+            if state.isExpanded {
+                IslandExpandedView(state: state, controller: controller)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
+            } else {
+                IslandCollapsedView(
+                    state: state,
+                    notchWidth: controller.notchWidth,
+                    pixelAnimationStyle: controller.workspaceStore?.appSettings.dynamicIslandPixelAnimation ?? .random
+                )
+                    .transition(.opacity)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.isExpanded)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                if !state.isExpanded && !state.items.isEmpty {
+                    state.selectedTab = .notifications
+                }
+                state.isExpanded.toggle()
+            }
+            controller.repositionPanel()
+        }
+    }
+}

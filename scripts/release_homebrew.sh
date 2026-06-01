@@ -14,7 +14,8 @@ APPCAST_FILE="${APPCAST_FILE:-$ROOT_DIR/appcast.xml}"
 SIGN_SCRIPT="${SIGN_SCRIPT:-$ROOT_DIR/scripts/sign_macos.sh}"
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 UPLOAD_DSYM_SCRIPT="${UPLOAD_DSYM_SCRIPT:-$ROOT_DIR/scripts/upload_dsym_to_sentry.sh}"
-TAP_REPO="${TAP_REPO:-everettjf/homebrew-tap}"
+TAP_PROJECT_PATH="${TAP_PROJECT_PATH:-${TAP_REPO:-}}"
+TAP_REMOTE_URL="${TAP_REMOTE_URL:-}"
 TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-tap"
 TAP_DIR="${TAP_DIR:-$TAP_DIR_DEFAULT}"
 CASK_PATH="${CASK_PATH:-Casks/${APP_SLUG}.rb}"
@@ -32,6 +33,7 @@ SPARKLE_CHANNEL="${SPARKLE_CHANNEL:-}"
 SKIP_BUMP="${SKIP_BUMP:-0}"
 BUMP_PART="${BUMP_PART:-patch}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
+SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
 SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
 SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
@@ -41,6 +43,7 @@ APPCAST_STAGING_DIR=""
 CLONED_DEFAULT_TAP_DIR=0
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
+source "$ROOT_DIR/scripts/gitlab_release_tools.sh"
 
 usage() {
   cat <<EOF
@@ -51,9 +54,15 @@ Environment:
   SKIP_BUMP=1            Publish the current MARKETING_VERSION and CURRENT_PROJECT_VERSION unchanged.
   BUMP_PART=patch        Version bump part when SKIP_BUMP=0. patch also increments CURRENT_PROJECT_VERSION by 1.
   SKIP_NOTARIZE=1        Skip notarization in sign_macos.sh.
+  SKIP_GITLAB_RELEASE=1  Skip GitLab package upload and release asset links.
   SKIP_CASK_UPDATE=1     Skip updating the Homebrew tap repository.
   SKIP_SENTRY_DSYM_UPLOAD=1  Skip uploading the release dSYM to Sentry.
-  TAP_REPO=owner/repo    Override the tap repo. Default: everettjf/homebrew-tap.
+  GITLAB_HOST=code.devops.xiaohongshu.com  GitLab host for releases and packages.
+  GITLAB_PROJECT_PATH=huying/Argo  GitLab project path. Inferred from origin when omitted.
+  GITLAB_PROJECT_ID=12345  Optional numeric project id. Overrides path encoding for API calls.
+  GITLAB_TOKEN=token      Token with api scope for packages, releases, and asset links.
+  TAP_PROJECT_PATH=group/homebrew-tap  Optional GitLab tap project used when updating the cask.
+  TAP_REMOTE_URL=git@host:group/homebrew-tap.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
   SPARKLE_PRIVATE_KEY_FILE=path  Private key used for Sparkle appcast signing.
@@ -63,23 +72,6 @@ EOF
 read_setting() {
   local key="$1"
   awk -F ' = ' -v key="$key" '$1 ~ key { gsub(/;/, "", $2); print $2; exit }' "$PROJECT_FILE"
-}
-
-infer_release_repo() {
-  local remote
-  remote="$(git remote get-url origin 2>/dev/null || true)"
-  if [[ "$remote" =~ ^git@github\.com:([^/]+/[^/]+)(\.git)?$ ]]; then
-    echo "${BASH_REMATCH[1]%.git}"
-    return
-  fi
-  if [[ "$remote" =~ ^https://github\.com/([^/]+/[^/]+)(\.git)?$ ]]; then
-    echo "${BASH_REMATCH[1]%.git}"
-    return
-  fi
-  if [[ "$remote" =~ ^ssh://git@github\.com/([^/]+/[^/]+)(\.git)?$ ]]; then
-    echo "${BASH_REMATCH[1]%.git}"
-    return
-  fi
 }
 
 require_cmd() {
@@ -125,7 +117,7 @@ generate_release_notes() {
 
   if [[ -n "$previous_tag" ]]; then
     log_range="$previous_tag..HEAD"
-    compare_url="https://github.com/$RELEASE_REPO/compare/$previous_tag...$tag"
+    compare_url="$(gitlab_compare_url "$previous_tag" "$tag")"
   else
     log_range="HEAD"
   fi
@@ -170,7 +162,7 @@ generate_release_notes() {
 }
 
 brew_install_target() {
-  if [[ "$TAP_REPO" =~ ^([^/]+)/homebrew-(.+)$ ]]; then
+  if [[ "$TAP_PROJECT_PATH" =~ ^([^/]+)/homebrew-(.+)$ ]]; then
     echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/$APP_SLUG"
     return
   fi
@@ -178,24 +170,28 @@ brew_install_target() {
   echo "$APP_SLUG"
 }
 
-# A previous run is considered "fully published" when the GitHub release for
+# A previous run is considered "fully published" when the GitLab release for
 # the tag already carries every core artifact (DMG, app zip, dSYM zip). The
 # appcast.xml alone does not count — a release with only the appcast is the
 # signature of a publish that died midway through asset upload.
 release_assets_complete() {
   local tag="$1"
-  local assets
-  assets="$(gh release view "$tag" --repo "$RELEASE_REPO" --json assets --jq '.assets[].name' 2>/dev/null)" || return 1
   local required=(
     "$(basename "$DIST_DMG_PATH")"
     "$(basename "$DIST_ZIP_PATH")"
     "$(basename "$DIST_DSYM_ZIP_PATH")"
   )
-  local name
-  for name in "${required[@]}"; do
-    grep -qxF "$name" <<<"$assets" || return 1
-  done
-  return 0
+  gitlab_release_assets_complete "$tag" "${required[@]}"
+}
+
+tap_remote_url() {
+  if [[ -n "$TAP_REMOTE_URL" ]]; then
+    echo "$TAP_REMOTE_URL"
+    return
+  fi
+  if [[ -n "$TAP_PROJECT_PATH" ]]; then
+    echo "git@$GITLAB_HOST:$TAP_PROJECT_PATH.git"
+  fi
 }
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -203,7 +199,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-for cmd in git gh shasum mktemp security; do
+for cmd in git curl python3 shasum mktemp security; do
   require_cmd "$cmd"
 done
 
@@ -231,22 +227,17 @@ if [[ "$SKIP_SENTRY_DSYM_UPLOAD" != "1" && ! -x "$UPLOAD_DSYM_SCRIPT" ]]; then
   exit 1
 fi
 
-if ! gh auth status >/dev/null 2>&1; then
-  echo "GitHub CLI not authenticated. Run: gh auth login" >&2
-  exit 1
-fi
-
-RELEASE_REPO="${RELEASE_REPO:-$(infer_release_repo)}"
-if [[ -z "$RELEASE_REPO" ]]; then
-  echo "Unable to infer GitHub repo from origin. Set RELEASE_REPO=owner/repo." >&2
-  exit 1
+cd "$ROOT_DIR"
+if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
+  gitlab_require_token
+else
+  gitlab_require_config
 fi
 
 if [[ -z "$APP_HOMEPAGE" ]]; then
-  APP_HOMEPAGE="https://github.com/$RELEASE_REPO"
+  APP_HOMEPAGE="$(gitlab_project_url)"
 fi
 
-cd "$ROOT_DIR"
 ensure_clean_worktree
 
 if [[ -z "$SIGNING_IDENTITY" ]]; then
@@ -310,14 +301,18 @@ trap cleanup EXIT
 # Resume vs. new-release detection. A tag matching the current
 # MARKETING_VERSION already existing locally means a previous run got at least
 # as far as tagging. Two cases to tell apart:
-#   1. The previous run fully published — the GitHub release already carries
+#   1. The previous run fully published — the GitLab release already carries
 #      every core asset. The version simply was never bumped afterwards, so
 #      this invocation is a brand new release: fall through and bump normally.
 #   2. The publish step died partway (tag pushed, but some/all assets missing,
-#      e.g. flaky TLS during `gh release create`). This is a real resume: skip
+#      e.g. flaky TLS during a package upload). This is a real resume: skip
 #      everything already done and only redo the upload.
 RESUMING=0
 if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+  if [[ "$SKIP_GITLAB_RELEASE" == "1" ]]; then
+    echo "Tag v$VERSION already exists and SKIP_GITLAB_RELEASE=1 prevents checking whether it is fully published." >&2
+    exit 1
+  fi
   if release_assets_complete "v$VERSION"; then
     echo "Release v$VERSION is already published with all core assets — treating this as a new release and bumping the version." >&2
   else
@@ -416,8 +411,8 @@ if [[ "$RESUMING" != "1" ]]; then
   sparkle_generate_appcast \
     "$APPCAST_STAGING_DIR" \
     "$SPARKLE_PRIVATE_KEY_FILE" \
-    "https://github.com/$RELEASE_REPO/releases/download/$TAG/" \
-    "https://github.com/$RELEASE_REPO/releases/tag/$TAG" \
+    "$(gitlab_package_version_url "$VERSION")/" \
+    "$(gitlab_release_url "$TAG")" \
     "$APP_HOMEPAGE" \
     "$SPARKLE_MAX_VERSIONS" \
     "$SPARKLE_CHANNEL" \
@@ -443,64 +438,35 @@ if [[ ! -f "$DIST_ZIP_PATH" ]]; then
   exit 1
 fi
 
-# `gh` does large HTTPS uploads to uploads.github.com that have hit TLS
-# "bad record MAC" / forced-close errors on flaky networks. A single
-# `gh release create <all assets>` is all-or-nothing: any blip mid-upload
-# tears the half-made release back down, so the retry re-creates it and
-# re-uploads every asset from scratch — never making progress on an unstable
-# link. Instead, create the release empty (a small, reliable API call), then
-# upload each asset on its own with per-file retries and `--clobber`, so a
-# failure only re-sends the one file that didn't make it.
-GH_MAX_ATTEMPTS="${GH_RELEASE_MAX_ATTEMPTS:-3}"
-GH_RETRY_DELAY="${GH_RELEASE_RETRY_DELAY:-10}"
-
-gh_retry() {
-  local label="$1"
-  shift
-  local attempt=1
-  local rc
-  while :; do
-    rc=0
-    "$@" || rc=$?
-    if [[ "$rc" -eq 0 ]]; then
-      return 0
-    fi
-    if (( attempt >= GH_MAX_ATTEMPTS )); then
-      echo "${label} failed after ${attempt} attempt(s) (exit ${rc})." >&2
-      return "$rc"
-    fi
-    echo "${label} failed (exit ${rc}); retrying in ${GH_RETRY_DELAY}s (attempt $((attempt + 1))/${GH_MAX_ATTEMPTS})..." >&2
-    sleep "$GH_RETRY_DELAY"
-    attempt=$((attempt + 1))
-  done
-}
-
-if gh release view "$TAG" >/dev/null 2>&1; then
-  gh_retry "gh release edit" gh release edit "$TAG" \
-    --title "$APP_NAME $VERSION" \
-    --notes-file "$RELEASE_NOTES_FILE"
-else
-  gh_retry "gh release create" gh release create "$TAG" \
-    --title "$APP_NAME $VERSION" \
-    --notes-file "$RELEASE_NOTES_FILE"
+if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
+  gitlab_publish_release_assets \
+    "$TAG" \
+    "$VERSION" \
+    "$APP_NAME $VERSION" \
+    "$RELEASE_NOTES_FILE" \
+    "$DIST_DMG_PATH" \
+    "$DIST_ZIP_PATH" \
+    "$DIST_DSYM_ZIP_PATH" \
+    "$APPCAST_FILE"
 fi
-
-for asset in "$DIST_DMG_PATH" "$DIST_ZIP_PATH" "$DIST_DSYM_ZIP_PATH" "$APPCAST_FILE"; do
-  gh_retry "gh release upload $(basename "$asset")" \
-    gh release upload "$TAG" "$asset" --clobber
-done
 
 if [[ "$SKIP_CASK_UPDATE" != "1" ]]; then
   SHA256="$(shasum -a 256 "$DIST_DMG_PATH" | awk '{print $1}')"
+  TAP_REMOTE="$(tap_remote_url)"
+  if [[ -z "$TAP_REMOTE" ]]; then
+    echo "Set TAP_PROJECT_PATH or TAP_REMOTE_URL, or set SKIP_CASK_UPDATE=1." >&2
+    exit 1
+  fi
+  CASK_DMG_URL_TEMPLATE="$(gitlab_package_file_url '#{version}' "$APP_NAME-#{version}.dmg")"
 
   if [[ "$TAP_DIR" == "$TAP_DIR_DEFAULT" ]]; then
     rm -rf "$TAP_DIR"
     mkdir -p "$(dirname "$TAP_DIR")"
-    git clone "https://github.com/$TAP_REPO.git" "$TAP_DIR"
+    git clone "$TAP_REMOTE" "$TAP_DIR"
     CLONED_DEFAULT_TAP_DIR=1
   elif [[ ! -d "$TAP_DIR/.git" ]]; then
     mkdir -p "$(dirname "$TAP_DIR")"
-    git clone "https://github.com/$TAP_REPO.git" "$TAP_DIR"
+    git clone "$TAP_REMOTE" "$TAP_DIR"
   fi
 
   cd "$TAP_DIR"
@@ -517,7 +483,7 @@ cask "$APP_SLUG" do
   version "$VERSION"
   sha256 "$SHA256"
 
-  url "https://github.com/$RELEASE_REPO/releases/download/v#{version}/$APP_NAME-#{version}.dmg"
+  url "$CASK_DMG_URL_TEMPLATE"
   name "$APP_NAME"
   desc "$APP_DESC"
   homepage "$APP_HOMEPAGE"
@@ -528,7 +494,7 @@ EOF
   else
     sed -i '' "s/^  version \".*\"/  version \"$VERSION\"/" "$CASK_PATH"
     sed -i '' "s/^  sha256 \".*\"/  sha256 \"$SHA256\"/" "$CASK_PATH"
-    sed -i '' "s|^  url \".*\"|  url \"https://github.com/$RELEASE_REPO/releases/download/v#{version}/$APP_NAME-#{version}.dmg\"|" "$CASK_PATH"
+    sed -i '' "s|^  url \".*\"|  url \"$CASK_DMG_URL_TEMPLATE\"|" "$CASK_PATH"
   fi
 
   git add "$CASK_PATH"

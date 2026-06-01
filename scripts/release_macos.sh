@@ -5,6 +5,7 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
+source "$ROOT_DIR/scripts/gitlab_release_tools.sh"
 
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 UPLOAD_DSYM_SCRIPT="${UPLOAD_DSYM_SCRIPT:-$ROOT_DIR/scripts/upload_dsym_to_sentry.sh}"
@@ -31,7 +32,7 @@ SPARKLE_CHANNEL="${SPARKLE_CHANNEL:-}"
 
 SKIP_PUSH="${SKIP_PUSH:-0}"
 SKIP_TAG="${SKIP_TAG:-0}"
-SKIP_GH_RELEASE="${SKIP_GH_RELEASE:-0}"
+SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
 SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 RELEASE_NOTES_FILE=""
@@ -54,7 +55,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for cmd in git xcodebuild xcrun; do
+for cmd in git curl python3 xcodebuild xcrun; do
   require_cmd "$cmd"
 done
 
@@ -136,12 +137,10 @@ if [[ ! -f "$SPARKLE_PRIVATE_KEY_FILE" ]]; then
   exit 1
 fi
 
-if [[ "$SKIP_GH_RELEASE" != "1" ]]; then
-  require_cmd gh
-  if ! gh auth status >/dev/null 2>&1; then
-    echo "GitHub CLI is not authenticated. Run: gh auth login" >&2
-    exit 1
-  fi
+if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
+  gitlab_require_token
+else
+  gitlab_require_config
 fi
 
 if [[ -n "$(git status --short)" ]]; then
@@ -226,7 +225,7 @@ RELEASE_NOTES_FILE="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
 cat > "$RELEASE_NOTES_FILE" <<EOF
 ## Argo $VERSION
 
-- GitHub release: https://github.com/everettjf/argo/releases/tag/$TAG
+- GitLab release: $(gitlab_release_url "$TAG")
 EOF
 
 APPCAST_STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/argo-appcast.XXXXXX")"
@@ -242,9 +241,9 @@ fi
 sparkle_generate_appcast \
   "$APPCAST_STAGING_DIR" \
   "$SPARKLE_PRIVATE_KEY_FILE" \
-  "https://github.com/everettjf/argo/releases/download/$TAG/" \
-  "https://github.com/everettjf/argo/releases/tag/$TAG" \
-  "https://github.com/everettjf/argo" \
+  "$(gitlab_package_version_url "$VERSION")/" \
+  "$(gitlab_release_url "$TAG")" \
+  "$(gitlab_project_url)" \
   "$SPARKLE_MAX_VERSIONS" \
   "$SPARKLE_CHANNEL" \
   "$ROOT_DIR" \
@@ -254,21 +253,21 @@ sparkle_generate_appcast \
 cp "$APPCAST_STAGING_DIR/appcast.xml" "$APPCAST_OUTPUT_PATH"
 rm -rf "$APPCAST_STAGING_DIR"
 APPCAST_STAGING_DIR=""
+
+if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
+  gitlab_publish_release_assets \
+    "$TAG" \
+    "$VERSION" \
+    "$APP_NAME $VERSION" \
+    "$RELEASE_NOTES_FILE" \
+    "$DMG_PATH" \
+    "$ZIP_PATH" \
+    "$DSYM_ZIP_PATH" \
+    "$APPCAST_OUTPUT_PATH"
+fi
+
 rm -f "$RELEASE_NOTES_FILE"
 RELEASE_NOTES_FILE=""
-
-if [[ "$SKIP_GH_RELEASE" != "1" ]]; then
-  if gh release view "$TAG" >/dev/null 2>&1; then
-    gh release upload "$TAG" "$DMG_PATH" "$ZIP_PATH" "$DSYM_ZIP_PATH" "$APPCAST_OUTPUT_PATH" --clobber
-    gh release edit "$TAG" \
-      --title "$APP_NAME $VERSION" \
-      --notes "Release $VERSION"
-  else
-    gh release create "$TAG" "$DMG_PATH" "$ZIP_PATH" "$DSYM_ZIP_PATH" "$APPCAST_OUTPUT_PATH" \
-      --title "$APP_NAME $VERSION" \
-      --notes "Release $VERSION"
-  fi
-fi
 
 echo "Release ready:"
 echo "  App bundle: $APP_BUNDLE_PATH"

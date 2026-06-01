@@ -33,7 +33,7 @@ struct SupportLinksExtension: ArgoFeatureExtension {
             CommandPaletteItem(
                 id: "extension-support-feedback",
                 title: LocalizationManager.shared.string("extension.support.feedback"),
-                subtitle: "github.com/everettjf/argo/issues/new",
+                subtitle: "code.devops.xiaohongshu.com/huying/Argo/-/issues/new",
                 group: .navigation,
                 keywords: ["extension", "feedback", "issue", "bug"],
                 isGlobal: true,

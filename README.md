@@ -3,7 +3,7 @@
 [中文版本](./README.zh-CN.md)
 
 [![Website](https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square)](https://argo.dev)
-[![Releases](https://img.shields.io/badge/Download-GitHub%20Releases-24292f?style=flat-square&logo=github)](https://github.com/everettjf/argo/releases)
+[![Releases](https://img.shields.io/badge/Download-GitLab%20Releases-fc6d26?style=flat-square&logo=gitlab)](https://code.devops.xiaohongshu.com/huying/Argo/-/releases)
 [![Platform](https://img.shields.io/badge/Platform-macOS-black?style=flat-square)](https://argo.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square)](./LICENSE)
 
@@ -25,14 +25,14 @@ It gives you one focused place to open codebases, switch worktrees, keep termina
 ### Homebrew
 
 ```bash
-brew update && brew install --cask everettjf/tap/argo
+brew update && brew install --cask argo
 ```
 
 ### Direct Download
 
-Download the latest signed `.dmg` from GitHub Releases:
+Download the latest signed `.dmg` from GitLab Releases:
 
-<https://github.com/everettjf/argo/releases/latest>
+<https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
 
 ## Quick Start
 
@@ -50,8 +50,8 @@ Download the latest signed `.dmg` from GitHub Releases:
 
 - Website: <https://argo.dev>
 - Docs: <https://argo.dev/docs/intro>
-- Releases: <https://github.com/everettjf/argo/releases>
-- Issues: <https://github.com/everettjf/argo/issues>
+- Releases: <https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
+- Issues: <https://code.devops.xiaohongshu.com/huying/Argo/-/issues>
 - Discord: <https://discord.com/invite/eGzEaP6TzR>
 
 Power features:
@@ -68,11 +68,6 @@ Power features:
 
 Development setup, build commands, testing, repo layout, and release docs live in [`DEVELOP.md`](./DEVELOP.md).
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=everettjf/argo&type=Date)](https://www.star-history.com/#everettjf/argo&Date)
-
 ## License
 
 Released under the Apache License 2.0. See [`LICENSE`](./LICENSE).
-

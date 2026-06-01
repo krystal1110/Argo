@@ -25,7 +25,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/everettjf/argo/stable/appcast.xml</string>
+	<string>https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>DJPIksMP6FvVtjZk9WN9lzZRcd9el01eqFzcafpehlQ=</string>
 	<key>NSMicrophoneUsageDescription</key>

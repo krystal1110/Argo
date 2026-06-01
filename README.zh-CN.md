@@ -3,7 +3,7 @@
 [English Version](./README.md)
 
 [![Website](https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square)](https://argo.dev)
-[![Releases](https://img.shields.io/badge/Download-GitHub%20Releases-24292f?style=flat-square&logo=github)](https://github.com/everettjf/argo/releases)
+[![Releases](https://img.shields.io/badge/Download-GitLab%20Releases-fc6d26?style=flat-square&logo=gitlab)](https://code.devops.xiaohongshu.com/huying/Argo/-/releases)
 [![Platform](https://img.shields.io/badge/Platform-macOS-black?style=flat-square)](https://argo.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square)](./LICENSE)
 
@@ -25,14 +25,14 @@ Argo 是一款原生 macOS 终端工作区应用，面向需要频繁在多个�
 ### Homebrew
 
 ```bash
-brew update && brew install --cask everettjf/tap/argo
+brew update && brew install --cask argo
 ```
 
 ### 直接下载
 
-从 GitHub Releases 下载最新已签名的 `.dmg`：
+从 GitLab Releases 下载最新已签名的 `.dmg`：
 
-<https://github.com/everettjf/argo/releases/latest>
+<https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
 
 ## 快速开始
 
@@ -50,8 +50,8 @@ brew update && brew install --cask everettjf/tap/argo
 
 - Website: <https://argo.dev>
 - 文档: <https://argo.dev/docs/intro>
-- Releases: <https://github.com/everettjf/argo/releases>
-- Issues: <https://github.com/everettjf/argo/issues>
+- Releases: <https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
+- Issues: <https://code.devops.xiaohongshu.com/huying/Argo/-/issues>
 - Discord: <https://discord.com/invite/eGzEaP6TzR>
 
 进阶功能：
@@ -66,10 +66,6 @@ brew update && brew install --cask everettjf/tap/argo
 ## 面向开发者
 
 开发环境配置、构建命令、测试方式、仓库结构以及发布流程文档位于 [`DEVELOP.md`](./DEVELOP.md)。
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=everettjf/argo&type=Date)](https://www.star-history.com/#everettjf/argo&Date)
 
 ## 许可证
 

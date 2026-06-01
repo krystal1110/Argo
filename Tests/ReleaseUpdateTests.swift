@@ -38,8 +38,40 @@ final class ReleaseUpdateTests: XCTestCase {
     func testAppUpdaterDefaultsToStableAppcastFeed() {
         XCTAssertEqual(
             AppUpdaterController.defaultFeedURLString,
-            "https://raw.githubusercontent.com/everettjf/argo/stable/appcast.xml"
+            "https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml"
         )
+    }
+
+    func testAppUpdaterReleasesURLUsesGitLabProject() {
+        XCTAssertEqual(
+            AppUpdaterController.releasesURL.absoluteString,
+            "https://code.devops.xiaohongshu.com/huying/Argo/-/releases"
+        )
+    }
+
+    func testReleaseScriptsUseGitLabPublishing() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        for relativePath in ["scripts/release_homebrew.sh", "scripts/release_macos.sh"] {
+            let script = try String(contentsOf: rootURL.appendingPathComponent(relativePath), encoding: .utf8)
+            XCTAssertTrue(script.contains("scripts/gitlab_release_tools.sh"), "\(relativePath) should use GitLab release helpers")
+            XCTAssertTrue(script.contains("SKIP_GITLAB_RELEASE"), "\(relativePath) should expose GitLab release skipping")
+            XCTAssertFalse(script.contains("gh release"), "\(relativePath) should not shell out to GitHub release commands")
+            XCTAssertFalse(script.contains("SKIP_GH_RELEASE"), "\(relativePath) should not expose the old GitHub release flag")
+        }
+    }
+
+    func testAppcastUsesGitLabReleaseAssets() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let appcast = try String(contentsOf: rootURL.appendingPathComponent("appcast.xml"), encoding: .utf8)
+
+        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/-/releases"))
+        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/api/v4/projects/huying%2FArgo/packages/generic/argo/"))
+        XCTAssertFalse(appcast.contains("https://github.com/everettjf/argo/releases"))
     }
 
     func testAppUpdaterFallsBackToStableFeedWhenInfoPlistValueMissing() {

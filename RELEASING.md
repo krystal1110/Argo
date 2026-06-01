@@ -5,7 +5,8 @@
 ## Preconditions
 
 - Clean git worktree
-- `gh auth login` completed
+- `curl` and `python3` available
+- `GITLAB_TOKEN` set to a GitLab token with `api` scope
 - Developer ID signing identity available if signing/notarizing
 - Sparkle private key exported locally, usually at `~/.argo_release/sparkle_private_key`
 - Metal toolchain installed for Ghostty release builds:
@@ -86,6 +87,19 @@ Provide notarization credentials with either:
 
 ## Publish
 
+Argo releases are published to GitLab:
+
+- project: `https://code.devops.xiaohongshu.com/huying/Argo`
+- releases: `https://code.devops.xiaohongshu.com/huying/Argo/-/releases`
+- Sparkle feed: `https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml`
+- release binaries: GitLab Generic Package Registry package `argo/<version>`
+
+Set the GitLab token before publishing:
+
+```bash
+export GITLAB_TOKEN=<token-with-api-scope>
+```
+
 ```bash
 ./deploy.sh
 ```
@@ -102,7 +116,8 @@ Default behavior:
 - packages `Argo-<version>.app.zip` for Sparkle
 - notarizes unless `SKIP_NOTARIZE=1`
 - updates the repository `appcast.xml`
-- creates or updates the GitHub release, including the dSYM zip
+- uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitLab Generic Package Registry
+- creates or updates the GitLab release and attaches release asset links for those files
 - updates the Homebrew tap unless `SKIP_CASK_UPDATE=1`
 
 Useful overrides:
@@ -110,10 +125,17 @@ Useful overrides:
 - `BUMP_PART=minor ./deploy.sh`
 - `SKIP_BUMP=1 ./deploy.sh`
 - `SKIP_NOTARIZE=1 ./deploy.sh`
+- `SKIP_GITLAB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
 - `SKIP_SENTRY_DSYM_UPLOAD=1 ./deploy.sh`
+- `GITLAB_PROJECT_PATH=huying/Argo ./deploy.sh`
+- `GITLAB_PROJECT_ID=<numeric-id> ./deploy.sh`
+- `TAP_PROJECT_PATH=group/homebrew-tap ./deploy.sh`
+- `TAP_REMOTE_URL=git@code.devops.xiaohongshu.com:group/homebrew-tap.git ./deploy.sh`
 - `ARGO_RELEASE_HOME=/secure/release-home ./deploy.sh`
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
+
+`GITLAB_PROJECT_PATH` is inferred from `origin` when the remote is `git@code.devops.xiaohongshu.com:huying/Argo.git`. Set `GITLAB_PROJECT_ID` only if you prefer numeric GitLab API URLs. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitLab authentication headers during update checks.
 
 Sentry dSYM upload uses `sentry-cli` authentication by default. `SENTRY_AUTH_TOKEN` also works.
 
@@ -126,4 +148,4 @@ Optional Sentry environment:
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 
-For the first public release, prefer writing the GitHub release notes manually instead of relying only on generated commit summaries.
+For the first public release, prefer writing the GitLab release notes manually instead of relying only on generated commit summaries.

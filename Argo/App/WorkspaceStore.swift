@@ -3517,7 +3517,7 @@ final class WorkspaceStore: ObservableObject {
     }
 
     private func submitArgoFeedback() {
-        guard let url = URL(string: "https://github.com/everettjf/argo/issues/new") else { return }
+        guard let url = URL(string: "https://code.devops.xiaohongshu.com/huying/Argo/-/issues/new") else { return }
         NSWorkspace.shared.open(url)
         receive(.statusMessage(localized("extension.support.feedbackOpened"), .neutral, deliverSystemNotification: false))
     }

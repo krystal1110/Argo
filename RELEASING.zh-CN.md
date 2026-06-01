@@ -100,6 +100,26 @@ Argo 发布产物现在发布到 GitLab：
 export GITLAB_TOKEN=<token-with-api-scope>
 ```
 
+推荐使用根目录的一键发布脚本：
+
+```bash
+./release.sh
+```
+
+常用方式：
+
+```bash
+./release.sh patch
+./release.sh minor
+./release.sh major
+./release.sh 1.2.0
+./release.sh set 1.2.0
+```
+
+`./release.sh 1.2.0` 和 `./release.sh set 1.2.0` 会先把 `MARKETING_VERSION` 设置为指定版本，再继续走完整发布流程。
+
+底层发布入口仍然可直接使用：
+
 ```bash
 ./deploy.sh
 ```
@@ -123,6 +143,7 @@ export GITLAB_TOKEN=<token-with-api-scope>
 常用覆盖方式：
 
 - `BUMP_PART=minor ./deploy.sh`
+- `BUMP_PART=set BUMP_VERSION=1.2.0 ./deploy.sh`
 - `SKIP_BUMP=1 ./deploy.sh`
 - `SKIP_NOTARIZE=1 ./deploy.sh`
 - `SKIP_GITLAB_RELEASE=1 ./deploy.sh`

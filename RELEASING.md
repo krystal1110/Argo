@@ -100,6 +100,26 @@ Set the GitLab token before publishing:
 export GITLAB_TOKEN=<token-with-api-scope>
 ```
 
+Use the root one-command release script for normal releases:
+
+```bash
+./release.sh
+```
+
+Common forms:
+
+```bash
+./release.sh patch
+./release.sh minor
+./release.sh major
+./release.sh 1.2.0
+./release.sh set 1.2.0
+```
+
+`./release.sh 1.2.0` and `./release.sh set 1.2.0` set `MARKETING_VERSION` explicitly before continuing through the full publish flow.
+
+The lower-level release entrypoint remains available:
+
 ```bash
 ./deploy.sh
 ```
@@ -123,6 +143,7 @@ Default behavior:
 Useful overrides:
 
 - `BUMP_PART=minor ./deploy.sh`
+- `BUMP_PART=set BUMP_VERSION=1.2.0 ./deploy.sh`
 - `SKIP_BUMP=1 ./deploy.sh`
 - `SKIP_NOTARIZE=1 ./deploy.sh`
 - `SKIP_GITLAB_RELEASE=1 ./deploy.sh`

@@ -63,6 +63,21 @@ final class ReleaseUpdateTests: XCTestCase {
         }
     }
 
+    func testReleaseShortcutScriptPublishesOneCommandGitLabRelease() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let shortcut = try String(contentsOf: rootURL.appendingPathComponent("release.sh"), encoding: .utf8)
+        let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
+
+        XCTAssertTrue(shortcut.contains("GITLAB_PROJECT_PATH:=huying/Argo"))
+        XCTAssertTrue(shortcut.contains("BUMP_PART=set"))
+        XCTAssertTrue(shortcut.contains("BUMP_VERSION"))
+        XCTAssertTrue(shortcut.contains("exec \"$ROOT_DIR/deploy.sh\""))
+        XCTAssertTrue(homebrewRelease.contains("BUMP_VERSION"))
+        XCTAssertTrue(homebrewRelease.contains("\"$ROOT_DIR/scripts/bump_version.sh\" set \"$BUMP_VERSION\""))
+    }
+
     func testAppcastUsesGitLabReleaseAssets() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

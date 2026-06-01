@@ -38,6 +38,7 @@ SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
 SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
 RELEASE_NOTES_LIMIT="${RELEASE_NOTES_LIMIT:-50}"
+BUMP_VERSION="${BUMP_VERSION:-}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
 CLONED_DEFAULT_TAP_DIR=0
@@ -53,6 +54,8 @@ Usage:
 Environment:
   SKIP_BUMP=1            Publish the current MARKETING_VERSION and CURRENT_PROJECT_VERSION unchanged.
   BUMP_PART=patch        Version bump part when SKIP_BUMP=0. patch also increments CURRENT_PROJECT_VERSION by 1.
+  BUMP_PART=set BUMP_VERSION=1.2.0
+                         Set MARKETING_VERSION explicitly before publishing.
   SKIP_NOTARIZE=1        Skip notarization in sign_macos.sh.
   SKIP_GITLAB_RELEASE=1  Skip GitLab package upload and release asset links.
   SKIP_CASK_UPDATE=1     Skip updating the Homebrew tap repository.
@@ -328,7 +331,15 @@ if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
 fi
 
 if [[ "$SKIP_BUMP" != "1" ]]; then
-  "$ROOT_DIR/scripts/bump_version.sh" "$BUMP_PART"
+  if [[ "$BUMP_PART" == "set" ]]; then
+    if [[ -z "$BUMP_VERSION" ]]; then
+      echo "BUMP_PART=set requires BUMP_VERSION=<version>." >&2
+      exit 1
+    fi
+    "$ROOT_DIR/scripts/bump_version.sh" set "$BUMP_VERSION"
+  else
+    "$ROOT_DIR/scripts/bump_version.sh" "$BUMP_PART"
+  fi
   DID_BUMP=1
   VERSION="$(read_setting MARKETING_VERSION)"
 fi

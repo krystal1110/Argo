@@ -120,7 +120,22 @@ Because Argo is open source, keep the private key outside this repository. A pri
 
 ## Publish
 
-The root release entrypoint is:
+The recommended one-command release entrypoint is:
+
+```bash
+./release.sh
+```
+
+You can choose the bump directly:
+
+```bash
+./release.sh patch
+./release.sh minor
+./release.sh major
+./release.sh 1.2.0
+```
+
+The lower-level release entrypoint remains available:
 
 ```bash
 ./deploy.sh

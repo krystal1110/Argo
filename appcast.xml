@@ -13,17 +13,7 @@
             <sparkle:version>151</sparkle:version>
             <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
-            <enclosure url="https://code.devops.xiaohongshu.com/api/v4/projects/huying%2FArgo/packages/generic/argo/1.0.0/Argo-1.0.0.app.zip" length="29333552" type="application/octet-stream" sparkle:edSignature="DjGjyAqcseVFTotrC1X5EIEcAWlCT7bmgeTxkC8ZoL96lMnHk2Z7FPAJnUnLBZSj+2qlJuuRMLwLxacoEujnBA=="/>
-        </item>
-        <item>
-            <title>1.0.17</title>
-            <pubDate>Mon, 23 Mar 2026 22:44:44 -0700</pubDate>
-            <link>https://code.devops.xiaohongshu.com/huying/Argo</link>
-            <sparkle:fullReleaseNotesLink>https://code.devops.xiaohongshu.com/huying/Argo/-/releases/v1.0.17</sparkle:fullReleaseNotesLink>
-            <sparkle:version>16</sparkle:version>
-            <sparkle:shortVersionString>1.0.17</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.6</sparkle:minimumSystemVersion>
-            <enclosure url="https://code.devops.xiaohongshu.com/api/v4/projects/huying%2FArgo/packages/generic/argo/1.0.17/Argo-1.0.17.app.zip" length="20960624" type="application/octet-stream" sparkle:edSignature="4Lg0/Nix7cEsuD0HKlthLSX9U1c1ss9LiyiPB84o8Bi68rOj+tKTc6KXg7AmMl1pSsGq2UQcVyKDTuSiaeiCCg=="/>
+            <enclosure url="https://code.devops.xiaohongshu.com/huying/Argo/uploads/86b831c2104c3b45f15335896c17ce0d/Argo-1.0.0.app.zip" length="29333552" type="application/octet-stream" sparkle:edSignature="DjGjyAqcseVFTotrC1X5EIEcAWlCT7bmgeTxkC8ZoL96lMnHk2Z7FPAJnUnLBZSj+2qlJuuRMLwLxacoEujnBA=="/>
         </item>
     </channel>
 </rss>

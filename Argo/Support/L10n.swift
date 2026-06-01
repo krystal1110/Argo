@@ -2,7 +2,7 @@
 //  L10n.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Foundation

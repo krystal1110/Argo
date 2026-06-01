@@ -2,7 +2,7 @@
 //  FileChangeWatcher.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Foundation
@@ -16,7 +16,7 @@ import Foundation
 final class FileChangeWatcher {
     private let url: URL
     private let onChange: () -> Void
-    private let queue = DispatchQueue(label: "com.everettjf.argo.fileChangeWatcher")
+    private let queue = DispatchQueue(label: "com.krystal.argo.fileChangeWatcher")
     private var source: DispatchSourceFileSystemObject?
     private var fileDescriptor: Int32 = -1
     private var rearmWorkItem: DispatchWorkItem?

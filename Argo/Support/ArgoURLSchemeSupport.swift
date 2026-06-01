@@ -2,7 +2,7 @@
 //  ArgoURLSchemeSupport.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import AppKit
@@ -10,9 +10,9 @@ import Foundation
 
 enum ArgoURLScheme {
     static let scheme = "argo"
-    static let tokenDefaultsKey = "com.everettjf.argo.urlScheme.token"
-    static let enabledDefaultsKey = "com.everettjf.argo.urlScheme.enabled"
-    static let skipConfirmationDefaultsKey = "com.everettjf.argo.urlScheme.skipConfirmation"
+    static let tokenDefaultsKey = "com.krystal.argo.urlScheme.token"
+    static let enabledDefaultsKey = "com.krystal.argo.urlScheme.enabled"
+    static let skipConfirmationDefaultsKey = "com.krystal.argo.urlScheme.skipConfirmation"
 
     struct RunRequest {
         let cmd: String

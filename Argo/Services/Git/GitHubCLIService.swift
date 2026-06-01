@@ -2,7 +2,7 @@
 //  GitHubCLIService.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Foundation

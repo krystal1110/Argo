@@ -2,7 +2,7 @@
 //  LocalizationManager.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 import Combine
 import Foundation

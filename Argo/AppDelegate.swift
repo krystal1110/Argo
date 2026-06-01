@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Cocoa

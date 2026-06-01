@@ -2,7 +2,7 @@
 //  TerminalScrollbarOverlay.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import SwiftUI

@@ -2,7 +2,7 @@
 //  ShellSessionTests.swift
 //  ArgoTests
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import AppKit

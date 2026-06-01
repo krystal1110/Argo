@@ -2,7 +2,7 @@
 //  QuickCommandSupportTests.swift
 //  ArgoTests
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Carbon

@@ -2,7 +2,7 @@
 //  DiffWindowState.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Combine

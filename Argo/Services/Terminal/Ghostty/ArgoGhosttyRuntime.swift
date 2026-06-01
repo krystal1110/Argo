@@ -2,7 +2,7 @@
 //  ArgoGhosttyRuntime.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 @preconcurrency import AppKit

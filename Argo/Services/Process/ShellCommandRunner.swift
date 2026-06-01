@@ -2,7 +2,7 @@
 //  ShellCommandRunner.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import Foundation

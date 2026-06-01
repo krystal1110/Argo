@@ -2,7 +2,7 @@
 //  ExternalEditorSupportTests.swift
 //  ArgoTests
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import XCTest

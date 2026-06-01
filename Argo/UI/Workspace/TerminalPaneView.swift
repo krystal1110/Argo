@@ -2,7 +2,7 @@
 //  TerminalPaneView.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import SwiftUI

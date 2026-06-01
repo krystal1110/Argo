@@ -2,7 +2,7 @@
   terminal-architecture.md
   Argo
 
-  Author: everettjf
+  Author: krystal
 -->
 
 # Terminal Architecture

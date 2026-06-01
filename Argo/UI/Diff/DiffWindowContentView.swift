@@ -2,7 +2,7 @@
 //  DiffWindowContentView.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import SwiftUI

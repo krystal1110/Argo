@@ -2,7 +2,7 @@
 //  ReleaseUpdateTests.swift
 //  ArgoTests
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import XCTest
@@ -137,7 +137,7 @@ final class ReleaseUpdateTests: XCTestCase {
 
         XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/-/releases"))
         XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/uploads/"))
-        XCTAssertFalse(appcast.contains("https://github.com/everettjf/argo/releases"))
+        XCTAssertFalse(appcast.contains("https://github.com/krystal/argo/releases"))
     }
 
     func testAppUpdaterFallsBackToStableFeedWhenInfoPlistValueMissing() {

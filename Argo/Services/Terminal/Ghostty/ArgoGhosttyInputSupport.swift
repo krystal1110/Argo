@@ -2,7 +2,7 @@
 //  ArgoGhosttyInputSupport.swift
 //  Argo
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import AppKit

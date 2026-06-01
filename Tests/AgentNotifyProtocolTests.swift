@@ -2,7 +2,7 @@
 //  AgentNotifyProtocolTests.swift
 //  ArgoTests
 //
-//  Author: everettjf
+//  Author: krystal
 //
 
 import XCTest
@@ -80,7 +80,7 @@ final class AgentNotifyProtocolTests: XCTestCase {
     }
 
     func testSocketPathStaysWithinSunPathLimit() {
-        let url = AgentNotifySocketPath.resolveSocketURL(homeDirectory: "/Users/everettjf")
+        let url = AgentNotifySocketPath.resolveSocketURL(homeDirectory: "/Users/krystal")
         XCTAssertLessThanOrEqual(url.path.utf8.count, 103, "socket path must fit sockaddr_un.sun_path on Darwin")
     }
 

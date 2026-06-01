@@ -78,6 +78,30 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertTrue(homebrewRelease.contains("\"$ROOT_DIR/scripts/bump_version.sh\" set \"$BUMP_VERSION\""))
     }
 
+    func testSigningScriptAssessesGatekeeperOnlyAfterNotarizationWhenRequested() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let script = try String(contentsOf: rootURL.appendingPathComponent("scripts/sign_macos.sh"), encoding: .utf8)
+
+        XCTAssertFalse(
+            script.contains("""
+            /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE_PATH"
+            /usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
+            """),
+            "Gatekeeper assessment rejects Developer ID apps before notarization finishes."
+        )
+        XCTAssertTrue(script.contains("""
+        if [[ "$NOTARIZE" != "1" ]]; then
+          /usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
+        fi
+        """))
+        XCTAssertTrue(script.contains("""
+            xcrun stapler validate "$DMG_PATH"
+            /usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
+        """))
+    }
+
     func testAppcastUsesGitLabReleaseAssets() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

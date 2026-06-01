@@ -187,7 +187,9 @@ fi
 /usr/bin/codesign --remove-signature "$APP_BUNDLE_PATH" >/dev/null 2>&1 || true
 sparkle_codesign_app "$APP_BUNDLE_PATH" "$SIGNING_IDENTITY" "$ENTITLEMENTS_PATH"
 /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE_PATH"
-/usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
+if [[ "$NOTARIZE" != "1" ]]; then
+  /usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
+fi
 
 rm -rf "$DMG_PATH" "$STAGING_DIR"
 mkdir -p "$STAGING_DIR"
@@ -289,6 +291,7 @@ EOF
     xcrun stapler staple "$APP_BUNDLE_PATH"
     xcrun stapler staple "$DMG_PATH"
     xcrun stapler validate "$DMG_PATH"
+    /usr/sbin/spctl --assess -vv --type execute "$APP_BUNDLE_PATH"
   else
     echo "Skipping stapler: notarization not yet Accepted. DMG will rely on online Gatekeeper check at first launch." >&2
   fi

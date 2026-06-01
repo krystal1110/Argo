@@ -11,6 +11,36 @@ enum ArgoFeatureFlags {
     static let showsRemoteSessionCreationUI = true
 }
 
+enum MainWindowMode: String, CaseIterable, Identifiable {
+    case workspace
+    case canvas
+    case overview
+
+    var id: String { rawValue }
+
+    var titleLocalizationKey: String {
+        switch self {
+        case .workspace:
+            return "main.rail.workspace"
+        case .canvas:
+            return "main.canvas.title"
+        case .overview:
+            return "main.overview.title"
+        }
+    }
+
+    func iconSystemName(selected: Bool) -> String {
+        switch self {
+        case .workspace:
+            return "sidebar.leading"
+        case .canvas:
+            return selected ? "square.grid.3x2.fill" : "square.grid.3x2"
+        case .overview:
+            return selected ? "building.2.fill" : "building.2"
+        }
+    }
+}
+
 struct PresentedError: Identifiable {
     let id = UUID()
     let title: String

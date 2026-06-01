@@ -128,6 +128,26 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(WorkspaceTabStateRecord.makeDefault(for: "/tmp/argo").title, "标签页 1")
     }
 
+    func testMainWindowModeMetadataIsStable() {
+        XCTAssertEqual(MainWindowMode.allCases, [.workspace, .canvas, .overview])
+        XCTAssertEqual(MainWindowMode.workspace.id, "workspace")
+        XCTAssertEqual(MainWindowMode.canvas.id, "canvas")
+        XCTAssertEqual(MainWindowMode.overview.id, "overview")
+        XCTAssertEqual(MainWindowMode.workspace.titleLocalizationKey, "main.rail.workspace")
+        XCTAssertEqual(MainWindowMode.canvas.titleLocalizationKey, "main.canvas.title")
+        XCTAssertEqual(MainWindowMode.overview.titleLocalizationKey, "main.overview.title")
+        XCTAssertEqual(MainWindowMode.workspace.iconSystemName(selected: false), "sidebar.leading")
+        XCTAssertEqual(MainWindowMode.canvas.iconSystemName(selected: true), "square.grid.3x2.fill")
+        XCTAssertEqual(MainWindowMode.overview.iconSystemName(selected: true), "building.2.fill")
+    }
+
+    func testMainRailStringsLocalizeForSimplifiedChinese() {
+        LocalizationManager.shared.updateSelectedLanguage(.simplifiedChinese)
+
+        XCTAssertEqual(L10nTable.string(for: "main.rail.workspace", language: .simplifiedChinese), "工作区")
+        XCTAssertEqual(L10nTable.string(for: "main.rail.settings", language: .simplifiedChinese), "设置")
+    }
+
     func testWorktreeAndRemoteStringsLocalizeForSimplifiedChinese() throws {
         LocalizationManager.shared.updateSelectedLanguage(.simplifiedChinese)
 

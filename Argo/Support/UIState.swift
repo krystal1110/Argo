@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum ArgoFeatureFlags {
     static let showsRemoteSessionCreationUI = true
@@ -38,6 +39,15 @@ enum MainWindowMode: String, CaseIterable, Identifiable {
         case .overview:
             return selected ? "building.2.fill" : "building.2"
         }
+    }
+}
+
+struct MainWindowLayoutState {
+    var workspaceColumnVisibility: NavigationSplitViewVisibility = .all
+
+    mutating func selectMode(_ mode: MainWindowMode, previousMode: MainWindowMode) {
+        guard mode == .workspace, previousMode != .workspace else { return }
+        workspaceColumnVisibility = .all
     }
 }
 

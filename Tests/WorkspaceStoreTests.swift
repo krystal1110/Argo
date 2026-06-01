@@ -5,6 +5,7 @@
 //  Author: krystal
 //
 
+import SwiftUI
 import XCTest
 @testable import Argo
 
@@ -178,6 +179,24 @@ final class WorkspaceStoreTests: XCTestCase {
 
         XCTAssertEqual(store.selectedWorkspaceID, workspace.id)
         XCTAssertEqual(store.mainWindowMode, .workspace)
+    }
+
+    func testMainWindowLayoutRestoresWorkspaceSidebarWhenReturningFromGlobalMode() {
+        var layoutState = MainWindowLayoutState()
+        layoutState.workspaceColumnVisibility = .detailOnly
+
+        layoutState.selectMode(.workspace, previousMode: .overview)
+
+        XCTAssertEqual(layoutState.workspaceColumnVisibility, .all)
+    }
+
+    func testMainWindowLayoutKeepsWorkspaceSidebarStateWhenReselectingWorkspace() {
+        var layoutState = MainWindowLayoutState()
+        layoutState.workspaceColumnVisibility = .detailOnly
+
+        layoutState.selectMode(.workspace, previousMode: .workspace)
+
+        XCTAssertEqual(layoutState.workspaceColumnVisibility, .detailOnly)
     }
 
     func testSleepPreventionStringsLocalizeForSimplifiedChinese() async throws {

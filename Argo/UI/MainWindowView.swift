@@ -12,6 +12,7 @@ import SwiftUI
 struct MainWindowView: View {
     @EnvironmentObject private var store: WorkspaceStore
     @ObservedObject private var localization = LocalizationManager.shared
+    @State private var layoutState = MainWindowLayoutState()
 
     private func localized(_ key: String) -> String {
         localization.string(key)
@@ -76,7 +77,9 @@ struct MainWindowView: View {
     }
 
     private func selectMainWindowMode(_ mode: MainWindowMode, restoreFocus: Bool = true) {
-        let wasCanvasMode = store.mainWindowMode == .canvas
+        let previousMode = store.mainWindowMode
+        layoutState.selectMode(mode, previousMode: previousMode)
+        let wasCanvasMode = previousMode == .canvas
         store.mainWindowMode = mode
         if restoreFocus, wasCanvasMode, mode == .workspace {
             restoreFocusedPane()
@@ -211,7 +214,7 @@ struct MainWindowView: View {
                 Group {
                     switch store.mainWindowMode {
                     case .workspace:
-                        NavigationSplitView {
+                        NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
                             WorkspaceSidebarView()
                                 .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
                         } detail: {
@@ -563,7 +566,11 @@ struct MainWindowView: View {
 
                     Button(isOverviewMode ? localized("main.overview.close") : localized("main.overview.open")) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            store.dispatch(.toggleOverview)
+                            if isOverviewMode {
+                                dismissGlobalMode(restoreFocus: false)
+                            } else {
+                                selectMainWindowMode(.overview, restoreFocus: false)
+                            }
                         }
                     }
 
@@ -625,6 +632,9 @@ struct MainWindowView: View {
                 await store.refreshHAPIIntegrationStatus()
             }
             store.refreshAvailableExternalEditors()
+        }
+        .onChange(of: store.mainWindowMode) { previousMode, newMode in
+            layoutState.selectMode(newMode, previousMode: previousMode)
         }
         .sheet(item: $store.renameWorkspaceRequest) { request in
             RenameWorkspaceSheet(request: request) { name in
@@ -1102,14 +1112,18 @@ private struct ToolbarAnchorView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
-        DispatchQueue.main.async {
-            anchorView = view
-        }
+        updateAnchorView(view)
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        updateAnchorView(nsView)
+    }
+
+    private func updateAnchorView(_ nsView: NSView) {
+        guard anchorView !== nsView else { return }
         DispatchQueue.main.async {
+            guard anchorView !== nsView else { return }
             anchorView = nsView
         }
     }

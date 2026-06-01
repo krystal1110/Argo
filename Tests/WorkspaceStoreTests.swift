@@ -108,6 +108,78 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertTrue(items.contains(where: { $0.id == "check-updates" && $0.title == "检查 Argo 更新" }))
     }
 
+    func testMainWindowModeDefaultsToWorkspace() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        XCTAssertEqual(store.mainWindowMode, .workspace)
+    }
+
+    func testOverviewCommandTogglesMainWindowMode() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        store.dispatch(.toggleOverview)
+        XCTAssertEqual(store.mainWindowMode, .overview)
+
+        store.dispatch(.toggleOverview)
+        XCTAssertEqual(store.mainWindowMode, .workspace)
+    }
+
+    func testOverviewCommandDismissesCommandPalette() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        store.dispatch(.toggleCommandPalette)
+        XCTAssertTrue(store.isCommandPalettePresented)
+
+        store.dispatch(.toggleOverview)
+
+        XCTAssertEqual(store.mainWindowMode, .overview)
+        XCTAssertFalse(store.isCommandPalettePresented)
+    }
+
+    func testOverviewCommandPaletteTitleReflectsMainWindowMode() {
+        LocalizationManager.shared.updateSelectedLanguage(.english)
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.mainWindowMode = .overview
+
+        let overviewItem = store.commandPaletteItems.first { $0.id == "overview" }
+
+        XCTAssertEqual(overviewItem?.title, "Close Workspace Overview")
+    }
+
+    func testPresentSettingsDoesNotChangeMainWindowMode() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.mainWindowMode = .canvas
+
+        store.dispatch(.presentSettings)
+
+        XCTAssertEqual(store.mainWindowMode, .canvas)
+        XCTAssertNotNil(store.settingsRequest)
+    }
+
+    func testDismissTransientUIReturnsToWorkspaceMode() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.mainWindowMode = .overview
+
+        store.dispatch(.dismissTransientUI)
+
+        XCTAssertEqual(store.mainWindowMode, .workspace)
+    }
+
+    func testSelectWorkspaceReturnsToWorkspaceMode() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.workspaces = [workspace]
+        store.mainWindowMode = .canvas
+
+        store.dispatch(.selectWorkspace(workspace.id))
+
+        XCTAssertEqual(store.selectedWorkspaceID, workspace.id)
+        XCTAssertEqual(store.mainWindowMode, .workspace)
+    }
+
     func testSleepPreventionStringsLocalizeForSimplifiedChinese() async throws {
         LocalizationManager.shared.updateSelectedLanguage(.simplifiedChinese)
         let store = WorkspaceStore(persistsWorkspaceState: false)

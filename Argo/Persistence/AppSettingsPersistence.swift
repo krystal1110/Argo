@@ -38,6 +38,11 @@ final class AppSettingsPersistence {
     private var pendingWorkItem: DispatchWorkItem?
     private let saveDebounce: DispatchTimeInterval = .milliseconds(500)
 
+    /// Avoid a main-actor deinit hop, which trips a libmalloc abort in XCTest
+    /// on this Swift/macOS toolchain. App shutdown still flushes pending work
+    /// explicitly via `WorkspaceStore.flushPendingPersistence()`.
+    nonisolated deinit {}
+
     func load() -> AppSettings {
         let url = resolvedSettingsFileURL()
         guard let data = try? Data(contentsOf: url) else {

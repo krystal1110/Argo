@@ -27,7 +27,7 @@ final class WorkspaceStore: ObservableObject {
     @Published var appSettings = AppSettings()
     @Published var gitHubIntegrationState: GitHubIntegrationState = .disabled
     @Published var statusMessage: WorkspaceStatusMessage?
-    @Published var isOverviewPresented = false
+    @Published var mainWindowMode: MainWindowMode = .workspace
     @Published var globalCanvasState = GlobalCanvasStateRecord()
     @Published var isCommandPalettePresented = false
     @Published var commandPaletteQuery = ""
@@ -287,7 +287,7 @@ final class WorkspaceStore: ObservableObject {
         var items: [CommandPaletteItem] = [
             CommandPaletteItem(
                 id: "overview",
-                title: isOverviewPresented ? localized("main.commandPalette.overview.close") : localized("main.commandPalette.overview.open"),
+                title: mainWindowMode == .overview ? localized("main.commandPalette.overview.close") : localized("main.commandPalette.overview.open"),
                 subtitle: localizedFormat("main.commandPalette.workspacesCountFormat", workspaces.count),
                 group: .navigation,
                 keywords: ["overview", "dashboard", "summary"],
@@ -2576,7 +2576,7 @@ final class WorkspaceStore: ObservableObject {
 
         case .toggleOverview:
             dismissCommandPalette()
-            isOverviewPresented.toggle()
+            mainWindowMode = mainWindowMode == .overview ? .workspace : .overview
 
         case .presentSettings:
             dismissCommandPalette()
@@ -2593,12 +2593,13 @@ final class WorkspaceStore: ObservableObject {
         case .dismissTransientUI:
             resetCommandPalette()
             settingsRequest = nil
-            isOverviewPresented = false
+            mainWindowMode = .workspace
 
         case .selectWorkspace(let id):
             dismissCommandPalette()
             if let workspace = workspace(for: id) {
                 selectWorkspace(workspace)
+                mainWindowMode = .workspace
             }
 
         case .refreshWorkspace(let id):

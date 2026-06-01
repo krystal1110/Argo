@@ -20,6 +20,8 @@ TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-tap"
 TAP_DIR="${TAP_DIR:-$TAP_DIR_DEFAULT}"
 CASK_PATH="${CASK_PATH:-Casks/${APP_SLUG}.rb}"
 APP_HOMEPAGE="${APP_HOMEPAGE:-}"
+GITLAB_ASSET_BACKEND="${GITLAB_ASSET_BACKEND:-project_uploads}"
+STABLE_BRANCH="${STABLE_BRANCH:-stable}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-}"
 DEFAULT_NOTARYTOOL_PROFILE="${DEFAULT_NOTARYTOOL_PROFILE:-argo-notarytool}"
@@ -64,6 +66,8 @@ Environment:
   GITLAB_PROJECT_PATH=huying/Argo  GitLab project path. Inferred from origin when omitted.
   GITLAB_PROJECT_ID=12345  Optional numeric project id. Overrides path encoding for API calls.
   GITLAB_TOKEN=token      Token with api scope for packages, releases, and asset links.
+  GITLAB_ASSET_BACKEND=project_uploads  Asset storage backend: project_uploads or generic_packages.
+  STABLE_BRANCH=stable    Branch pushed after appcast updates so SUFeedURL can read the feed.
   TAP_PROJECT_PATH=group/homebrew-tap  Optional GitLab tap project used when updating the cask.
   TAP_REMOTE_URL=git@host:group/homebrew-tap.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
@@ -237,6 +241,16 @@ else
   gitlab_require_config
 fi
 
+case "$GITLAB_ASSET_BACKEND" in
+  generic_packages|project_uploads)
+    ;;
+  *)
+    echo "Unsupported GITLAB_ASSET_BACKEND: $GITLAB_ASSET_BACKEND" >&2
+    echo "Expected: project_uploads or generic_packages" >&2
+    exit 1
+    ;;
+esac
+
 if [[ -z "$APP_HOMEPAGE" ]]; then
   APP_HOMEPAGE="$(gitlab_project_url)"
 fi
@@ -264,6 +278,7 @@ DIST_DMG_PATH="$OUTPUT_DIR/$APP_NAME-$VERSION.dmg"
 DIST_ZIP_PATH="$OUTPUT_DIR/$APP_NAME-$VERSION.app.zip"
 DIST_DSYM_PATH="$OUTPUT_DIR/dSYMs/$APP_NAME-$VERSION.app.dSYM"
 DIST_DSYM_ZIP_PATH="$DIST_DSYM_PATH.zip"
+DIST_ZIP_URL=""
 RELEASE_DONE=0
 DID_BUMP=0
 FAILED_LINE=""
@@ -411,6 +426,12 @@ RELEASE_NOTES_FILE="$(generate_release_notes "$VERSION" "$TAG" "$PREVIOUS_TAG" "
 if [[ "$RESUMING" != "1" ]]; then
   sparkle_create_app_zip "$OUTPUT_DIR/$APP_NAME.app" "$DIST_ZIP_PATH"
 
+  APPCAST_DOWNLOAD_URL_PREFIX="$(gitlab_package_version_url "$VERSION")/"
+  if [[ "$GITLAB_ASSET_BACKEND" == "project_uploads" && "$SKIP_GITLAB_RELEASE" != "1" ]]; then
+    DIST_ZIP_URL="$(gitlab_project_upload_file "$DIST_ZIP_PATH")"
+    APPCAST_DOWNLOAD_URL_PREFIX="${DIST_ZIP_URL%/*}/"
+  fi
+
   APPCAST_STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/argo-appcast.XXXXXX")"
   ZIP_BASENAME="$(basename "$DIST_ZIP_PATH" .zip)"
   cp "$DIST_ZIP_PATH" "$APPCAST_STAGING_DIR/"
@@ -422,7 +443,7 @@ if [[ "$RESUMING" != "1" ]]; then
   sparkle_generate_appcast \
     "$APPCAST_STAGING_DIR" \
     "$SPARKLE_PRIVATE_KEY_FILE" \
-    "$(gitlab_package_version_url "$VERSION")/" \
+    "$APPCAST_DOWNLOAD_URL_PREFIX" \
     "$(gitlab_release_url "$TAG")" \
     "$APP_HOMEPAGE" \
     "$SPARKLE_MAX_VERSIONS" \
@@ -438,6 +459,7 @@ if [[ "$RESUMING" != "1" ]]; then
   if ! git diff --cached --quiet; then
     git commit -m "chore: release $VERSION"
     git push origin "$(git branch --show-current)"
+    git push origin "HEAD:$STABLE_BRANCH"
   fi
 
   git tag "$TAG"
@@ -450,15 +472,36 @@ if [[ ! -f "$DIST_ZIP_PATH" ]]; then
 fi
 
 if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-  gitlab_publish_release_assets \
-    "$TAG" \
-    "$VERSION" \
-    "$APP_NAME $VERSION" \
-    "$RELEASE_NOTES_FILE" \
-    "$DIST_DMG_PATH" \
-    "$DIST_ZIP_PATH" \
-    "$DIST_DSYM_ZIP_PATH" \
-    "$APPCAST_FILE"
+  if [[ "$GITLAB_ASSET_BACKEND" == "generic_packages" ]]; then
+    gitlab_publish_release_assets \
+      "$TAG" \
+      "$VERSION" \
+      "$APP_NAME $VERSION" \
+      "$RELEASE_NOTES_FILE" \
+      "$DIST_DMG_PATH" \
+      "$DIST_ZIP_PATH" \
+      "$DIST_DSYM_ZIP_PATH" \
+      "$APPCAST_FILE"
+  else
+    gitlab_retry "GitLab release upsert" \
+      gitlab_create_or_update_release "$TAG" "$APP_NAME $VERSION" "$RELEASE_NOTES_FILE"
+
+    if [[ -z "$DIST_ZIP_URL" ]]; then
+      DIST_ZIP_URL="$(gitlab_project_upload_file "$DIST_ZIP_PATH")"
+    fi
+    DIST_DMG_URL="$(gitlab_project_upload_file "$DIST_DMG_PATH")"
+    DIST_DSYM_ZIP_URL="$(gitlab_project_upload_file "$DIST_DSYM_ZIP_PATH")"
+    APPCAST_URL="$(gitlab_project_upload_file "$APPCAST_FILE")"
+
+    gitlab_retry "GitLab release asset link $(basename "$DIST_DMG_PATH")" \
+      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_DMG_PATH")" "$DIST_DMG_URL" "/downloads/$TAG/$(basename "$DIST_DMG_PATH")"
+    gitlab_retry "GitLab release asset link $(basename "$DIST_ZIP_PATH")" \
+      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_ZIP_PATH")" "$DIST_ZIP_URL" "/downloads/$TAG/$(basename "$DIST_ZIP_PATH")"
+    gitlab_retry "GitLab release asset link $(basename "$DIST_DSYM_ZIP_PATH")" \
+      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_DSYM_ZIP_PATH")" "$DIST_DSYM_ZIP_URL" "/downloads/$TAG/$(basename "$DIST_DSYM_ZIP_PATH")"
+    gitlab_retry "GitLab release asset link $(basename "$APPCAST_FILE")" \
+      gitlab_release_link_upsert "$TAG" "$(basename "$APPCAST_FILE")" "$APPCAST_URL" "/downloads/$TAG/$(basename "$APPCAST_FILE")"
+  fi
 fi
 
 if [[ "$SKIP_CASK_UPDATE" != "1" ]]; then

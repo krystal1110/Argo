@@ -92,7 +92,7 @@ Argo releases are published to GitLab:
 - project: `https://code.devops.xiaohongshu.com/huying/Argo`
 - releases: `https://code.devops.xiaohongshu.com/huying/Argo/-/releases`
 - Sparkle feed: `https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml`
-- release binaries: GitLab Generic Package Registry package `argo/<version>`
+- release binaries: GitLab Project Uploads linked from the release
 
 Set the GitLab token before publishing:
 
@@ -136,7 +136,8 @@ Default behavior:
 - packages `Argo-<version>.app.zip` for Sparkle
 - notarizes unless `SKIP_NOTARIZE=1`
 - updates the repository `appcast.xml`
-- uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitLab Generic Package Registry
+- pushes the Sparkle feed branch, `stable` by default
+- uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitLab
 - creates or updates the GitLab release and attaches release asset links for those files
 - updates the Homebrew tap unless `SKIP_CASK_UPDATE=1`
 
@@ -149,8 +150,11 @@ Useful overrides:
 - `SKIP_GITLAB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
 - `SKIP_SENTRY_DSYM_UPLOAD=1 ./deploy.sh`
+- `GITLAB_ASSET_BACKEND=project_uploads ./deploy.sh`
+- `GITLAB_ASSET_BACKEND=generic_packages ./deploy.sh`
 - `GITLAB_PROJECT_PATH=huying/Argo ./deploy.sh`
 - `GITLAB_PROJECT_ID=<numeric-id> ./deploy.sh`
+- `STABLE_BRANCH=stable ./deploy.sh`
 - `TAP_PROJECT_PATH=group/homebrew-tap ./deploy.sh`
 - `TAP_REMOTE_URL=git@code.devops.xiaohongshu.com:group/homebrew-tap.git ./deploy.sh`
 - `ARGO_RELEASE_HOME=/secure/release-home ./deploy.sh`

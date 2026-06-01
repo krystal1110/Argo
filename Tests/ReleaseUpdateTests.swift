@@ -78,6 +78,21 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertTrue(homebrewRelease.contains("\"$ROOT_DIR/scripts/bump_version.sh\" set \"$BUMP_VERSION\""))
     }
 
+    func testReleaseScriptSupportsGitLabProjectUploadsAndStableFeedBranch() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
+        let gitlabHelpers = try String(contentsOf: rootURL.appendingPathComponent("scripts/gitlab_release_tools.sh"), encoding: .utf8)
+
+        XCTAssertTrue(homebrewRelease.contains("GITLAB_ASSET_BACKEND"))
+        XCTAssertTrue(homebrewRelease.contains("project_uploads"))
+        XCTAssertTrue(homebrewRelease.contains("gitlab_project_upload_file \"$DIST_ZIP_PATH\""))
+        XCTAssertTrue(homebrewRelease.contains("git push origin \"HEAD:$STABLE_BRANCH\""))
+        XCTAssertTrue(gitlabHelpers.contains("gitlab_project_upload_file()"))
+        XCTAssertTrue(gitlabHelpers.contains("/uploads"))
+    }
+
     func testSigningScriptAssessesGatekeeperOnlyAfterNotarizationWhenRequested() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -109,7 +124,7 @@ final class ReleaseUpdateTests: XCTestCase {
         let appcast = try String(contentsOf: rootURL.appendingPathComponent("appcast.xml"), encoding: .utf8)
 
         XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/-/releases"))
-        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/api/v4/projects/huying%2FArgo/packages/generic/argo/"))
+        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/uploads/"))
         XCTAssertFalse(appcast.contains("https://github.com/everettjf/argo/releases"))
     }
 

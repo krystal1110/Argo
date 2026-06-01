@@ -85,6 +85,46 @@ gitlab_package_file_url() {
   echo "$(gitlab_package_version_url "$version")/$(gitlab_urlencode "$file_name")"
 }
 
+gitlab_project_upload_file() {
+  local asset_path="$1"
+  local file_name
+  local tmp_response
+  local http_code
+  file_name="$(basename "$asset_path")"
+  tmp_response="$(mktemp "${TMPDIR:-/tmp}/argo-gitlab-project-upload.XXXXXX")"
+
+  http_code="$(
+    curl --silent --show-error --output "$tmp_response" --write-out "%{http_code}" \
+      --request POST \
+      --header "$(gitlab_auth_header)" \
+      --form "file=@${asset_path};filename=${file_name}" \
+      "$(gitlab_project_api_url)/uploads"
+  )" || {
+    local rc=$?
+    echo "GitLab project upload failed for $file_name (curl exit $rc)." >&2
+    cat "$tmp_response" >&2
+    rm -f "$tmp_response"
+    return "$rc"
+  }
+
+  if [[ "$http_code" != "201" ]]; then
+    echo "GitLab project upload failed for $file_name with HTTP $http_code:" >&2
+    cat "$tmp_response" >&2
+    rm -f "$tmp_response"
+    return 1
+  fi
+
+  python3 - "$tmp_response" "$(gitlab_project_url)" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as fh:
+    payload = json.load(fh)
+print(sys.argv[2] + payload["url"])
+PY
+  rm -f "$tmp_response"
+}
+
 gitlab_require_config() {
   gitlab_configure
   if [[ -z "${GITLAB_PROJECT_PATH:-}" ]]; then

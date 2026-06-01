@@ -27,6 +27,8 @@ Environment:
   SKIP_CASK_UPDATE=1           Skip Homebrew tap update.
   SKIP_SENTRY_DSYM_UPLOAD=1    Skip Sentry dSYM upload.
   SKIP_GITLAB_RELEASE=1        Skip GitLab publishing.
+  GITLAB_ASSET_BACKEND=project_uploads
+                                Store release files via GitLab project uploads.
 EOF
 }
 

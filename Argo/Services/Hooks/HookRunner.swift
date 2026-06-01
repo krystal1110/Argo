@@ -234,7 +234,10 @@ nonisolated final class HookRunner: @unchecked Sendable {
         switch source {
         case .command(let command):
             process.executableURL = URL(fileURLWithPath: "/bin/sh")
-            process.arguments = ["-c", command]
+            // Blocking quit hooks have a hard wall-clock budget. If timeout
+            // interrupts a foreground child (for example `sleep`), `-e` keeps
+            // the shell from continuing with later `;` commands.
+            process.arguments = mode == "blocking" ? ["-e", "-c", command] : ["-c", command]
         case .script(let scriptURL):
             let path = scriptURL.path
             guard FileManager.default.fileExists(atPath: path) else {

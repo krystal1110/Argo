@@ -12,7 +12,6 @@ import SwiftUI
 struct MainWindowView: View {
     @EnvironmentObject private var store: WorkspaceStore
     @ObservedObject private var localization = LocalizationManager.shared
-    @State private var isCanvasPresented = false
 
     private func localized(_ key: String) -> String {
         localization.string(key)
@@ -68,6 +67,32 @@ struct MainWindowView: View {
         availableHAPIInstallation?.primaryActionHelpText ?? localized("main.hapi.defaultHelpText")
     }
 
+    private var isCanvasMode: Bool {
+        store.mainWindowMode == .canvas
+    }
+
+    private var isOverviewMode: Bool {
+        store.mainWindowMode == .overview
+    }
+
+    private func selectMainWindowMode(_ mode: MainWindowMode, restoreFocus: Bool = true) {
+        let wasCanvasMode = store.mainWindowMode == .canvas
+        store.mainWindowMode = mode
+        if restoreFocus, wasCanvasMode, mode == .workspace {
+            restoreFocusedPane()
+        }
+    }
+
+    private func restoreFocusedPane() {
+        guard let workspace = store.selectedWorkspace,
+              let focusedPaneID = workspace.sessionController.focusedPaneID else {
+            return
+        }
+        DispatchQueue.main.async {
+            workspace.sessionController.focus(focusedPaneID)
+        }
+    }
+
     @ViewBuilder
     private func hapiToolbarControl(using installation: HAPIInstallationStatus) -> some View {
         ToolbarSegmentedControl(
@@ -119,19 +144,8 @@ struct MainWindowView: View {
         return ArgoTheme.warning.opacity(0.42)
     }
 
-    private func dismissCanvas(restoreFocus: Bool = true) {
-        isCanvasPresented = false
-        if store.mainWindowMode == .canvas {
-            store.mainWindowMode = .workspace
-        }
-        guard restoreFocus,
-              let workspace = store.selectedWorkspace,
-              let focusedPaneID = workspace.sessionController.focusedPaneID else {
-            return
-        }
-        DispatchQueue.main.async {
-            workspace.sessionController.focus(focusedPaneID)
-        }
+    private func dismissGlobalMode(restoreFocus: Bool = true) {
+        selectMainWindowMode(.workspace, restoreFocus: restoreFocus)
     }
 
     @ViewBuilder
@@ -180,38 +194,49 @@ struct MainWindowView: View {
 
     var body: some View {
         ZStack {
-            NavigationSplitView {
-                WorkspaceSidebarView()
-                    .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
-            } detail: {
-                if isCanvasPresented {
-                    Color.clear
-                } else {
-                    WorkspaceDetailView()
-                }
-            }
-            .navigationSplitViewStyle(.balanced)
+            HStack(spacing: 0) {
+                GlobalModeRailView(
+                    selectedMode: store.mainWindowMode,
+                    uiScale: uiScale,
+                    onSelectMode: { mode in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectMainWindowMode(mode, restoreFocus: mode == .workspace)
+                        }
+                    },
+                    onOpenSettings: {
+                        store.presentSettings(for: store.selectedWorkspace)
+                    }
+                )
 
-            if store.mainWindowMode == .overview {
-                OverviewView {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        store.mainWindowMode = .workspace
+                Group {
+                    switch store.mainWindowMode {
+                    case .workspace:
+                        NavigationSplitView {
+                            WorkspaceSidebarView()
+                                .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
+                        } detail: {
+                            WorkspaceDetailView()
+                        }
+                        .navigationSplitViewStyle(.balanced)
+
+                    case .canvas:
+                        GlobalCanvasView {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                dismissGlobalMode()
+                            }
+                        }
+                        .environmentObject(store)
+
+                    case .overview:
+                        OverviewView {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                dismissGlobalMode(restoreFocus: false)
+                            }
+                        }
+                        .environmentObject(store)
                     }
                 }
-                .environmentObject(store)
-                .transition(.opacity)
-                .zIndex(1)
-            }
-
-            if isCanvasPresented {
-                GlobalCanvasView {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        dismissCanvas()
-                    }
-                }
-                .environmentObject(store)
-                .transition(.opacity)
-                .zIndex(1)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             if store.isCommandPalettePresented {
@@ -242,6 +267,7 @@ struct MainWindowView: View {
                         .padding(4 * uiScale)
                 }
                 .scaleEffect(uiScale)
+                .disabled(store.mainWindowMode != .workspace)
                 .accessibilityLabel(localized("menu.view.toggleSidebar"))
                 .help(localized("menu.view.toggleSidebar"))
             }
@@ -372,35 +398,6 @@ struct MainWindowView: View {
 
                 }
                 .scaleEffect(uiScale)
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        dismissCanvas(restoreFocus: false)
-                        store.mainWindowMode = store.mainWindowMode == .overview ? .workspace : .overview
-                    }
-                } label: {
-                    Image(systemName: store.mainWindowMode == .overview ? "building.2.fill" : "building.2")
-                        .padding(4 * uiScale)
-                }
-                .scaleEffect(uiScale)
-                .accessibilityLabel(localized("main.overview.title"))
-                .help(localized("main.overview.title"))
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if isCanvasPresented {
-                            dismissCanvas()
-                        } else {
-                            isCanvasPresented = true
-                            store.mainWindowMode = .canvas
-                        }
-                    }
-                } label: {
-                    Image(systemName: isCanvasPresented ? "square.grid.3x2.fill" : "square.grid.3x2")
-                        .padding(4 * uiScale)
-                }
-                .scaleEffect(uiScale)
-                .accessibilityLabel(localized("main.canvas.title"))
-                .help(isCanvasPresented ? localized("main.canvas.hide") : localized("main.canvas.show"))
 
                 Button {
                     openDiffWindow()
@@ -564,20 +561,18 @@ struct MainWindowView: View {
 
                     Divider()
 
-                    Button(store.mainWindowMode == .overview ? localized("main.overview.close") : localized("main.overview.open")) {
+                    Button(isOverviewMode ? localized("main.overview.close") : localized("main.overview.open")) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            dismissCanvas(restoreFocus: false)
                             store.dispatch(.toggleOverview)
                         }
                     }
 
-                    Button(isCanvasPresented ? localized("main.canvas.hide") : localized("main.canvas.show")) {
+                    Button(isCanvasMode ? localized("main.canvas.hide") : localized("main.canvas.show")) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            if isCanvasPresented {
-                                dismissCanvas()
+                            if isCanvasMode {
+                                dismissGlobalMode()
                             } else {
-                                isCanvasPresented = true
-                                store.mainWindowMode = .canvas
+                                selectMainWindowMode(.canvas, restoreFocus: false)
                             }
                         }
                     }
@@ -630,18 +625,6 @@ struct MainWindowView: View {
                 await store.refreshHAPIIntegrationStatus()
             }
             store.refreshAvailableExternalEditors()
-        }
-        .onChange(of: store.mainWindowMode) { _, mode in
-            if mode == .canvas {
-                isCanvasPresented = true
-            } else {
-                isCanvasPresented = false
-            }
-        }
-        .onChange(of: store.selectedWorkspaceID) { _, newValue in
-            if newValue == nil {
-                isCanvasPresented = false
-            }
         }
         .sheet(item: $store.renameWorkspaceRequest) { request in
             RenameWorkspaceSheet(request: request) { name in

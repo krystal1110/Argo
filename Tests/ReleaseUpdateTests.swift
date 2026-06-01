@@ -93,6 +93,18 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertTrue(gitlabHelpers.contains("/uploads"))
     }
 
+    func testGeneratedReleaseNotesDoNotIncludeCommitHistory() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
+
+        XCTAssertFalse(homebrewRelease.contains("Showing the most recent"))
+        XCTAssertFalse(homebrewRelease.contains("## Included Commits"))
+        XCTAssertFalse(homebrewRelease.contains("git log \\"))
+        XCTAssertFalse(homebrewRelease.contains("Truncated to the most recent"))
+    }
+
     func testSigningScriptAssessesGatekeeperOnlyAfterNotarizationWhenRequested() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

@@ -173,4 +173,4 @@ Optional Sentry environment:
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 
-For the first public release, prefer writing the GitLab release notes manually instead of relying only on generated commit summaries.
+Generated GitLab release notes are intentionally concise: they include the DMG name, Homebrew install command, and previous release tag, but do not include commit history. Add any human-written changelog details directly in GitLab after the release if needed.

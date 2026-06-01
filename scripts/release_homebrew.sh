@@ -39,7 +39,6 @@ SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
 SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
 SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
-RELEASE_NOTES_LIMIT="${RELEASE_NOTES_LIMIT:-50}"
 BUMP_VERSION="${BUMP_VERSION:-}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
@@ -113,25 +112,14 @@ generate_release_notes() {
   local previous_tag="$3"
   local dmg_name="$4"
   local release_notes_file
-  local log_range
-  local commit_count
-  local compare_url=""
   local brew_install_ref
 
   release_notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
 
   brew_install_ref="$(brew_install_target)"
 
-  if [[ -n "$previous_tag" ]]; then
-    log_range="$previous_tag..HEAD"
-    compare_url="$(gitlab_compare_url "$previous_tag" "$tag")"
-  else
-    log_range="HEAD"
-  fi
-
-  commit_count="$(git rev-list --count $log_range)"
   {
-    echo "## Release $version"
+    echo "## Argo $version"
     echo
     echo "- DMG: \`$dmg_name\`"
     echo "- Homebrew: \`brew install --cask $brew_install_ref\`"
@@ -139,29 +127,6 @@ generate_release_notes() {
       echo "- Previous release: \`$previous_tag\`"
     else
       echo "- Previous release: none"
-    fi
-    echo
-    echo "## Included Commits"
-    echo
-    if [[ -n "$previous_tag" ]]; then
-      echo "Showing the most recent ${RELEASE_NOTES_LIMIT} commits between \`$previous_tag\` and \`$tag\`."
-    else
-      echo "Showing the most recent ${RELEASE_NOTES_LIMIT} commits in repository history."
-    fi
-    echo
-    git log \
-      --max-count="$RELEASE_NOTES_LIMIT" \
-      --pretty=format:'- `%h` %s' \
-      $log_range
-    if [[ "$commit_count" -gt "$RELEASE_NOTES_LIMIT" ]]; then
-      echo
-      echo
-      echo "_Truncated to the most recent ${RELEASE_NOTES_LIMIT} commits out of ${commit_count}._"
-    fi
-    if [[ -n "$compare_url" ]]; then
-      echo
-      echo
-      echo "Full diff: $compare_url"
     fi
   } > "$release_notes_file"
 

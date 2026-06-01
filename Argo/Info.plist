@@ -16,25 +16,6 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.developer-tools</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 everettjf. Released under the  Apache-2.0 license.</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>SUFeedURL</key>
-	<string>https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>DJPIksMP6FvVtjZk9WN9lzZRcd9el01eqFzcafpehlQ=</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Argo needs microphone access for voice input in the terminal.</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -46,5 +27,24 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 everettjf. Released under the  Apache-2.0 license.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Argo needs microphone access for voice input in the terminal.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>DJPIksMP6FvVtjZk9WN9lzZRcd9el01eqFzcafpehlQ=</string>
 </dict>
 </plist>

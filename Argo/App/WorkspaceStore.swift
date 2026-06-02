@@ -27,7 +27,7 @@ final class WorkspaceStore: ObservableObject {
     @Published var appSettings = AppSettings()
     @Published var gitHubIntegrationState: GitHubIntegrationState = .disabled
     @Published var statusMessage: WorkspaceStatusMessage?
-    @Published var mainWindowMode: MainWindowMode = .workspace
+    @Published private(set) var mainWindowMode: MainWindowMode = .workspace
     @Published var globalCanvasState = GlobalCanvasStateRecord()
     @Published var isCommandPalettePresented = false
     @Published var commandPaletteQuery = ""
@@ -218,6 +218,13 @@ final class WorkspaceStore: ObservableObject {
 
     var sleepPreventionPrimaryActionLabel: String {
         sleepPreventionSession == nil ? localized("main.sleepPrevention.start") : localized("main.sleepPrevention.stop")
+    }
+
+    func setMainWindowMode(_ mode: MainWindowMode) {
+        let transition = MainWindowModeTransition(previousMode: mainWindowMode, newMode: mode)
+        transition.perform {
+            mainWindowMode = mode
+        }
     }
 
     var sleepPreventionPrimaryActionHelpText: String {
@@ -2576,7 +2583,7 @@ final class WorkspaceStore: ObservableObject {
 
         case .toggleOverview:
             dismissCommandPalette()
-            mainWindowMode = mainWindowMode == .overview ? .workspace : .overview
+            setMainWindowMode(mainWindowMode == .overview ? .workspace : .overview)
 
         case .presentSettings:
             dismissCommandPalette()
@@ -2593,13 +2600,13 @@ final class WorkspaceStore: ObservableObject {
         case .dismissTransientUI:
             resetCommandPalette()
             settingsRequest = nil
-            mainWindowMode = .workspace
+            setMainWindowMode(.workspace)
 
         case .selectWorkspace(let id):
             dismissCommandPalette()
             if let workspace = workspace(for: id) {
                 selectWorkspace(workspace)
-                mainWindowMode = .workspace
+                setMainWindowMode(.workspace)
             }
 
         case .refreshWorkspace(let id):

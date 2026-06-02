@@ -51,6 +51,21 @@ struct MainWindowLayoutState {
     }
 }
 
+struct MainWindowModeTransition {
+    var previousMode: MainWindowMode
+    var newMode: MainWindowMode
+
+    var shouldAnimate: Bool {
+        false
+    }
+
+    func perform(_ update: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, update)
+    }
+}
+
 struct PresentedError: Identifiable {
     let id = UUID()
     let title: String

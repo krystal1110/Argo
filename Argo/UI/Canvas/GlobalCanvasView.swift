@@ -144,9 +144,7 @@ struct GlobalCanvasView: View {
                                 },
                                 onOpen: {
                                     store.selectGlobalCanvasCard(card.id)
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        onDismiss()
-                                    }
+                                    onDismiss()
                                 },
                                 onTogglePin: {
                                     togglePinned(for: card.id)
@@ -320,9 +318,7 @@ struct GlobalCanvasView: View {
 
     private var exitCanvasButton: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                onDismiss()
-            }
+            onDismiss()
         } label: {
             Label(localized("canvas.exit"), systemImage: "xmark.circle.fill")
         }

@@ -80,7 +80,7 @@ struct MainWindowView: View {
         let previousMode = store.mainWindowMode
         layoutState.selectMode(mode, previousMode: previousMode)
         let wasCanvasMode = previousMode == .canvas
-        store.mainWindowMode = mode
+        store.setMainWindowMode(mode)
         if restoreFocus, wasCanvasMode, mode == .workspace {
             restoreFocusedPane()
         }
@@ -202,9 +202,7 @@ struct MainWindowView: View {
                     selectedMode: store.mainWindowMode,
                     uiScale: uiScale,
                     onSelectMode: { mode in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectMainWindowMode(mode, restoreFocus: mode == .workspace)
-                        }
+                        selectMainWindowMode(mode, restoreFocus: mode == .workspace)
                     },
                     onOpenSettings: {
                         store.presentSettings(for: store.selectedWorkspace)
@@ -224,17 +222,13 @@ struct MainWindowView: View {
 
                     case .canvas:
                         GlobalCanvasView {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                dismissGlobalMode()
-                            }
+                            dismissGlobalMode()
                         }
                         .environmentObject(store)
 
                     case .overview:
                         OverviewView {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                dismissGlobalMode(restoreFocus: false)
-                            }
+                            dismissGlobalMode(restoreFocus: false)
                         }
                         .environmentObject(store)
                     }
@@ -565,22 +559,18 @@ struct MainWindowView: View {
                     Divider()
 
                     Button(isOverviewMode ? localized("main.overview.close") : localized("main.overview.open")) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            if isOverviewMode {
-                                dismissGlobalMode(restoreFocus: false)
-                            } else {
-                                selectMainWindowMode(.overview, restoreFocus: false)
-                            }
+                        if isOverviewMode {
+                            dismissGlobalMode(restoreFocus: false)
+                        } else {
+                            selectMainWindowMode(.overview, restoreFocus: false)
                         }
                     }
 
                     Button(isCanvasMode ? localized("main.canvas.hide") : localized("main.canvas.show")) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            if isCanvasMode {
-                                dismissGlobalMode()
-                            } else {
-                                selectMainWindowMode(.canvas, restoreFocus: false)
-                            }
+                        if isCanvasMode {
+                            dismissGlobalMode()
+                        } else {
+                            selectMainWindowMode(.canvas, restoreFocus: false)
                         }
                     }
 

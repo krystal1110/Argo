@@ -21,26 +21,49 @@ struct TerminalHostView: NSViewRepresentable {
     func updateNSView(_ nsView: TerminalViewContainer, context: Context) {
         nsView.attach(session.nsView, restoreFocus: shouldRestoreFocus)
     }
+
+    static func dismantleNSView(_ nsView: TerminalViewContainer, coordinator: ()) {
+        nsView.detachHostedView()
+    }
 }
 
 final class TerminalViewContainer: NSView {
     private weak var hostedView: NSView?
+    private var hostedConstraints: [NSLayoutConstraint] = []
+
+    override func viewWillMove(toSuperview newSuperview: NSView?) {
+        if newSuperview == nil {
+            detachHostedView()
+        }
+        super.viewWillMove(toSuperview: newSuperview)
+    }
+
+    override func willRemoveSubview(_ subview: NSView) {
+        if subview === hostedView {
+            NSLayoutConstraint.deactivate(hostedConstraints)
+            hostedConstraints = []
+            hostedView = nil
+        }
+        super.willRemoveSubview(subview)
+    }
 
     func attach(_ view: NSView, restoreFocus: Bool) {
         let needsAttach = hostedView !== view || view.superview !== self
 
         if needsAttach {
-            hostedView?.removeFromSuperview()
+            detachHostedView()
             view.removeFromSuperview()
             hostedView = view
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
-            NSLayoutConstraint.activate([
+            let constraints = [
                 view.leadingAnchor.constraint(equalTo: leadingAnchor),
                 view.trailingAnchor.constraint(equalTo: trailingAnchor),
                 view.topAnchor.constraint(equalTo: topAnchor),
                 view.bottomAnchor.constraint(equalTo: bottomAnchor),
-            ])
+            ]
+            hostedConstraints = constraints
+            NSLayoutConstraint.activate(constraints)
         }
 
         guard restoreFocus, needsAttach else { return }
@@ -49,6 +72,17 @@ final class TerminalViewContainer: NSView {
             if window.firstResponder !== view {
                 window.makeFirstResponder(view)
             }
+        }
+    }
+
+    func detachHostedView() {
+        NSLayoutConstraint.deactivate(hostedConstraints)
+        hostedConstraints = []
+
+        guard let hostedView else { return }
+        self.hostedView = nil
+        if hostedView.superview === self {
+            hostedView.removeFromSuperview()
         }
     }
 }

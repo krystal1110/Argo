@@ -140,7 +140,7 @@ final class WorkspaceStoreTests: XCTestCase {
     func testOverviewCommandPaletteTitleReflectsMainWindowMode() {
         LocalizationManager.shared.updateSelectedLanguage(.english)
         let store = WorkspaceStore(persistsWorkspaceState: false)
-        store.mainWindowMode = .overview
+        store.setMainWindowMode(.overview)
 
         let overviewItem = store.commandPaletteItems.first { $0.id == "overview" }
 
@@ -149,7 +149,7 @@ final class WorkspaceStoreTests: XCTestCase {
 
     func testPresentSettingsDoesNotChangeMainWindowMode() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
-        store.mainWindowMode = .canvas
+        store.setMainWindowMode(.canvas)
 
         store.dispatch(.presentSettings)
 
@@ -159,7 +159,7 @@ final class WorkspaceStoreTests: XCTestCase {
 
     func testDismissTransientUIReturnsToWorkspaceMode() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
-        store.mainWindowMode = .overview
+        store.setMainWindowMode(.overview)
 
         store.dispatch(.dismissTransientUI)
 
@@ -173,7 +173,7 @@ final class WorkspaceStoreTests: XCTestCase {
         let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
         let store = WorkspaceStore(persistsWorkspaceState: false)
         store.workspaces = [workspace]
-        store.mainWindowMode = .canvas
+        store.setMainWindowMode(.canvas)
 
         store.dispatch(.selectWorkspace(workspace.id))
 
@@ -197,6 +197,17 @@ final class WorkspaceStoreTests: XCTestCase {
         layoutState.selectMode(.workspace, previousMode: .workspace)
 
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .detailOnly)
+    }
+
+    func testMainWindowModeTransitionsDoNotAnimateBetweenContentModes() {
+        for previousMode in MainWindowMode.allCases {
+            for newMode in MainWindowMode.allCases {
+                XCTAssertFalse(
+                    MainWindowModeTransition(previousMode: previousMode, newMode: newMode).shouldAnimate,
+                    "Expected \(previousMode.rawValue) -> \(newMode.rawValue) to avoid animated AppKit host remounts"
+                )
+            }
+        }
     }
 
     func testSleepPreventionStringsLocalizeForSimplifiedChinese() async throws {

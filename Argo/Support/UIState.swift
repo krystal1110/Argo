@@ -44,10 +44,16 @@ enum MainWindowMode: String, CaseIterable, Identifiable {
 
 struct MainWindowLayoutState {
     var workspaceColumnVisibility: NavigationSplitViewVisibility = .all
+    private var selectedMode: MainWindowMode = .workspace
+    private var workspaceModeColumnVisibility: NavigationSplitViewVisibility = .all
 
-    mutating func selectMode(_ mode: MainWindowMode, previousMode: MainWindowMode) {
-        guard mode != previousMode else { return }
-        workspaceColumnVisibility = .all
+    mutating func selectMode(_ mode: MainWindowMode) {
+        guard mode != selectedMode else { return }
+        if selectedMode == .workspace {
+            workspaceModeColumnVisibility = workspaceColumnVisibility
+        }
+        workspaceColumnVisibility = mode == .workspace ? workspaceModeColumnVisibility : .detailOnly
+        selectedMode = mode
     }
 }
 

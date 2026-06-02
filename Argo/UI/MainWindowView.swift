@@ -78,7 +78,7 @@ struct MainWindowView: View {
 
     private func selectMainWindowMode(_ mode: MainWindowMode, restoreFocus: Bool = true) {
         let previousMode = store.mainWindowMode
-        layoutState.selectMode(mode, previousMode: previousMode)
+        layoutState.selectMode(mode)
         let wasCanvasMode = previousMode == .canvas
         store.setMainWindowMode(mode)
         if restoreFocus, wasCanvasMode, mode == .workspace {
@@ -265,6 +265,7 @@ struct MainWindowView: View {
                         .padding(4 * uiScale)
                 }
                 .scaleEffect(uiScale)
+                .disabled(store.mainWindowMode != .workspace)
                 .accessibilityLabel(localized("menu.view.toggleSidebar"))
                 .help(localized("menu.view.toggleSidebar"))
             }
@@ -623,8 +624,8 @@ struct MainWindowView: View {
             }
             store.refreshAvailableExternalEditors()
         }
-        .onChange(of: store.mainWindowMode) { previousMode, newMode in
-            layoutState.selectMode(newMode, previousMode: previousMode)
+        .onChange(of: store.mainWindowMode) { _, newMode in
+            layoutState.selectMode(newMode)
         }
         .sheet(item: $store.renameWorkspaceRequest) { request in
             RenameWorkspaceSheet(request: request) { name in

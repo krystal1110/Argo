@@ -183,35 +183,55 @@ final class WorkspaceStoreTests: XCTestCase {
 
     func testMainWindowLayoutRestoresWorkspaceSidebarWhenReturningFromGlobalMode() {
         var layoutState = MainWindowLayoutState()
-        layoutState.workspaceColumnVisibility = .detailOnly
+        layoutState.workspaceColumnVisibility = .all
 
-        layoutState.selectMode(.workspace, previousMode: .overview)
+        layoutState.selectMode(.overview)
+        layoutState.selectMode(.workspace)
 
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .all)
     }
 
-    func testMainWindowLayoutKeepsWorkspaceSidebarVisibleWhenChangingModes() {
-        for previousMode in MainWindowMode.allCases {
-            for newMode in MainWindowMode.allCases where newMode != previousMode {
-                var layoutState = MainWindowLayoutState()
-                layoutState.workspaceColumnVisibility = .detailOnly
+    func testMainWindowLayoutHidesWorkspaceSidebarWhenEnteringGlobalModes() {
+        for newMode in [MainWindowMode.canvas, .overview] {
+            var layoutState = MainWindowLayoutState()
+            layoutState.workspaceColumnVisibility = .all
 
-                layoutState.selectMode(newMode, previousMode: previousMode)
+            layoutState.selectMode(newMode)
 
-                XCTAssertEqual(
-                    layoutState.workspaceColumnVisibility,
-                    .all,
-                    "Expected \(previousMode.rawValue) -> \(newMode.rawValue) to keep the workspace sidebar visible"
-                )
-            }
+            XCTAssertEqual(
+                layoutState.workspaceColumnVisibility,
+                .detailOnly,
+                "Expected workspace -> \(newMode.rawValue) to hide the workspace sidebar column"
+            )
         }
+    }
+
+    func testMainWindowLayoutPreservesCollapsedWorkspaceSidebarAcrossGlobalModeRoundTrip() {
+        var layoutState = MainWindowLayoutState()
+        layoutState.workspaceColumnVisibility = .detailOnly
+
+        layoutState.selectMode(.canvas)
+        layoutState.selectMode(.workspace)
+
+        XCTAssertEqual(layoutState.workspaceColumnVisibility, .detailOnly)
+    }
+
+    func testMainWindowLayoutPreservesExpandedWorkspaceSidebarWhenModeChangeIsObservedTwice() {
+        var layoutState = MainWindowLayoutState()
+        layoutState.workspaceColumnVisibility = .all
+
+        layoutState.selectMode(.canvas)
+        layoutState.selectMode(.canvas)
+        layoutState.selectMode(.workspace)
+
+        XCTAssertEqual(layoutState.workspaceColumnVisibility, .all)
     }
 
     func testMainWindowLayoutKeepsWorkspaceSidebarStateWhenReselectingWorkspace() {
         var layoutState = MainWindowLayoutState()
         layoutState.workspaceColumnVisibility = .detailOnly
 
-        layoutState.selectMode(.workspace, previousMode: .workspace)
+        layoutState.selectMode(.workspace)
 
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .detailOnly)
     }

@@ -646,7 +646,6 @@ struct SettingsSheet: View {
                     Toggle(localized("settings.general.behavior.autoRefresh"), isOn: $appSettings.autoRefreshEnabled)
                     Toggle(localized("settings.general.behavior.autoClosePaneOnExit"), isOn: $appSettings.autoClosePaneOnProcessExit)
                     Toggle(localized("settings.general.behavior.confirmQuitRunningCommands"), isOn: $appSettings.confirmQuitWhenCommandsRunning)
-                    Toggle(localized("settings.general.behavior.enableHotKeyWindow"), isOn: $appSettings.hotKeyWindowEnabled)
                     Toggle(localized("settings.general.behavior.enableFileWatchers"), isOn: $appSettings.fileWatcherEnabled)
                     Toggle(localized("settings.general.behavior.allowSystemNotifications"), isOn: $appSettings.systemNotificationsEnabled)
                     Toggle(localized("settings.general.behavior.showArchivedWorkspaces"), isOn: $appSettings.showArchivedWorkspaces)
@@ -774,12 +773,14 @@ struct SettingsSheet: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
 
+                Toggle(localized("settings.general.behavior.enableHotKeyWindow"), isOn: $appSettings.hotKeyWindowEnabled)
+
                 HStack(alignment: .center, spacing: 12) {
                     Text(localized("settings.general.hotKeyWindow.globalShortcut"))
                     Spacer()
                     ShortcutRecorderField(
                         shortcut: hotKeyWindowShortcutBinding,
-                        fallbackShortcut: StoredShortcut(key: " ", command: true, shift: true, option: false, control: false),
+                        fallbackShortcut: AppSettings.defaultHotKeyWindowShortcut,
                         emptyTitle: localized("settings.general.hotKeyWindow.notSet"),
                         displayString: { $0.displayString },
                         transformRecordedShortcut: { $0 }

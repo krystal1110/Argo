@@ -366,6 +366,9 @@ struct AppSettings: Codable, Hashable {
     var hooksEnabled: Bool
     var directoryTreeEnabled: Bool
 
+    static let defaultHotKeyWindowShortcut = StoredShortcut(key: " ", command: false, shift: false, option: true, control: false)
+    private static let legacyDefaultHotKeyWindowShortcut = StoredShortcut(key: " ", command: true, shift: true, option: false, control: false)
+
     init(
         appLanguage: AppLanguage = .automatic,
         autoRefreshEnabled: Bool = true,
@@ -373,7 +376,7 @@ struct AppSettings: Codable, Hashable {
         autoClosePaneOnProcessExit: Bool = true,
         confirmQuitWhenCommandsRunning: Bool = true,
         hotKeyWindowEnabled: Bool = false,
-        hotKeyWindowShortcut: StoredShortcut = StoredShortcut(key: " ", command: true, shift: true, option: false, control: false),
+        hotKeyWindowShortcut: StoredShortcut = AppSettings.defaultHotKeyWindowShortcut,
         fileWatcherEnabled: Bool = true,
         githubIntegrationEnabled: Bool = true,
         autoCheckForUpdates: Bool = true,
@@ -556,6 +559,10 @@ extension AppSettings {
         } else {
             preferredExternalEditor = .cursor
         }
+        let decodedHotKeyWindowShortcut = try container.decodeIfPresent(StoredShortcut.self, forKey: .hotKeyWindowShortcut)
+        let hotKeyWindowShortcut = decodedHotKeyWindowShortcut == Self.legacyDefaultHotKeyWindowShortcut
+            ? Self.defaultHotKeyWindowShortcut
+            : decodedHotKeyWindowShortcut ?? Self.defaultHotKeyWindowShortcut
         self.init(
             appLanguage: try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .automatic,
             autoRefreshEnabled: try container.decodeIfPresent(Bool.self, forKey: .autoRefreshEnabled) ?? true,
@@ -563,8 +570,7 @@ extension AppSettings {
             autoClosePaneOnProcessExit: try container.decodeIfPresent(Bool.self, forKey: .autoClosePaneOnProcessExit) ?? true,
             confirmQuitWhenCommandsRunning: try container.decodeIfPresent(Bool.self, forKey: .confirmQuitWhenCommandsRunning) ?? true,
             hotKeyWindowEnabled: try container.decodeIfPresent(Bool.self, forKey: .hotKeyWindowEnabled) ?? false,
-            hotKeyWindowShortcut: try container.decodeIfPresent(StoredShortcut.self, forKey: .hotKeyWindowShortcut)
-                ?? StoredShortcut(key: " ", command: true, shift: true, option: false, control: false),
+            hotKeyWindowShortcut: hotKeyWindowShortcut,
             fileWatcherEnabled: try container.decodeIfPresent(Bool.self, forKey: .fileWatcherEnabled) ?? true,
             githubIntegrationEnabled: try container.decodeIfPresent(Bool.self, forKey: .githubIntegrationEnabled) ?? true,
             autoCheckForUpdates: try container.decodeIfPresent(Bool.self, forKey: .autoCheckForUpdates) ?? true,

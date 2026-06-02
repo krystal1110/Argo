@@ -687,13 +687,14 @@ public final class ArgoDesktopApplication: NSObject {
         for context in windowContexts {
             guard let window = context.window else { continue }
 
-            if hotKeyWindowSettings.hotKeyWindowEnabled, context.persistsWorkspaceState {
-                window.level = .floating
-                window.collectionBehavior = context.baseCollectionBehavior.union([.moveToActiveSpace, .fullScreenAuxiliary])
-            } else {
-                window.level = context.baseLevel
-                window.collectionBehavior = context.baseCollectionBehavior
-            }
+            let presentation = argoWindowPresentation(
+                hotKeyWindowEnabled: hotKeyWindowSettings.hotKeyWindowEnabled,
+                isPrimaryWorkspaceWindow: context.persistsWorkspaceState,
+                baseLevel: context.baseLevel,
+                baseCollectionBehavior: context.baseCollectionBehavior
+            )
+            window.level = presentation.level
+            window.collectionBehavior = presentation.collectionBehavior
         }
     }
 
@@ -733,6 +734,28 @@ func argoShouldInterceptLastWindowCloseForTermination(
     needsConfirmQuit: Bool
 ) -> Bool {
     !hotKeyWindowEnabled && openWindowCount <= 1 && needsConfirmQuit
+}
+
+struct ArgoWindowPresentation: Equatable {
+    var level: NSWindow.Level
+    var collectionBehavior: NSWindow.CollectionBehavior
+}
+
+func argoWindowPresentation(
+    hotKeyWindowEnabled: Bool,
+    isPrimaryWorkspaceWindow: Bool,
+    baseLevel: NSWindow.Level,
+    baseCollectionBehavior: NSWindow.CollectionBehavior
+) -> ArgoWindowPresentation {
+    var collectionBehavior = baseCollectionBehavior
+    if hotKeyWindowEnabled, isPrimaryWorkspaceWindow {
+        collectionBehavior.formUnion([.moveToActiveSpace, .fullScreenAuxiliary])
+    }
+
+    return ArgoWindowPresentation(
+        level: baseLevel,
+        collectionBehavior: collectionBehavior
+    )
 }
 
 @MainActor

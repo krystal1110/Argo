@@ -20,7 +20,7 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(settings.confirmQuitWhenCommandsRunning)
         XCTAssertEqual(
             settings.hotKeyWindowShortcut,
-            StoredShortcut(key: " ", command: true, shift: true, option: false, control: false)
+            StoredShortcut(key: " ", command: false, shift: false, option: true, control: false)
         )
         XCTAssertEqual(
             QuickCommandCatalog.defaultCommands.first(where: { $0.id == "codex-resume" })?.command,
@@ -36,6 +36,25 @@ final class QuickCommandSupportTests: XCTestCase {
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
 
         XCTAssertEqual(settings.appLanguage, .automatic)
+    }
+
+    func testLegacySettingsDecodeMigratesOldHotKeyWindowDefault() throws {
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data("""
+        {
+          "hotKeyWindowShortcut": {
+            "key": " ",
+            "command": true,
+            "shift": true,
+            "option": false,
+            "control": false
+          }
+        }
+        """.utf8))
+
+        XCTAssertEqual(
+            settings.hotKeyWindowShortcut,
+            StoredShortcut(key: " ", command: false, shift: false, option: true, control: false)
+        )
     }
 
     func testSettingsEncodingPreservesAppLanguage() throws {
@@ -558,6 +577,21 @@ final class QuickCommandSupportTests: XCTestCase {
 
     func testHotKeyWindowKeepsAppRunningWhenLastWindowCloses() {
         XCTAssertFalse(argoShouldTerminateAfterLastWindowClosed(hotKeyWindowEnabled: true, isRunningTests: false))
+    }
+
+    func testHotKeyWindowPresentationKeepsNormalWindowLevelWhenEnabled() {
+        let baseBehavior: NSWindow.CollectionBehavior = [.managed]
+        let presentation = argoWindowPresentation(
+            hotKeyWindowEnabled: true,
+            isPrimaryWorkspaceWindow: true,
+            baseLevel: .normal,
+            baseCollectionBehavior: baseBehavior
+        )
+
+        XCTAssertEqual(presentation.level, .normal)
+        XCTAssertTrue(presentation.collectionBehavior.contains(.managed))
+        XCTAssertTrue(presentation.collectionBehavior.contains(.moveToActiveSpace))
+        XCTAssertTrue(presentation.collectionBehavior.contains(.fullScreenAuxiliary))
     }
 
     func testStandardWindowModeTerminatesAfterLastWindowCloses() {

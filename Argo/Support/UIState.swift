@@ -46,7 +46,7 @@ struct MainWindowLayoutState {
     var workspaceColumnVisibility: NavigationSplitViewVisibility = .all
 
     mutating func selectMode(_ mode: MainWindowMode, previousMode: MainWindowMode) {
-        guard mode == .workspace, previousMode != .workspace else { return }
+        guard mode != previousMode else { return }
         workspaceColumnVisibility = .all
     }
 }

@@ -209,30 +209,31 @@ struct MainWindowView: View {
                     }
                 )
 
-                Group {
-                    switch store.mainWindowMode {
-                    case .workspace:
-                        NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
-                            WorkspaceSidebarView()
-                                .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
-                        } detail: {
+                NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
+                    WorkspaceSidebarView()
+                        .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
+                } detail: {
+                    Group {
+                        switch store.mainWindowMode {
+                        case .workspace:
                             WorkspaceDetailView()
-                        }
-                        .navigationSplitViewStyle(.balanced)
 
-                    case .canvas:
-                        GlobalCanvasView {
-                            dismissGlobalMode()
-                        }
-                        .environmentObject(store)
+                        case .canvas:
+                            GlobalCanvasView {
+                                dismissGlobalMode()
+                            }
+                            .environmentObject(store)
 
-                    case .overview:
-                        OverviewView {
-                            dismissGlobalMode(restoreFocus: false)
+                        case .overview:
+                            OverviewView {
+                                dismissGlobalMode(restoreFocus: false)
+                            }
+                            .environmentObject(store)
                         }
-                        .environmentObject(store)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .navigationSplitViewStyle(.balanced)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
@@ -264,7 +265,6 @@ struct MainWindowView: View {
                         .padding(4 * uiScale)
                 }
                 .scaleEffect(uiScale)
-                .disabled(store.mainWindowMode != .workspace)
                 .accessibilityLabel(localized("menu.view.toggleSidebar"))
                 .help(localized("menu.view.toggleSidebar"))
             }

@@ -190,6 +190,23 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .all)
     }
 
+    func testMainWindowLayoutKeepsWorkspaceSidebarVisibleWhenChangingModes() {
+        for previousMode in MainWindowMode.allCases {
+            for newMode in MainWindowMode.allCases where newMode != previousMode {
+                var layoutState = MainWindowLayoutState()
+                layoutState.workspaceColumnVisibility = .detailOnly
+
+                layoutState.selectMode(newMode, previousMode: previousMode)
+
+                XCTAssertEqual(
+                    layoutState.workspaceColumnVisibility,
+                    .all,
+                    "Expected \(previousMode.rawValue) -> \(newMode.rawValue) to keep the workspace sidebar visible"
+                )
+            }
+        }
+    }
+
     func testMainWindowLayoutKeepsWorkspaceSidebarStateWhenReselectingWorkspace() {
         var layoutState = MainWindowLayoutState()
         layoutState.workspaceColumnVisibility = .detailOnly

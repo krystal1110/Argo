@@ -330,20 +330,65 @@ final class QuickCommandSupportTests: XCTestCase {
     }
 
     func testPredefinedQuickCommandLibraryContainsLargeCuratedCatalog() {
-        XCTAssertEqual(QuickCommandCatalog.predefinedCommands.count, 200)
+        XCTAssertEqual(QuickCommandCatalog.predefinedCommands.count, 175)
         XCTAssertEqual(QuickCommandCatalog.predefinedCommandCount, QuickCommandCatalog.predefinedCommands.count)
         XCTAssertTrue(QuickCommandCatalog.defaultCategories.contains(.complex))
 
         let complexCommands = QuickCommandCatalog.predefinedCommands.filter {
             $0.categoryID == QuickCommandCategory.complex.id
         }
-        XCTAssertGreaterThanOrEqual(complexCommands.count, 70)
+        XCTAssertGreaterThanOrEqual(complexCommands.count, 60)
+    }
+
+    func testPredefinedQuickCommandLibraryOmitsGitCategoryAndCommands() {
+        XCTAssertFalse(QuickCommandCatalog.defaultCategories.contains { $0.id == "git" })
+        XCTAssertFalse(QuickCommandCatalog.normalizedCategories([
+            QuickCommandCategory(id: "git", title: "Git", symbolName: "tag")
+        ]).contains { $0.id == "git" })
+        XCTAssertFalse(QuickCommandCatalog.predefinedCommands.contains { $0.categoryID == "git" })
+        XCTAssertFalse(QuickCommandCatalog.predefinedCommands.contains {
+            $0.normalizedCommand == "git" || $0.normalizedCommand.hasPrefix("git ")
+        })
+    }
+
+    func testShortcutActionsDoNotExposeGitReviewWindows() {
+        let actionIDs = ArgoShortcutAction.allCases.map(\.rawValue)
+
+        XCTAssertFalse(actionIDs.contains("openDiff"))
+        XCTAssertFalse(actionIDs.contains("openHistory"))
+    }
+
+    func testMainWindowDoesNotExposeMoreActionsMenu() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(source.contains("ellipsis.circle"))
+        XCTAssertFalse(source.contains("main.menu.moreActions"))
+    }
+
+    func testRemovedSessionAndLayoutActionsDoNotLocalize() {
+        let removedKeys = [
+            "main.menu.restartFocusedSession",
+            "main.menu.restartAllSessions",
+            "main.menu.resetLayout",
+            "main.menu.moreActions",
+        ]
+
+        for key in removedKeys {
+            XCTAssertEqual(L10nTable.string(for: key, language: .english), key)
+            XCTAssertEqual(L10nTable.string(for: key, language: .simplifiedChinese), key)
+        }
     }
 
     func testRecommendedComplexSubsetResolvesToExistingComplexCommands() throws {
         let allCommandsByID = Dictionary(uniqueKeysWithValues: QuickCommandCatalog.predefinedCommands.map { ($0.id, $0) })
 
-        XCTAssertEqual(QuickCommandCatalog.recommendedComplexCommandIDs.count, 12)
+        XCTAssertEqual(QuickCommandCatalog.recommendedComplexCommandIDs.count, 11)
 
         for id in QuickCommandCatalog.recommendedComplexCommandIDs {
             let command = try XCTUnwrap(allCommandsByID[id])
@@ -355,9 +400,9 @@ final class QuickCommandSupportTests: XCTestCase {
         var settings = AppSettings()
         let shortcut = StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)
 
-        ArgoKeyboardShortcuts.setShortcut(shortcut, for: .openDiff, in: &settings)
+        ArgoKeyboardShortcuts.setShortcut(shortcut, for: .toggleOverview, in: &settings)
 
-        XCTAssertEqual(ArgoKeyboardShortcuts.effectiveShortcut(for: .openDiff, in: settings), shortcut)
+        XCTAssertEqual(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleOverview, in: settings), shortcut)
         XCTAssertNil(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in: settings))
         XCTAssertEqual(ArgoKeyboardShortcuts.state(for: .toggleCommandPalette, in: settings), .disabled)
     }
@@ -431,7 +476,7 @@ final class QuickCommandSupportTests: XCTestCase {
         )
     }
 
-    func testPaneAndDiffShortcutsUseNewDefaults() {
+    func testPaneShortcutsUseNewDefaults() {
         let settings = AppSettings()
 
         XCTAssertEqual(
@@ -441,10 +486,6 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertEqual(
             ArgoKeyboardShortcuts.effectiveShortcut(for: .togglePaneZoom, in: settings),
             StoredShortcut(key: "\r", command: true, shift: true, option: false, control: false)
-        )
-        XCTAssertEqual(
-            ArgoKeyboardShortcuts.effectiveShortcut(for: .openDiff, in: settings),
-            StoredShortcut(key: ".", command: true, shift: true, option: false, control: false)
         )
     }
 

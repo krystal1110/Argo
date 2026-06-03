@@ -475,9 +475,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                  .openSettings,
                  .toggleCommandPalette,
                  .toggleSidebar,
-                 .toggleOverview,
-                 .openDiff,
-                 .openHistory:
+                 .toggleOverview:
                 return true
             case .undo:
                 return canPerformResponderAction(Selector(("undo:")), sender: menuItem)
@@ -590,12 +588,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         case .toggleOverview:
             desktopApplication?.toggleOverview()
-
-        case .openDiff:
-            desktopApplication?.openDiffWindow()
-
-        case .openHistory:
-            desktopApplication?.openHistoryWindow()
 
         case .refreshSelectedWorkspace:
             desktopApplication?.refreshSelectedWorkspace()

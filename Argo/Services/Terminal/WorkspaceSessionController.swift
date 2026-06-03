@@ -154,11 +154,6 @@ final class WorkspaceSessionController: ObservableObject {
         focus(order[(index - 1 + order.count) % order.count])
     }
 
-    func restartFocused() {
-        guard let focusedPaneID, let session = sessions[focusedPaneID] else { return }
-        session.restart()
-    }
-
     func restartAll() {
         for session in sessions.values {
             session.restart()

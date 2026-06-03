@@ -898,8 +898,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
     case toggleCommandPalette
     case toggleSidebar
     case toggleOverview
-    case openDiff
-    case openHistory
     case refreshSelectedWorkspace
     case refreshAllRepositories
     case nextWorkspace
@@ -943,9 +941,7 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
              .hideFind,
              .toggleCommandPalette,
              .toggleSidebar,
-             .toggleOverview,
-             .openDiff,
-             .openHistory:
+             .toggleOverview:
             return .general
         case .refreshSelectedWorkspace,
              .refreshAllRepositories,
@@ -1015,10 +1011,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleSidebar.title")
         case .toggleOverview:
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleOverview.title")
-        case .openDiff:
-            return argoLocalizedSettingsString("settings.shortcuts.action.openDiff.title")
-        case .openHistory:
-            return argoLocalizedSettingsString("settings.shortcuts.action.openHistory.title")
         case .refreshSelectedWorkspace:
             return argoLocalizedSettingsString("settings.shortcuts.action.refreshSelectedWorkspace.title")
         case .refreshAllRepositories:
@@ -1104,10 +1096,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleSidebar.subtitle")
         case .toggleOverview:
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleOverview.subtitle")
-        case .openDiff:
-            return argoLocalizedSettingsString("settings.shortcuts.action.openDiff.subtitle")
-        case .openHistory:
-            return argoLocalizedSettingsString("settings.shortcuts.action.openHistory.subtitle")
         case .refreshSelectedWorkspace:
             return argoLocalizedSettingsString("settings.shortcuts.action.refreshSelectedWorkspace.subtitle")
         case .refreshAllRepositories:
@@ -1193,10 +1181,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return StoredShortcut(key: "b", command: true, shift: false, option: false, control: false)
         case .toggleOverview:
             return StoredShortcut(key: "o", command: true, shift: true, option: false, control: false)
-        case .openDiff:
-            return StoredShortcut(key: ".", command: true, shift: true, option: false, control: false)
-        case .openHistory:
-            return StoredShortcut(key: "h", command: true, shift: true, option: false, control: false)
         case .refreshSelectedWorkspace:
             return StoredShortcut(key: "r", command: true, shift: false, option: false, control: false)
         case .refreshAllRepositories:

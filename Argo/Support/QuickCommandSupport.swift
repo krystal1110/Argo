@@ -38,7 +38,6 @@ nonisolated struct QuickCommandCategory: Codable, Hashable, Identifiable {
     static let system = QuickCommandCategory(id: "system", title: "System", symbolName: "gearshape.2")
     static let complex = QuickCommandCategory(id: "complex", title: "Complex", symbolName: "slider.horizontal.3")
     static let archives = QuickCommandCategory(id: "archives", title: "Archives", symbolName: "archivebox")
-    static let git = QuickCommandCategory(id: "git", title: "Git", symbolName: "point.topleft.down.curvedto.point.bottomright.up")
     static let homebrew = QuickCommandCategory(id: "homebrew", title: "Homebrew", symbolName: "cup.and.saucer.fill")
     static let macos = QuickCommandCategory(id: "macos", title: "macOS", symbolName: "apple.logo")
 
@@ -56,11 +55,11 @@ nonisolated struct QuickCommandCategory: Codable, Hashable, Identifiable {
         .system,
         .complex,
         .archives,
-        .git,
         .homebrew,
         .macos,
     ]
 
+    static let retiredCategoryIDs: Set<String> = ["git"]
     static let builtInByID = Dictionary(uniqueKeysWithValues: builtInCategories.map { ($0.id, $0) })
     static let defaultCategory = QuickCommandCategory.codex
     static let fallbackCategory = QuickCommandCategory.general
@@ -213,7 +212,6 @@ enum QuickCommandCatalog {
         "library-complex-top-cpu-processes",
         "library-complex-tail-and-filter-errors",
         "library-complex-find-todo-and-fixme",
-        "library-complex-git-files-changed-most",
         "library-complex-package-scripts",
         "library-complex-swift-test-failures-summary",
         "library-complex-http-timing-breakdown",
@@ -344,8 +342,6 @@ enum QuickCommandCatalog {
         library("list listening ports", "lsof -nP -iTCP -sTCP:LISTEN", .complex),
         library("top memory processes", "ps aux | sort -rk 4,4 | head -15", .complex),
         library("top cpu processes", "ps aux | sort -rk 3,3 | head -15", .complex),
-        library("git branches merged", "git branch --merged | grep -v '\\*' | grep -v 'main' | grep -v 'master'", .complex),
-        library("git recent authors", "git shortlog -sn --all | head -20", .complex),
         library("find TODO and FIXME", "rg -n \"TODO|FIXME|HACK|XXX\" .", .complex),
         library("json pretty from clipboard", "pbpaste | jq '.' | pbcopy", .complex),
         library("find duplicate files", "find . -type f -exec shasum {} + | sort", .complex),
@@ -363,13 +359,6 @@ enum QuickCommandCatalog {
         library("files changed today", "find . -type f -newermt \"$(date +%F)\" -print | head -50", .complex),
         library("line counts by file type", "find . -type f \\( -name '*.swift' -o -name '*.ts' -o -name '*.js' \\) -print0 | xargs -0 wc -l | sort -nr | head -30", .complex),
         library("largest node modules folders", "find . -type d -name node_modules -prune -print0 | xargs -0 du -sh 2>/dev/null | sort -hr", .complex),
-        library("git changed files by author", "git log --format='%an' --name-only --since='30 days ago' | awk 'NF==0{next} /^[^[:space:]]/{author=$0; next} {count[author]++} END {for (a in count) print count[a], a}' | sort -nr", .complex),
-        library("git commits last 30 days", "git log --since='30 days ago' --oneline --decorate --graph", .complex),
-        library("git files changed most", "git log --pretty=format: --name-only | sed '/^$/d' | sort | uniq -c | sort -nr | head -30", .complex),
-        library("git unstaged summary", "git diff --name-only && echo && git diff --stat", .complex),
-        library("git staged summary", "git diff --cached --name-only && echo && git diff --cached --stat", .complex),
-        library("git deleted branches cleanup", "git fetch --prune && git branch -vv | grep ': gone]' | awk '{print $1}'", .complex),
-        library("open pull request branch candidates", "git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short) %(committerdate:relative)' | head -20", .complex),
         library("search secrets patterns", "rg -n --hidden --glob '!*.lock' --glob '!*.png' '(AKIA|SECRET_KEY|BEGIN RSA PRIVATE KEY|xoxb-|ghp_)' .", .complex),
         library("json logs pretty stream", "tail -f app.log | jq -R 'fromjson? // {message:.}'", .complex),
         library("extract error counts", "rg -o 'ERROR|WARN|FATAL' app.log | sort | uniq -c | sort -nr", .complex),
@@ -427,22 +416,6 @@ enum QuickCommandCatalog {
         library("gunzip", "gunzip large.log.gz", .archives),
         library("xz", "xz -z file.log", .archives),
         library("7z", "7z a archive.7z folder/", .archives),
-        library("git status", "git status --short", .git),
-        library("git branch", "git branch -vv", .git),
-        library("git checkout", "git checkout -b feature/name", .git),
-        library("git switch", "git switch main", .git),
-        library("git fetch", "git fetch --all --prune", .git),
-        library("git pull rebase", "git pull --rebase", .git),
-        library("git log", "git log --oneline --graph --decorate -20", .git),
-        library("git diff", "git diff --stat", .git),
-        library("git blame", "git blame path/to/file", .git),
-        library("git restore", "git restore path/to/file", .git),
-        library("git stash", "git stash push -u -m \"wip\"", .git),
-        library("git clean", "git clean -fd", .git),
-        library("git show", "git show --stat --summary HEAD", .git),
-        library("git cherry", "git cherry -v", .git),
-        library("git reflog", "git reflog --date=relative | head -20", .git),
-        library("git remote", "git remote -v", .git),
         library("brew install", "brew install wget", .homebrew),
         library("brew upgrade", "brew upgrade", .homebrew),
         library("brew outdated", "brew outdated", .homebrew),
@@ -473,7 +446,7 @@ enum QuickCommandCatalog {
         var seenIDs = Set<String>()
         var customCategories: [QuickCommandCategory] = []
 
-        for category in categories.map(\.normalized) where !category.isBuiltIn {
+        for category in categories.map(\.normalized) where !category.isBuiltIn && !QuickCommandCategory.retiredCategoryIDs.contains(category.id) {
             guard seenIDs.insert(category.id).inserted else { continue }
             customCategories.append(category)
         }

@@ -1821,10 +1821,6 @@ final class WorkspaceStore: ObservableObject {
         persist()
     }
 
-    func restartFocusedSession(in workspace: WorkspaceModel) {
-        workspace.sessionController.restartFocused()
-    }
-
     func clearFocusedSession(in workspace: WorkspaceModel) {
         workspace.sessionController.clearFocused()
     }
@@ -1886,16 +1882,6 @@ final class WorkspaceStore: ObservableObject {
 
     func toggleZoom(in workspace: WorkspaceModel, paneID: UUID? = nil) {
         workspace.toggleZoom(on: paneID)
-        persist()
-    }
-
-    func restartAllSessions(in workspace: WorkspaceModel) {
-        workspace.restartAllPanes()
-        persist()
-    }
-
-    func resetLayout(in workspace: WorkspaceModel) {
-        workspace.resetLayout()
         persist()
     }
 

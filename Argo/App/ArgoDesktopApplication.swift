@@ -463,26 +463,6 @@ public final class ArgoDesktopApplication: NSObject {
         activeStore?.dispatch(.refreshAllRepositories)
     }
 
-    func openDiffWindow() {
-        let workspace = activeStore?.selectedWorkspace
-        let supportsDiff = workspace?.supportsRepositoryFeatures == true
-        DiffWindowManager.shared.show(
-            worktreePath: supportsDiff ? workspace?.activeWorktreePath : nil,
-            branchName: workspace?.activeWorktree?.branchLabel ?? workspace?.currentBranch ?? "",
-            emptyStateMessage: diffEmptyStateMessage(for: workspace, supportsDiff: supportsDiff)
-        )
-    }
-
-    func openHistoryWindow() {
-        let workspace = activeStore?.selectedWorkspace
-        let supportsHistory = workspace?.supportsRepositoryFeatures == true
-        HistoryWindowManager.shared.show(
-            worktreePath: supportsHistory ? workspace?.activeWorktreePath : nil,
-            branchName: workspace?.activeWorktree?.branchLabel ?? workspace?.currentBranch ?? "",
-            emptyStateMessage: historyEmptyStateMessage(for: workspace, supportsHistory: supportsHistory)
-        )
-    }
-
     public var hasSelectedWorkspace: Bool {
         activeStore?.selectedWorkspace != nil
     }
@@ -531,26 +511,6 @@ public final class ArgoDesktopApplication: NSObject {
 
     var currentAppSettings: AppSettings {
         activeStore?.appSettings ?? hotKeyWindowSettings
-    }
-
-    private func diffEmptyStateMessage(for workspace: WorkspaceModel?, supportsDiff: Bool) -> String {
-        guard let workspace else {
-            return LocalizationManager.shared.string("main.diff.selectWorkspace")
-        }
-        if supportsDiff {
-            return LocalizationManager.shared.string("main.diff.workingDirectoryClean")
-        }
-        return l10nFormat(LocalizationManager.shared.string("main.diff.noContextFormat"), arguments: [workspace.name])
-    }
-
-    private func historyEmptyStateMessage(for workspace: WorkspaceModel?, supportsHistory: Bool) -> String {
-        guard let workspace else {
-            return LocalizationManager.shared.string("main.history.selectWorkspace")
-        }
-        if supportsHistory {
-            return LocalizationManager.shared.string("main.history.noCommits")
-        }
-        return l10nFormat(LocalizationManager.shared.string("main.history.noContextFormat"), arguments: [workspace.name])
     }
 
     static var sharedWindowTabbingIdentifier: String {

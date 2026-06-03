@@ -947,32 +947,6 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         focusPane(previousFocusedPaneID)
     }
 
-    func closeAllPanes() {
-        sessionController.sessions.keys.forEach { sessionController.closePane($0) }
-        let snapshot = PaneSnapshot(
-            id: UUID(),
-            preferredWorkingDirectory: activeWorktreePath,
-            preferredEngine: .libghosttyPreferred,
-            backendConfiguration: defaultPaneBackendConfiguration
-        )
-        let initialPane = sessionController.createPane(from: snapshot)
-        layout = .pane(PaneLeaf(paneID: initialPane))
-        zoomedPaneID = nil
-        sessionController.sync(with: [initialPane], defaultWorkingDirectory: activeWorktreePath)
-        sessionController.focus(initialPane)
-        wireWorkspaceActions()
-        saveActiveWorktreeState()
-    }
-
-    func restartAllPanes() {
-        sessionController.restartAll()
-        saveActiveWorktreeState()
-    }
-
-    func resetLayout() {
-        closeAllPanes()
-    }
-
     func forgetWorktrees(paths: [String]) {
         let targets = Set(paths)
         guard !targets.isEmpty else { return }

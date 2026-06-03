@@ -1605,8 +1605,7 @@ private func quickCommandCategoryTint(_ id: String) -> Color {
         return ArgoTheme.warning
     case QuickCommandCategory.complex.id:
         return ArgoTheme.localAccent
-    case QuickCommandCategory.git.id,
-         QuickCommandCategory.homebrew.id,
+    case QuickCommandCategory.homebrew.id,
          QuickCommandCategory.macos.id:
         return ArgoTheme.accent
     default:

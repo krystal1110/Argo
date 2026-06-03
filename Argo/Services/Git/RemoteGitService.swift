@@ -69,42 +69,6 @@ actor RemoteGitService {
         return result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func diffNameStatus(
-        configuration: SSHSessionConfiguration,
-        remoteDirectory: String
-    ) async throws -> String {
-        let result = try await runRemoteGit(
-            configuration: configuration,
-            command: "cd \(shellQuoted(remoteDirectory)) && git diff --find-renames --find-copies --name-status HEAD -- 2>/dev/null"
-        )
-        return result.exitCode == 0 ? result.stdout : ""
-    }
-
-    func diffPatch(
-        configuration: SSHSessionConfiguration,
-        remoteDirectory: String,
-        filePath: String
-    ) async throws -> String {
-        let result = try await runRemoteGit(
-            configuration: configuration,
-            command: "cd \(shellQuoted(remoteDirectory)) && git diff --find-renames --find-copies --no-color HEAD -- \(shellQuoted(filePath))"
-        )
-        return result.exitCode == 0 ? result.stdout : ""
-    }
-
-    func showFileAtRef(
-        configuration: SSHSessionConfiguration,
-        ref: String,
-        filePath: String,
-        remoteDirectory: String
-    ) async throws -> String? {
-        let result = try await runRemoteGit(
-            configuration: configuration,
-            command: "cd \(shellQuoted(remoteDirectory)) && git show \(ref):\(shellQuoted(filePath)) 2>/dev/null"
-        )
-        return result.exitCode == 0 ? result.stdout : nil
-    }
-
     private func runRemoteGit(
         configuration: SSHSessionConfiguration,
         command: String

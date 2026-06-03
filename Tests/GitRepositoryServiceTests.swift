@@ -102,29 +102,6 @@ final class GitRepositoryServiceTests: XCTestCase {
         )
     }
 
-    func testDiffNameStatusSupportsEmptyGitRepositories() async throws {
-        let directoryURL = try makeTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directoryURL) }
-
-        try runProcess(
-            executable: "/usr/bin/env",
-            arguments: ["git", "init", "-b", "main"],
-            currentDirectory: directoryURL.path
-        )
-
-        let fileURL = directoryURL.appendingPathComponent("staged.txt")
-        try Data("hello\n".utf8).write(to: fileURL)
-        try runProcess(
-            executable: "/usr/bin/env",
-            arguments: ["git", "add", "staged.txt"],
-            currentDirectory: directoryURL.path
-        )
-
-        let output = try await GitRepositoryService().diffNameStatus(for: directoryURL.path)
-
-        XCTAssertEqual(output.trimmingCharacters(in: .whitespacesAndNewlines), "A\tstaged.txt")
-    }
-
     private func makeTemporaryDirectory() throws -> URL {
         let root = FileManager.default.temporaryDirectory
         let directoryURL = root.appendingPathComponent(UUID().uuidString, isDirectory: true)

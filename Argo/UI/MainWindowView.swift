@@ -34,10 +34,6 @@ struct MainWindowView: View {
         store.selectedWorkspace?.sessionController.focusedPaneID != nil
     }
 
-    private var selectedWorkspaceSupportsGit: Bool {
-        store.selectedWorkspace?.supportsRepositoryFeatures == true
-    }
-
     private var hasSelectedSession: Bool {
         guard let workspace = store.selectedWorkspace else { return false }
         let targetPaneID = workspace.sessionController.focusedPaneID ?? workspace.paneOrder.first
@@ -66,14 +62,6 @@ struct MainWindowView: View {
 
     private var hapiHelpText: String {
         availableHAPIInstallation?.primaryActionHelpText ?? localized("main.hapi.defaultHelpText")
-    }
-
-    private var isCanvasMode: Bool {
-        store.mainWindowMode == .canvas
-    }
-
-    private var isOverviewMode: Bool {
-        store.mainWindowMode == .overview
     }
 
     private func selectMainWindowMode(_ mode: MainWindowMode, restoreFocus: Bool = true) {
@@ -398,26 +386,6 @@ struct MainWindowView: View {
                 .scaleEffect(uiScale)
 
                 Button {
-                    openDiffWindow()
-                } label: {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .padding(4 * uiScale)
-                }
-                .scaleEffect(uiScale)
-                .accessibilityLabel(localized("menu.view.openDiff"))
-                .help(localized("menu.view.openDiff"))
-
-                Button {
-                    openHistoryWindow()
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .padding(4 * uiScale)
-                }
-                .scaleEffect(uiScale)
-                .accessibilityLabel(localized("menu.view.openHistory"))
-                .help(localized("menu.view.openHistory"))
-
-                Button {
                     store.dispatch(.toggleCommandPalette)
                 } label: {
                     Image(systemName: "command")
@@ -486,133 +454,6 @@ struct MainWindowView: View {
                 .accessibilityLabel(localized("main.toolbar.webPreview"))
                 .help(localized("main.toolbar.webPreview"))
 
-                Menu {
-                    Button(localized("main.menu.restartFocusedSession")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.restartFocusedSession(in: workspace)
-                    }
-                    .disabled(!hasFocusedPane)
-
-                    Button(localized("main.menu.restartAllSessions")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.restartAllSessions(in: workspace)
-                    }
-                    .disabled(!hasSelectedWorkspace)
-
-                    Button(localized("main.menu.runWorkspaceScript")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.dispatch(.runWorkspaceScript(workspace.id))
-                    }
-                    .disabled(!(store.selectedWorkspace?.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false))
-
-                    Button(localized("main.menu.runSetupScript")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.dispatch(.runSetupScript(workspace.id))
-                    }
-                    .disabled(!(store.selectedWorkspace?.setupScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false))
-
-                    Divider()
-
-                    Button(localized("main.menu.equalizeSplits")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.equalizeSplits(in: workspace)
-                    }
-                    .disabled(!hasSelectedWorkspace)
-
-                    Button(localized("main.menu.toggleZoom")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.toggleZoom(in: workspace)
-                    }
-                    .disabled(!hasFocusedPane)
-
-                    Button(localized("main.menu.resetLayout")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.resetLayout(in: workspace)
-                    }
-                    .disabled(!hasSelectedWorkspace)
-
-                    Divider()
-
-                    Button(localized("sidebar.menu.browseFiles")) {
-                        guard let workspace = store.selectedWorkspace else { return }
-                        store.presentWorkspaceFileBrowser(for: workspace)
-                    }
-                    .disabled(!hasSelectedWorkspace)
-
-                    Button(store.selectedWorkspace?.isFileTreePresented == true ? localized("main.toolbar.hideFileTree") : localized("main.toolbar.toggleFileTree")) {
-                        store.selectedWorkspace?.toggleFileTree()
-                    }
-                    .disabled(!hasSelectedWorkspace)
-
-                    if selectedWorkspaceSupportsGit {
-                        Button(localized("sheet.worktree.title")) {
-                            guard let workspace = store.selectedWorkspace else { return }
-                            store.presentCreateWorktree(for: workspace)
-                        }
-                        .disabled(!selectedWorkspaceSupportsGit)
-
-                        Button(localized("main.menu.refreshRepo")) {
-                            store.refreshSelectedWorkspace()
-                        }
-                        .disabled(!selectedWorkspaceSupportsGit)
-                    }
-
-                    Divider()
-
-                    Button(isOverviewMode ? localized("main.overview.close") : localized("main.overview.open")) {
-                        if isOverviewMode {
-                            dismissGlobalMode(restoreFocus: false)
-                        } else {
-                            selectMainWindowMode(.overview, restoreFocus: false)
-                        }
-                    }
-
-                    Button(isCanvasMode ? localized("main.canvas.hide") : localized("main.canvas.show")) {
-                        if isCanvasMode {
-                            dismissGlobalMode()
-                        } else {
-                            selectMainWindowMode(.canvas, restoreFocus: false)
-                        }
-                    }
-
-                    Button(localized("menu.view.openDiff")) {
-                        openDiffWindow()
-                    }
-
-                    Button(localized("menu.view.openHistory")) {
-                        openHistoryWindow()
-                    }
-
-                    if let workspace = store.selectedWorkspace,
-                       !workspace.remoteTargets.isEmpty {
-                        Menu(localized("main.menu.remoteTargets")) {
-                            ForEach(workspace.remoteTargets) { target in
-                                Button(localizedFormat("main.menu.remoteShellFormat", target.name)) {
-                                    store.dispatch(.openRemoteTargetShell(workspace.id, target.id))
-                                }
-                                Button(localizedFormat("main.menu.remoteBrowseFormat", target.name)) {
-                                    store.dispatch(.browseRemoteTargetRepository(workspace.id, target.id))
-                                }
-                                Button(localizedFormat("main.menu.remoteCopyDestinationFormat", target.name)) {
-                                    store.dispatch(.copyRemoteTargetDestination(workspace.id, target.id))
-                                }
-                                if target.ssh.remoteWorkingDirectory?.isEmpty == false {
-                                    Button(localizedFormat("main.menu.remoteCopyPathFormat", target.name)) {
-                                        store.dispatch(.copyRemoteTargetWorkingDirectory(workspace.id, target.id))
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Button(localized("menu.app.settings")) {
-                        store.presentSettings(for: store.selectedWorkspace)
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                .scaleEffect(uiScale)
-                .help(localized("main.menu.moreActions"))
             }
         }
         .task {
@@ -742,46 +583,6 @@ struct MainWindowView: View {
         }
         .animation(.easeInOut(duration: 0.18), value: store.statusMessage?.id)
         .animation(.easeInOut(duration: 0.18), value: store.isCommandPalettePresented)
-    }
-
-    private func openDiffWindow() {
-        let workspace = store.selectedWorkspace
-        let supportsDiff = workspace?.supportsRepositoryFeatures == true
-        DiffWindowManager.shared.show(
-            worktreePath: supportsDiff ? workspace?.activeWorktreePath : nil,
-            branchName: workspace?.activeWorktree?.branchLabel ?? workspace?.currentBranch ?? "",
-            emptyStateMessage: diffEmptyStateMessage(for: workspace, supportsDiff: supportsDiff)
-        )
-    }
-
-    private func openHistoryWindow() {
-        let workspace = store.selectedWorkspace
-        let supportsHistory = workspace?.supportsRepositoryFeatures == true
-        HistoryWindowManager.shared.show(
-            worktreePath: supportsHistory ? workspace?.activeWorktreePath : nil,
-            branchName: workspace?.activeWorktree?.branchLabel ?? workspace?.currentBranch ?? "",
-            emptyStateMessage: historyEmptyStateMessage(for: workspace, supportsHistory: supportsHistory)
-        )
-    }
-
-    private func historyEmptyStateMessage(for workspace: WorkspaceModel?, supportsHistory: Bool) -> String {
-        guard let workspace else {
-            return localized("main.history.selectWorkspace")
-        }
-        if supportsHistory {
-            return localized("main.history.noCommits")
-        }
-        return localizedFormat("main.history.noContextFormat", workspace.name)
-    }
-
-    private func diffEmptyStateMessage(for workspace: WorkspaceModel?, supportsDiff: Bool) -> String {
-        guard let workspace else {
-            return localized("main.diff.selectWorkspace")
-        }
-        if supportsDiff {
-            return localized("main.diff.workingDirectoryClean")
-        }
-        return localizedFormat("main.diff.noContextFormat", workspace.name)
     }
 
     private func present(menu: NSMenu, from anchorView: NSView?) {

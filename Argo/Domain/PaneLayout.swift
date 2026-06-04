@@ -175,7 +175,7 @@ indirect enum SessionLayoutNode: Codable, Equatable, Hashable {
             return false
         case .split(var split):
             if split.id == splitID {
-                split.fraction = min(max(fraction, 0.12), 0.88)
+                split.fraction = PaneSplitSizing.clampedFraction(fraction)
                 self = .split(split)
                 return true
             }
@@ -315,7 +315,7 @@ indirect enum SessionLayoutNode: Codable, Equatable, Hashable {
             return false
         case .split(var split):
             if split.id == splitID {
-                split.fraction = min(max(split.fraction + delta, 0.12), 0.88)
+                split.fraction = PaneSplitSizing.clampedFraction(split.fraction + delta)
                 self = .split(split)
                 return true
             }

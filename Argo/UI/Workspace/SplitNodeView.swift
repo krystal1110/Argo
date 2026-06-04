@@ -42,10 +42,11 @@ struct SplitNodeView: View {
 
     @ViewBuilder
     private func splitBody(_ split: PaneSplitNode, in size: CGSize) -> some View {
-        let dividerThickness: CGFloat = 6
+        let preferredDividerThickness: CGFloat = 6
         let clampedFraction = PaneSplitSizing.clampedFraction(split.fraction)
 
         if split.axis == .vertical {
+            let dividerThickness = min(preferredDividerThickness, max(size.width, 0))
             let lengths = PaneSplitSizing.lengths(
                 totalLength: size.width,
                 dividerThickness: dividerThickness,
@@ -69,6 +70,7 @@ struct SplitNodeView: View {
                     .frame(width: lengths.second)
             }
         } else {
+            let dividerThickness = min(preferredDividerThickness, max(size.height, 0))
             let lengths = PaneSplitSizing.lengths(
                 totalLength: size.height,
                 dividerThickness: dividerThickness,
@@ -102,9 +104,9 @@ private struct SplitDivider: View {
     let onUpdate: (Double) -> Void
 
     @State private var dragStartFraction: Double?
+    @State private var dragStartAvailableLength: CGFloat?
     @State private var isHovering = false
     @State private var isDragging = false
-    @State private var didPushCursor = false
 
     private var isActive: Bool {
         isHovering || isDragging
@@ -125,23 +127,27 @@ private struct SplitDivider: View {
                 .fill(isActive ? Color.white.opacity(0.72) : ArgoTheme.strongBorder)
                 .frame(width: axis == .vertical ? 2 : 16, height: axis == .horizontal ? 2 : 16)
         }
+        .background(SplitCursorArea(cursor: resizeCursor))
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovering = hovering
-            setCursorVisible(hovering || isDragging)
         }
         .onDisappear {
-            setCursorVisible(false)
+            isHovering = false
+            isDragging = false
+            dragStartFraction = nil
+            dragStartAvailableLength = nil
         }
         .gesture(
             DragGesture(minimumDistance: 1)
                 .onChanged { value in
-                    let startFraction = dragStartFraction ?? fraction
                     if dragStartFraction == nil {
                         dragStartFraction = fraction
+                        dragStartAvailableLength = availableLength
                         isDragging = true
-                        setCursorVisible(true)
                     }
+                    let startFraction = dragStartFraction ?? fraction
+                    let startAvailableLength = dragStartAvailableLength ?? availableLength
                     let translation = axis == .vertical
                         ? value.translation.width
                         : value.translation.height
@@ -149,25 +155,51 @@ private struct SplitDivider: View {
                         PaneSplitSizing.fraction(
                             startingAt: startFraction,
                             translation: translation,
-                            availableLength: availableLength
+                            availableLength: startAvailableLength
                         )
                     )
                 }
                 .onEnded { _ in
                     dragStartFraction = nil
+                    dragStartAvailableLength = nil
                     isDragging = false
-                    setCursorVisible(isHovering)
                 }
         )
     }
+}
 
-    private func setCursorVisible(_ visible: Bool) {
-        if visible, !didPushCursor {
-            resizeCursor.push()
-            didPushCursor = true
-        } else if !visible, didPushCursor {
-            NSCursor.pop()
-            didPushCursor = false
+private struct SplitCursorArea: NSViewRepresentable {
+    let cursor: NSCursor
+
+    func makeNSView(context: Context) -> CursorRectView {
+        CursorRectView(cursor: cursor)
+    }
+
+    func updateNSView(_ nsView: CursorRectView, context: Context) {
+        nsView.cursor = cursor
+        nsView.window?.invalidateCursorRects(for: nsView)
+    }
+
+    final class CursorRectView: NSView {
+        var cursor: NSCursor
+
+        init(cursor: NSCursor) {
+            self.cursor = cursor
+            super.init(frame: .zero)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func resetCursorRects() {
+            super.resetCursorRects()
+            addCursorRect(bounds, cursor: cursor)
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            nil
         }
     }
 }

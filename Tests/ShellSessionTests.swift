@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import Combine
 import XCTest
 @testable import Argo
 
@@ -396,6 +397,31 @@ final class ShellSessionTests: XCTestCase {
         }
     }
 
+    func testDuplicateSurfaceResizeDoesNotPublishUnchangedTerminalSize() async {
+        await MainActor.run {
+            let surface = FakeManagedTerminalSurfaceController()
+            let session = ShellSession(
+                snapshot: PaneSnapshot.makeDefault(cwd: "/tmp/argo-shell-session-resize"),
+                surfaceController: surface
+            )
+            var changeCount = 0
+            let cancellable = session.objectWillChange.sink {
+                changeCount += 1
+            }
+
+            surface.emitResize(cols: 100, rows: 30)
+            XCTAssertEqual(session.cols, 100)
+            XCTAssertEqual(session.rows, 30)
+            XCTAssertGreaterThan(changeCount, 0)
+
+            changeCount = 0
+            surface.emitResize(cols: 100, rows: 30)
+
+            XCTAssertEqual(changeCount, 0)
+            cancellable.cancel()
+        }
+    }
+
     func testSnapshotPromotesLocalTmuxSessionToRestorableLaunch() async {
         await MainActor.run {
             let surface = FakeManagedTerminalSurfaceController()
@@ -537,6 +563,9 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     }
     func sendReturn() {
         sendReturnCallCount += 1
+    }
+    func emitResize(cols: Int, rows: Int) {
+        onResize?(cols, rows)
     }
     func focus() {}
     func setFocused(_ isFocused: Bool) {}

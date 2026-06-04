@@ -145,8 +145,11 @@ final class ShellSession: ObservableObject, Identifiable {
 
         surfaceController.onResize = { [weak self] cols, rows in
             guard let self else { return }
-            self.cols = max(cols, 2)
-            self.rows = max(rows, 2)
+            let nextCols = max(cols, 2)
+            let nextRows = max(rows, 2)
+            guard self.cols != nextCols || self.rows != nextRows else { return }
+            self.cols = nextCols
+            self.rows = nextRows
         }
         surfaceController.onTitleChange = { [weak self] title in
             guard let self, !title.isEmpty else { return }

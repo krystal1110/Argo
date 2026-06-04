@@ -66,3 +66,16 @@ enum PaneSplitSizing {
         )
     }
 }
+
+struct PaneSplitDragContext: Equatable {
+    var startFraction: Double
+    var availableLength: CGFloat
+
+    func fraction(forTranslation translation: CGFloat) -> Double {
+        PaneSplitSizing.fraction(
+            startingAt: startFraction,
+            translation: translation,
+            availableLength: availableLength
+        )
+    }
+}

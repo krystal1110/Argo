@@ -108,6 +108,26 @@ final class PaneLayoutTests: XCTestCase {
         )
     }
 
+    func testSplitDragContextUsesFrozenStartingPointForPreviewFractions() {
+        let context = PaneSplitDragContext(startFraction: 0.4, availableLength: 200)
+
+        XCTAssertEqual(
+            context.fraction(forTranslation: 50),
+            0.65,
+            accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            context.fraction(forTranslation: -500),
+            0.12,
+            accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            context.fraction(forTranslation: 500),
+            0.88,
+            accuracy: 0.0001
+        )
+    }
+
     func testSplitSizingAllocatesLengthsWithoutOverflowingContainer() {
         let balanced = PaneSplitSizing.lengths(
             totalLength: 500,
@@ -232,5 +252,37 @@ final class PaneLayoutTests: XCTestCase {
             return XCTFail("Expected nested split")
         }
         XCTAssertEqual(innerAfterOuterUpdate.fraction, 0.7, accuracy: 0.0001)
+    }
+
+    func testSplitDividerAppearanceUsesPrototypeHandleDimensions() {
+        XCTAssertEqual(
+            PaneSplitDividerAppearance.handleSize(for: .vertical),
+            CGSize(width: 3, height: 64)
+        )
+        XCTAssertEqual(
+            PaneSplitDividerAppearance.handleSize(for: .horizontal),
+            CGSize(width: 56, height: 3)
+        )
+    }
+
+    func testSplitDividerHandleStaysVisibleAndBrightensWhenActive() {
+        XCTAssertGreaterThan(PaneSplitDividerAppearance.inactiveHandleOpacity, 0)
+        XCTAssertGreaterThan(
+            PaneSplitDividerAppearance.activeHandleOpacity,
+            PaneSplitDividerAppearance.inactiveHandleOpacity
+        )
+    }
+
+    func testSplitDividerHandleUsesPrototypeHoverScale() {
+        XCTAssertEqual(PaneSplitDividerAppearance.activeHandleScale, 1.08, accuracy: 0.0001)
+    }
+
+    func testSplitDividerHandleDoesNotUseSymbolIconOrCircularBacking() {
+        XCTAssertFalse(PaneSplitDividerAppearance.usesSymbolIcon)
+        XCTAssertFalse(PaneSplitDividerAppearance.usesIconBacking)
+    }
+
+    func testSplitDividerRendersAboveAdjacentPanesSoHoverHandleIsNotOccluded() {
+        XCTAssertGreaterThan(PaneSplitDividerAppearance.stackZIndex, 0)
     }
 }

@@ -6,9 +6,9 @@
 //
 
 import CoreGraphics
-import Foundation
 
 enum PaneSplitSizing {
+    static let defaultFraction = 0.5
     static let minimumFraction = 0.12
     static let maximumFraction = 0.88
 
@@ -19,7 +19,10 @@ enum PaneSplitSizing {
     }
 
     static func clampedFraction(_ fraction: Double) -> Double {
-        min(max(fraction, minimumFraction), maximumFraction)
+        guard fraction.isFinite else {
+            return defaultFraction
+        }
+        return min(max(fraction, minimumFraction), maximumFraction)
     }
 
     static func fraction(
@@ -38,7 +41,11 @@ enum PaneSplitSizing {
         minimumFirst: CGFloat,
         minimumSecond: CGFloat
     ) -> Lengths {
-        let available = max(totalLength - dividerThickness, 1)
+        let available = max(totalLength - dividerThickness, 0)
+        guard available > 0 else {
+            return Lengths(first: 0, second: 0, available: 0)
+        }
+
         let clamped = CGFloat(clampedFraction(fraction))
 
         guard available >= minimumFirst + minimumSecond else {

@@ -87,6 +87,9 @@ final class PaneLayoutTests: XCTestCase {
         XCTAssertEqual(PaneSplitSizing.clampedFraction(-0.5), 0.12, accuracy: 0.0001)
         XCTAssertEqual(PaneSplitSizing.clampedFraction(0.5), 0.5, accuracy: 0.0001)
         XCTAssertEqual(PaneSplitSizing.clampedFraction(1.5), 0.88, accuracy: 0.0001)
+        XCTAssertEqual(PaneSplitSizing.clampedFraction(.nan), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(PaneSplitSizing.clampedFraction(.infinity), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(PaneSplitSizing.clampedFraction(-Double.infinity), 0.5, accuracy: 0.0001)
 
         XCTAssertEqual(
             PaneSplitSizing.fraction(startingAt: 0.4, translation: 50, availableLength: 200),
@@ -142,6 +145,18 @@ final class PaneLayoutTests: XCTestCase {
         XCTAssertEqual(constrained.first + constrained.second, constrained.available, accuracy: 0.0001)
         XCTAssertGreaterThan(constrained.first, 0)
         XCTAssertGreaterThan(constrained.second, 0)
+
+        let collapsed = PaneSplitSizing.lengths(
+            totalLength: 0,
+            dividerThickness: 6,
+            fraction: 0.5,
+            minimumFirst: 120,
+            minimumSecond: 120
+        )
+
+        XCTAssertEqual(collapsed.available, 0, accuracy: 0.0001)
+        XCTAssertEqual(collapsed.first, 0, accuracy: 0.0001)
+        XCTAssertEqual(collapsed.second, 0, accuracy: 0.0001)
     }
 
     func testUpdateFractionClampsAtBounds() {

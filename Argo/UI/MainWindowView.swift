@@ -30,10 +30,6 @@ struct MainWindowView: View {
         CGFloat(store.appSettings.uiScale)
     }
 
-    private var hasFocusedPane: Bool {
-        store.selectedWorkspace?.sessionController.focusedPaneID != nil
-    }
-
     private var hasSelectedSession: Bool {
         guard let workspace = store.selectedWorkspace else { return false }
         let targetPaneID = workspace.sessionController.focusedPaneID ?? workspace.paneOrder.first
@@ -92,55 +88,8 @@ struct MainWindowView: View {
         }
     }
 
-    @ViewBuilder
-    private func hapiToolbarControl(using installation: HAPIInstallationStatus) -> some View {
-        ToolbarSegmentedControl(
-            backgroundColor: ArgoTheme.chromeBackground.opacity(0.96),
-            borderColor: ArgoTheme.border,
-            leadingAction: { anchorView in
-                present(menu: makeHAPIMenu(using: installation), from: anchorView)
-            },
-            trailingAction: { anchorView in
-                present(menu: makeHAPIMenu(using: installation), from: anchorView)
-            },
-            isLeadingDisabled: !hasSelectedWorkspace,
-            isTrailingDisabled: !hasSelectedWorkspace,
-            leadingAccessibilityLabel: installation.primaryActionTitle,
-            leadingHelp: hapiHelpText,
-            trailingAccessibilityLabel: localized("main.hapi.actions"),
-            trailingHelp: localized("main.hapi.quickStartActions"),
-            leadingContent: {
-                HStack(spacing: 6) {
-                    ToolbarFeatureIcon(
-                        systemName: "dot.radiowaves.left.and.right",
-                        tint: ArgoTheme.accent
-                    )
-                }
-            },
-            trailingContent: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(ArgoTheme.secondaryText)
-            }
-        )
-    }
-
     private var sleepPreventionIconName: String {
         store.sleepPreventionSession == nil ? "moon.zzz" : "moon.zzz.fill"
-    }
-
-    private var sleepPreventionSplitButtonBackground: Color {
-        if store.sleepPreventionSession == nil {
-            return ArgoTheme.chromeBackground.opacity(0.96)
-        }
-        return ArgoTheme.warning.opacity(0.14)
-    }
-
-    private var sleepPreventionSplitButtonBorder: Color {
-        if store.sleepPreventionSession == nil {
-            return ArgoTheme.border
-        }
-        return ArgoTheme.warning.opacity(0.42)
     }
 
     private func dismissGlobalMode(restoreFocus: Bool = true) {
@@ -335,11 +284,20 @@ struct MainWindowView: View {
                             }
                         }
 
-                        GlassToolbarMenuIconButton(
+                        GlassToolbarIconButton(
                             systemName: sleepPreventionIconName,
                             tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,
                             accessibilityLabel: store.sleepPreventionPrimaryActionLabel,
                             help: store.sleepPreventionPrimaryActionHelpText
+                        ) {
+                            store.performPrimarySleepPreventionAction()
+                        }
+
+                        GlassToolbarMenuIconButton(
+                            systemName: "chevron.down",
+                            tint: ArgoTheme.secondaryText,
+                            accessibilityLabel: store.sleepPreventionStatusText,
+                            help: store.sleepPreventionStatusText
                         ) { anchorView in
                             present(menu: makeSleepPreventionMenu(), from: anchorView)
                         }
@@ -786,87 +744,6 @@ struct MainWindowView: View {
         }
 
         return menu
-    }
-}
-
-private struct ToolbarSegmentedControl<LeadingContent: View, TrailingContent: View>: View {
-    let backgroundColor: Color
-    let borderColor: Color
-    let leadingAction: (NSView?) -> Void
-    let trailingAction: (NSView?) -> Void
-    let isLeadingDisabled: Bool
-    let isTrailingDisabled: Bool
-    let leadingAccessibilityLabel: String
-    let leadingHelp: String
-    let trailingAccessibilityLabel: String
-    let trailingHelp: String
-    @ViewBuilder let leadingContent: () -> LeadingContent
-    @ViewBuilder let trailingContent: () -> TrailingContent
-
-    @State private var leadingAnchorView: NSView?
-    @State private var trailingAnchorView: NSView?
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Button {
-                leadingAction(leadingAnchorView)
-            } label: {
-                leadingContent()
-                    .padding(.leading, 7)
-                    .padding(.trailing, 8)
-                    .frame(height: 22)
-                    .contentShape(Rectangle())
-                    .background(ToolbarAnchorView(anchorView: $leadingAnchorView))
-            }
-            .buttonStyle(.plain)
-            .disabled(isLeadingDisabled)
-            .accessibilityLabel(leadingAccessibilityLabel)
-            .help(leadingHelp)
-
-            Rectangle()
-                .fill(borderColor.opacity(0.9))
-                .frame(width: 1, height: 14)
-
-            Button {
-                trailingAction(trailingAnchorView)
-            } label: {
-                trailingContent()
-                    .frame(width: 22, height: 22)
-                    .contentShape(Rectangle())
-                    .background(ToolbarAnchorView(anchorView: $trailingAnchorView))
-            }
-            .buttonStyle(.plain)
-            .disabled(isTrailingDisabled)
-            .accessibilityLabel(trailingAccessibilityLabel)
-            .help(trailingHelp)
-        }
-        .background(backgroundColor, in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(borderColor, lineWidth: 1)
-        )
-    }
-}
-
-private struct ToolbarAnchorView: NSViewRepresentable {
-    @Binding var anchorView: NSView?
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
-        updateAnchorView(view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        updateAnchorView(nsView)
-    }
-
-    private func updateAnchorView(_ nsView: NSView) {
-        guard anchorView !== nsView else { return }
-        DispatchQueue.main.async {
-            guard anchorView !== nsView else { return }
-            anchorView = nsView
-        }
     }
 }
 

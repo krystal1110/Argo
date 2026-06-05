@@ -18,6 +18,21 @@ final class PathFormattingTests: XCTestCase {
         XCTAssertEqual("\(home)/src/argo".abbreviatedPath, "~/src/argo")
     }
 
+    func testTerminalChromeDisplayPathUsesTildeForHomeDirectory() {
+        let home = NSHomeDirectory()
+        XCTAssertEqual(
+            "\(home)/Documents/Claude 相关".terminalChromeDisplayPath,
+            "~/Documents/Claude 相关"
+        )
+    }
+
+    func testTerminalChromeDisplayPathKeepsAbsolutePathOutsideHomeDirectory() {
+        XCTAssertEqual(
+            "/tmp/Argo Scratch".terminalChromeDisplayPath,
+            "/tmp/Argo Scratch"
+        )
+    }
+
     func testShellEscapedEscapesSpaces() {
         XCTAssertEqual(
             "/Users/eevv/Screen Studio Projects".shellEscaped,

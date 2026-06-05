@@ -20,6 +20,11 @@ extension String {
         URL(fileURLWithPath: self).lastPathComponent
     }
 
+    nonisolated var terminalChromeDisplayPath: String {
+        let displayPath = abbreviatedPath
+        return displayPath.isEmpty ? lastPathComponentValue : displayPath
+    }
+
     nonisolated var shellQuoted: String {
         "'" + replacingOccurrences(of: "'", with: "'\\''") + "'"
     }

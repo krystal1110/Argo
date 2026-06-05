@@ -77,10 +77,10 @@ private struct WorkspaceSessionDetailView: View {
         }
     }
 
-    /// The tab strip is shown when there is more than one terminal tab, or when
-    /// a preview tab is open (so it can be selected / dismissed).
+    /// The tab strip is only shown when a preview tab is open. Terminal-only
+    /// tab actions live in the integrated terminal chrome.
     private var showsTabStrip: Bool {
-        workspace.tabs.count > 1 || workspace.previewPanel != nil
+        workspace.previewPanel != nil
     }
 
     /// Terminal tabs plus, when a preview is loaded, a trailing preview chip.
@@ -133,7 +133,41 @@ private struct WorkspaceSessionDetailView: View {
     @ViewBuilder
     private var terminalContent: some View {
         if let layout = workspace.layout {
-            SplitNodeView(workspace: workspace, sessionController: workspace.sessionController, node: layout)
+            TerminalWorkspaceSurface {
+                VStack(spacing: 0) {
+                    TerminalLocalChrome(
+                        path: terminalChromePath,
+                        tabs: workspace.tabs,
+                        activeTabID: workspace.activeTabID,
+                        isFocused: terminalChromeTargetPaneID == workspace.sessionController.focusedPaneID,
+                        canCreateTab: true,
+                        canSplit: terminalChromeTargetPaneID != nil,
+                        paneCountForTab: { tabID in
+                            workspace.paneCount(for: tabID)
+                        },
+                        onSelectTab: selectTerminalTabFromChrome,
+                        onCloseTab: closeTerminalTabFromChrome,
+                        onCreateTab: createTerminalTabFromChrome,
+                        onSplitRight: {
+                            splitTerminalFromChrome(axis: .vertical)
+                        },
+                        onSplitDown: {
+                            splitTerminalFromChrome(axis: .horizontal)
+                        }
+                    )
+                    .frame(height: 36)
+                    .padding(.horizontal, 6)
+                    .padding(.top, 3)
+                    .padding(.bottom, 3)
+                    .background(TerminalWorkspaceSurfaceStyle.chromeFill)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.105))
+                        .frame(height: 0.8)
+
+                    SplitNodeView(workspace: workspace, sessionController: workspace.sessionController, node: layout)
+                }
+            }
         } else {
             VStack(spacing: 14) {
                 Image(systemName: "terminal")
@@ -148,6 +182,95 @@ private struct WorkspaceSessionDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var terminalChromeTargetPaneID: UUID? {
+        if let focusedPaneID = workspace.sessionController.focusedPaneID,
+           workspace.sessionController.session(for: focusedPaneID) != nil {
+            return focusedPaneID
+        }
+        return workspace.paneOrder.first { paneID in
+            workspace.sessionController.session(for: paneID) != nil
+        }
+    }
+
+    private var terminalChromeTargetSession: ShellSession? {
+        guard let terminalChromeTargetPaneID else { return nil }
+        return workspace.sessionController.session(for: terminalChromeTargetPaneID)
+    }
+
+    private var terminalChromePath: String {
+        (terminalChromeTargetSession?.effectiveWorkingDirectory ?? workspace.activeWorktreePath)
+            .terminalChromeDisplayPath
+    }
+
+    private func createTerminalTabFromChrome() {
+        if let terminalChromeTargetPaneID {
+            workspace.focusPane(terminalChromeTargetPaneID)
+        }
+        store.createTab(in: workspace)
+    }
+
+    private func selectTerminalTabFromChrome(_ tabID: UUID) {
+        store.selectTab(in: workspace, tabID: tabID)
+    }
+
+    private func closeTerminalTabFromChrome(_ tabID: UUID) {
+        store.closeTab(in: workspace, tabID: tabID)
+    }
+
+    private func splitTerminalFromChrome(axis: PaneSplitAxis) {
+        guard let terminalChromeTargetPaneID else { return }
+        workspace.focusPane(terminalChromeTargetPaneID)
+        store.splitFocusedPane(in: workspace, axis: axis)
+    }
+}
+
+private struct TerminalWorkspaceSurface<Content: View>: View {
+    @EnvironmentObject private var store: WorkspaceStore
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    private var isTranslucent: Bool {
+        store.appSettings.terminalBackgroundOpacity < 1
+    }
+
+    private var surfaceFill: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98),
+                ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(surfaceFill)
+            .clipShape(shape)
+            .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
+            .shadow(color: Color.black.opacity(isTranslucent ? 0.16 : 0.10), radius: 12, y: 5)
+    }
+}
+
+private enum TerminalWorkspaceSurfaceStyle {
+    static var chromeFill: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.085),
+                Color.white.opacity(0.035)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 }
 

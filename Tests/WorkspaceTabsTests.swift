@@ -9,6 +9,68 @@ import XCTest
 @testable import Argo
 
 final class WorkspaceTabsTests: XCTestCase {
+    func testTerminalLocalChromeIsNotRenderedInsideEachPane() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalPaneSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
+            encoding: .utf8
+        )
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(terminalPaneSource.contains("TerminalLocalChrome("))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome("))
+    }
+
+    func testTerminalChromeAndPanesShareOneOuterSurface() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalPaneSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
+            encoding: .utf8
+        )
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface {"))
+        XCTAssertFalse(terminalPaneSource.contains(".clipShape(RoundedRectangle"))
+        XCTAssertFalse(terminalPaneSource.contains(".background(paneFill, in: RoundedRectangle"))
+        XCTAssertFalse(terminalPaneSource.contains(".shadow(color:"))
+    }
+
+    func testTerminalTabsUseIntegratedChromeInsteadOfSeparateTopStrip() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("""
+    private var showsTabStrip: Bool {
+        workspace.previewPanel != nil
+    }
+"""))
+        XCTAssertTrue(workspaceDetailSource.contains("tabs: workspace.tabs"))
+        XCTAssertTrue(workspaceDetailSource.contains("activeTabID: workspace.activeTabID"))
+        XCTAssertTrue(workspaceDetailSource.contains("onSelectTab: selectTerminalTabFromChrome"))
+        XCTAssertTrue(terminalChromeSource.contains("ForEach(tabs)"))
+        XCTAssertFalse(terminalChromeSource.contains(".frame(maxWidth: 430"))
+        XCTAssertTrue(terminalChromeSource.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
+    }
+
     func testUpsertingAndSelectingTabsKeepsLegacyFieldsInSync() throws {
         var state = WorktreeSessionStateRecord.makeDefault(for: "/tmp/argo-tabs")
         let firstTab = try XCTUnwrap(state.selectedTab)

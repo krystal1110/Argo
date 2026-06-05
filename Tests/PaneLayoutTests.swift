@@ -9,6 +9,23 @@ import XCTest
 @testable import Argo
 
 final class PaneLayoutTests: XCTestCase {
+    func testSplitDividerBlocksWindowDraggingWhileUsingExpandedHitTarget() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let splitNodeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(splitNodeSource.contains("static let visualThickness: CGFloat = 6"))
+        XCTAssertTrue(splitNodeSource.contains("static let hitTargetThickness: CGFloat = 18"))
+        XCTAssertTrue(splitNodeSource.contains("SplitDividerHitTarget("))
+        XCTAssertTrue(splitNodeSource.contains("SplitDividerEventLayer("))
+        XCTAssertTrue(splitNodeSource.contains("override var mouseDownCanMoveWindow: Bool"))
+        XCTAssertTrue(splitNodeSource.contains("false"))
+    }
+
     func testSplitAndRemovePaneKeepsTreeValid() {
         let first = UUID()
         let second = UUID()

@@ -37,12 +37,14 @@ struct TerminalLocalChrome: View {
                     .truncationMode(.tail)
                     .layoutPriority(1)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 430, alignment: .leading)
             .frame(height: 32)
             .padding(.horizontal, 12)
             .background(pathFill, in: Capsule())
             .overlay(Capsule().stroke(Color.white.opacity(0.235), lineWidth: 1))
             .shadow(color: .black.opacity(0.07), radius: 8, y: 3)
+
+            Spacer(minLength: 8)
 
             HStack(spacing: 5) {
                 TransparentPaneActionButton(

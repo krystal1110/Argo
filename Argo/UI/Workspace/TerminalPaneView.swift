@@ -77,7 +77,7 @@ struct TerminalPaneView: View {
             )
             .frame(height: 44)
             .padding(.horizontal, 8)
-            .background(isFocused ? ArgoTheme.panelRaised.opacity(0.72) : ArgoTheme.paneHeaderBackground.opacity(0.66))
+            .background(isFocused ? ArgoTheme.panelRaised.opacity(0.54) : ArgoTheme.paneHeaderBackground.opacity(0.42))
 
             if isSearchPresented {
                 PaneSearchBar(
@@ -121,10 +121,10 @@ struct TerminalPaneView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isFocused ? ArgoTheme.accent.opacity(0.46) : ArgoTheme.border, lineWidth: isFocused ? 1.2 : 1)
+                .stroke(isFocused ? Color.white.opacity(0.12) : ArgoTheme.border.opacity(0.65), lineWidth: 0.8)
         )
         .background(paneFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(color: Color.black.opacity(isFocused ? 0.12 : 0.05), radius: isFocused ? 5 : 2, y: 2)
+        .shadow(color: Color.black.opacity(isFocused ? 0.08 : 0.04), radius: isFocused ? 4 : 2, y: 2)
         .contextMenu {
             Button(localized("terminal.menu.splitRight")) {
                 workspace.focusPane(paneID)

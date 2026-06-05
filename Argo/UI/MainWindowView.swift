@@ -140,47 +140,247 @@ struct MainWindowView: View {
         }
     }
 
+    private func toggleWorkspaceSidebar() {
+        NSApp.keyWindow?.firstResponder?.tryToPerform(
+            #selector(NSSplitViewController.toggleSidebar(_:)), with: nil
+        )
+    }
+
+    private var topGlassChrome: some View {
+        HStack(spacing: 14) {
+            Button {
+                toggleWorkspaceSidebar()
+            } label: {
+                Image(systemName: "sidebar.leading")
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 30, height: 30)
+                    .foregroundStyle(store.mainWindowMode == .workspace ? ArgoTheme.secondaryText : ArgoTheme.mutedText)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(store.mainWindowMode != .workspace)
+            .opacity(store.mainWindowMode == .workspace ? 1 : 0.42)
+            .scaleEffect(uiScale)
+            .accessibilityLabel(localized("menu.view.toggleSidebar"))
+            .help(localized("menu.view.toggleSidebar"))
+
+            GlassToolbarGroup(horizontalPadding: 12, spacing: 8) {
+                Image(systemName: "folder")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ArgoTheme.secondaryText)
+                Text(selectedWorkspaceDisplayName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ArgoTheme.tertiaryText)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 156, alignment: .leading)
+            }
+            .scaleEffect(uiScale)
+
+            Spacer(minLength: 14)
+
+            Button {
+                store.dispatch(.toggleCommandPalette)
+            } label: {
+                GlassToolbarGroup(horizontalPadding: 16, spacing: 8) {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(ArgoTheme.danger.opacity(0.95))
+                    Text(localized("menu.view.commandPalette"))
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(ArgoTheme.secondaryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(minWidth: 230, idealWidth: 320, maxWidth: 360)
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(uiScale)
+            .accessibilityLabel(localized("menu.view.commandPalette"))
+            .help(localized("menu.view.commandPalette"))
+
+            Spacer(minLength: 14)
+
+            GlassToolbarGroup(horizontalPadding: 5, spacing: 2) {
+                GlassToolbarMenuIconButton(
+                    systemName: "chevron.left.slash.chevron.right",
+                    tint: ArgoTheme.accent,
+                    accessibilityLabel: localized("main.toolbar.chooseQuickCommand"),
+                    help: localized("main.toolbar.chooseQuickCommand")
+                ) { anchorView in
+                    present(menu: makeQuickCommandMenu(), from: anchorView)
+                }
+
+                GlassToolbarMenuIconButton(
+                    systemName: "play.rectangle.on.rectangle",
+                    tint: ArgoTheme.accent,
+                    isDisabled: !hasSelectedWorkspace,
+                    accessibilityLabel: localized("main.toolbar.chooseWorkflow"),
+                    help: localized("main.toolbar.chooseWorkflow")
+                ) { anchorView in
+                    present(menu: makeWorkflowMenu(), from: anchorView)
+                }
+
+                if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
+                    GlassToolbarMenuIconButton(
+                        systemName: "dot.radiowaves.left.and.right",
+                        tint: ArgoTheme.accent,
+                        isDisabled: !hasSelectedWorkspace,
+                        accessibilityLabel: hapiInstallation.primaryActionTitle,
+                        help: hapiHelpText
+                    ) { anchorView in
+                        present(menu: makeHAPIMenu(using: hapiInstallation), from: anchorView)
+                    }
+                }
+
+                GlassToolbarIconButton(
+                    systemName: sleepPreventionIconName,
+                    tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,
+                    accessibilityLabel: store.sleepPreventionPrimaryActionLabel,
+                    help: store.sleepPreventionPrimaryActionHelpText
+                ) {
+                    store.performPrimarySleepPreventionAction()
+                }
+
+                GlassToolbarMenuIconButton(
+                    systemName: "chevron.down",
+                    tint: ArgoTheme.secondaryText,
+                    accessibilityLabel: store.sleepPreventionStatusText,
+                    help: store.sleepPreventionStatusText
+                ) { anchorView in
+                    present(menu: makeSleepPreventionMenu(), from: anchorView)
+                }
+
+                GlassToolbarIconButton(
+                    systemName: store.selectedWorkspace?.isFileTreePresented == true ? "list.bullet.indent" : "sidebar.squares.leading",
+                    tint: ArgoTheme.secondaryText,
+                    isActive: store.selectedWorkspace?.isFileTreePresented == true,
+                    isDisabled: !hasSelectedWorkspace,
+                    accessibilityLabel: localized("main.toolbar.toggleFileTree"),
+                    help: localized("main.toolbar.toggleFileTree")
+                ) {
+                    store.selectedWorkspace?.toggleFileTree()
+                }
+
+                Menu {
+                    webPreviewMenuContent
+                } label: {
+                    Image(systemName: "globe")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 28, height: 28)
+                        .foregroundStyle(ArgoTheme.secondaryText)
+                }
+                .menuIndicator(.hidden)
+                .disabled(!hasSelectedWorkspace)
+                .accessibilityLabel(localized("main.toolbar.webPreview"))
+                .help(localized("main.toolbar.webPreview"))
+            }
+            .scaleEffect(uiScale)
+
+            GlassToolbarSplitButton(
+                leadingAction: { _ in
+                    store.openSelectedWorkspaceInPreferredExternalEditor()
+                },
+                trailingAction: { anchorView in
+                    present(menu: makeExternalEditorMenu(), from: anchorView)
+                },
+                isLeadingDisabled: !hasSelectedWorkspace || effectiveExternalEditor == nil,
+                isTrailingDisabled: !hasSelectedWorkspace,
+                leadingAccessibilityLabel: externalEditorHelpText,
+                leadingHelp: externalEditorHelpText,
+                trailingAccessibilityLabel: localized("main.toolbar.chooseExternalEditor"),
+                trailingHelp: localized("main.toolbar.chooseExternalEditorDefault"),
+                leadingContent: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "arrow.up.forward.app.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(ArgoTheme.secondaryText)
+                        Text(effectiveExternalEditorDisplayName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(ArgoTheme.tertiaryText)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .frame(maxWidth: 96)
+                    }
+                },
+                trailingContent: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(ArgoTheme.secondaryText)
+                }
+            )
+            .scaleEffect(uiScale)
+        }
+        .padding(.leading, 92)
+        .padding(.trailing, 24)
+        .frame(height: 62)
+        .background(
+            ZStack {
+                ArgoTheme.chromeBackground
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.04),
+                        Color.black.opacity(0.06)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        )
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(0.075))
+                .frame(height: 1)
+        }
+    }
+
     var body: some View {
         ZStack {
-            HStack(spacing: 0) {
-                GlobalModeRailView(
-                    selectedMode: store.mainWindowMode,
-                    uiScale: uiScale,
-                    onSelectMode: { mode in
-                        selectMainWindowMode(mode, restoreFocus: mode == .workspace)
-                    },
-                    onOpenSettings: {
-                        store.presentSettings(for: store.selectedWorkspace)
-                    }
-                )
+            VStack(spacing: 0) {
+                topGlassChrome
 
-                NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
-                    WorkspaceSidebarView()
-                        .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
-                } detail: {
-                    Group {
-                        switch store.mainWindowMode {
-                        case .workspace:
-                            WorkspaceDetailView()
-
-                        case .canvas:
-                            GlobalCanvasView {
-                                dismissGlobalMode()
-                            }
-                            .environmentObject(store)
-
-                        case .overview:
-                            OverviewView {
-                                dismissGlobalMode(restoreFocus: false)
-                            }
-                            .environmentObject(store)
+                HStack(spacing: 0) {
+                    GlobalModeRailView(
+                        selectedMode: store.mainWindowMode,
+                        uiScale: uiScale,
+                        onSelectMode: { mode in
+                            selectMainWindowMode(mode, restoreFocus: mode == .workspace)
+                        },
+                        onOpenSettings: {
+                            store.presentSettings(for: store.selectedWorkspace)
                         }
+                    )
+
+                    NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
+                        WorkspaceSidebarView()
+                            .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
+                    } detail: {
+                        Group {
+                            switch store.mainWindowMode {
+                            case .workspace:
+                                WorkspaceDetailView()
+
+                            case .canvas:
+                                GlobalCanvasView {
+                                    dismissGlobalMode()
+                                }
+                                .environmentObject(store)
+
+                            case .overview:
+                                OverviewView {
+                                    dismissGlobalMode(restoreFocus: false)
+                                }
+                                .environmentObject(store)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .navigationSplitViewStyle(.balanced)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .navigationSplitViewStyle(.balanced)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .background(ArgoTheme.appBackground)
 
             if store.isCommandPalettePresented {
                 CommandPaletteView()
@@ -192,177 +392,14 @@ struct MainWindowView: View {
             VStack {
                 if let statusMessage = store.statusMessage {
                     StatusBanner(message: statusMessage)
-                        .padding(.top, 10)
+                        .padding(.top, 72)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 Spacer()
             }
             .zIndex(2)
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button {
-                    NSApp.keyWindow?.firstResponder?.tryToPerform(
-                        #selector(NSSplitViewController.toggleSidebar(_:)), with: nil
-                    )
-                } label: {
-                    Image(systemName: "sidebar.leading")
-                        .padding(4 * uiScale)
-                }
-                .scaleEffect(uiScale)
-                .disabled(store.mainWindowMode != .workspace)
-                .accessibilityLabel(localized("menu.view.toggleSidebar"))
-                .help(localized("menu.view.toggleSidebar"))
-
-                GlassToolbarGroup(horizontalPadding: 12, spacing: 8) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(ArgoTheme.secondaryText)
-                    Text(selectedWorkspaceDisplayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(ArgoTheme.tertiaryText)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: 150, alignment: .leading)
-                }
-                .scaleEffect(uiScale)
-            }
-
-            ToolbarItem(placement: .principal) {
-                Button {
-                    store.dispatch(.toggleCommandPalette)
-                } label: {
-                    GlassToolbarGroup(horizontalPadding: 14, spacing: 8) {
-                        Image(systemName: "sparkle")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(ArgoTheme.danger.opacity(0.95))
-                        Text(localized("menu.view.commandPalette"))
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundStyle(ArgoTheme.secondaryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                    .frame(maxWidth: 360)
-                }
-                .buttonStyle(.plain)
-                .scaleEffect(uiScale)
-                .accessibilityLabel(localized("menu.view.commandPalette"))
-                .help(localized("menu.view.commandPalette"))
-            }
-
-            ToolbarItemGroup(placement: .primaryAction) {
-                HStack(spacing: 10) {
-                    GlassToolbarGroup(horizontalPadding: 5, spacing: 2) {
-                        GlassToolbarMenuIconButton(
-                            systemName: "chevron.left.slash.chevron.right",
-                            tint: ArgoTheme.accent,
-                            accessibilityLabel: localized("main.toolbar.chooseQuickCommand"),
-                            help: localized("main.toolbar.chooseQuickCommand")
-                        ) { anchorView in
-                            present(menu: makeQuickCommandMenu(), from: anchorView)
-                        }
-
-                        GlassToolbarMenuIconButton(
-                            systemName: "play.rectangle.on.rectangle",
-                            tint: ArgoTheme.accent,
-                            isDisabled: !hasSelectedWorkspace,
-                            accessibilityLabel: localized("main.toolbar.chooseWorkflow"),
-                            help: localized("main.toolbar.chooseWorkflow")
-                        ) { anchorView in
-                            present(menu: makeWorkflowMenu(), from: anchorView)
-                        }
-
-                        if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
-                            GlassToolbarMenuIconButton(
-                                systemName: "dot.radiowaves.left.and.right",
-                                tint: ArgoTheme.accent,
-                                isDisabled: !hasSelectedWorkspace,
-                                accessibilityLabel: hapiInstallation.primaryActionTitle,
-                                help: hapiHelpText
-                            ) { anchorView in
-                                present(menu: makeHAPIMenu(using: hapiInstallation), from: anchorView)
-                            }
-                        }
-
-                        GlassToolbarIconButton(
-                            systemName: sleepPreventionIconName,
-                            tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,
-                            accessibilityLabel: store.sleepPreventionPrimaryActionLabel,
-                            help: store.sleepPreventionPrimaryActionHelpText
-                        ) {
-                            store.performPrimarySleepPreventionAction()
-                        }
-
-                        GlassToolbarMenuIconButton(
-                            systemName: "chevron.down",
-                            tint: ArgoTheme.secondaryText,
-                            accessibilityLabel: store.sleepPreventionStatusText,
-                            help: store.sleepPreventionStatusText
-                        ) { anchorView in
-                            present(menu: makeSleepPreventionMenu(), from: anchorView)
-                        }
-
-                        GlassToolbarIconButton(
-                            systemName: store.selectedWorkspace?.isFileTreePresented == true ? "list.bullet.indent" : "sidebar.squares.leading",
-                            tint: ArgoTheme.secondaryText,
-                            isActive: store.selectedWorkspace?.isFileTreePresented == true,
-                            isDisabled: !hasSelectedWorkspace,
-                            accessibilityLabel: localized("main.toolbar.toggleFileTree"),
-                            help: localized("main.toolbar.toggleFileTree")
-                        ) {
-                            store.selectedWorkspace?.toggleFileTree()
-                        }
-
-                        Menu {
-                            webPreviewMenuContent
-                        } label: {
-                            Image(systemName: "globe")
-                                .font(.system(size: 12, weight: .semibold))
-                                .frame(width: 28, height: 28)
-                                .foregroundStyle(ArgoTheme.secondaryText)
-                        }
-                        .menuIndicator(.hidden)
-                        .disabled(!hasSelectedWorkspace)
-                        .accessibilityLabel(localized("main.toolbar.webPreview"))
-                        .help(localized("main.toolbar.webPreview"))
-                    }
-
-                    GlassToolbarSplitButton(
-                        leadingAction: { _ in
-                            store.openSelectedWorkspaceInPreferredExternalEditor()
-                        },
-                        trailingAction: { anchorView in
-                            present(menu: makeExternalEditorMenu(), from: anchorView)
-                        },
-                        isLeadingDisabled: !hasSelectedWorkspace || effectiveExternalEditor == nil,
-                        isTrailingDisabled: !hasSelectedWorkspace,
-                        leadingAccessibilityLabel: externalEditorHelpText,
-                        leadingHelp: externalEditorHelpText,
-                        trailingAccessibilityLabel: localized("main.toolbar.chooseExternalEditor"),
-                        trailingHelp: localized("main.toolbar.chooseExternalEditorDefault"),
-                        leadingContent: {
-                            HStack(spacing: 7) {
-                                Image(systemName: "arrow.up.forward.app.fill")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(ArgoTheme.secondaryText)
-                                Text(effectiveExternalEditorDisplayName)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(ArgoTheme.tertiaryText)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                    .frame(maxWidth: 94)
-                            }
-                        },
-                        trailingContent: {
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(ArgoTheme.secondaryText)
-                        }
-                    )
-                }
-                .scaleEffect(uiScale)
-            }
-        }
+        .ignoresSafeArea(.container, edges: .top)
         .task {
             await store.refreshHAPIIntegrationStatus()
         }

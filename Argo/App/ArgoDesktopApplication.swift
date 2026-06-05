@@ -45,19 +45,20 @@ public final class ArgoDesktopApplication: NSObject {
             )
 
             let window = NSWindow(contentViewController: host)
-            window.title = "Argo"
+            window.title = ""
             window.setContentSize(NSSize(width: 1440, height: 920))
             window.minSize = NSSize(width: 1120, height: 720)
             window.center()
             window.isOpaque = false
             window.backgroundColor = WindowContext.opaqueBackgroundColor
-            window.styleMask.remove(.fullSizeContentView)
-            window.titleVisibility = .visible
-            window.titlebarAppearsTransparent = false
+            window.styleMask.insert(.fullSizeContentView)
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
             window.toolbarStyle = .unifiedCompact
             window.tabbingMode = .preferred
             window.tabbingIdentifier = ArgoDesktopApplication.windowTabbingIdentifier
-            window.isMovableByWindowBackground = false
+            window.isMovableByWindowBackground = true
 
             baseLevel = window.level
             baseCollectionBehavior = window.collectionBehavior

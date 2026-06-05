@@ -8,12 +8,6 @@
 import SwiftUI
 
 struct TerminalPaneView: View {
-    private enum PaneHeaderDensity {
-        case full
-        case compact
-        case minimal
-    }
-
     @EnvironmentObject private var store: WorkspaceStore
     @ObservedObject private var localization = LocalizationManager.shared
     @ObservedObject var workspace: WorkspaceModel
@@ -41,14 +35,6 @@ struct TerminalPaneView: View {
         localization.string(key)
     }
 
-    private func localizedFormat(_ key: String, _ arguments: CVarArg...) -> String {
-        l10nFormat(localized(key), locale: Locale.current, arguments: arguments)
-    }
-
-    private var directoryLabel: String {
-        session.effectiveWorkingDirectory.lastPathComponentValue
-    }
-
     private var searchStatusLabel: String? {
         guard let total = session.surfaceStatus.searchTotal else { return nil }
         let selected = max(session.surfaceStatus.searchSelected ?? 0, 0)
@@ -69,24 +55,29 @@ struct TerminalPaneView: View {
         return "\(Int(progress * 100))%"
     }
 
-    private var paneHeaderStatusTag: (text: String, tone: PaneTag.Tone)? {
-        if let exitCode = session.exitCode, session.lifecycle == .exited {
-            return (localizedFormat("terminal.status.exitFormat", exitCode), .warning)
-        }
-        if isFocused {
-            return (localized("terminal.status.active"), .accent)
-        }
-        return nil
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            GeometryReader { proxy in
-                paneHeaderContent(for: proxy.size.width)
-            }
-            .frame(height: 30)
-            .padding(.horizontal, 10)
-            .background(isFocused ? ArgoTheme.panelRaised : ArgoTheme.paneHeaderBackground)
+            TerminalLocalChrome(
+                path: session.effectiveWorkingDirectory.terminalChromeDisplayPath,
+                isFocused: isFocused,
+                canCreateTab: true,
+                canSplit: sessionController.session(for: paneID) != nil,
+                onCreateTab: {
+                    workspace.focusPane(paneID)
+                    store.createTab(in: workspace)
+                },
+                onSplitRight: {
+                    workspace.focusPane(paneID)
+                    store.splitFocusedPane(in: workspace, axis: .vertical)
+                },
+                onSplitDown: {
+                    workspace.focusPane(paneID)
+                    store.splitFocusedPane(in: workspace, axis: .horizontal)
+                }
+            )
+            .frame(height: 44)
+            .padding(.horizontal, 8)
+            .background(isFocused ? ArgoTheme.panelRaised.opacity(0.72) : ArgoTheme.paneHeaderBackground.opacity(0.66))
 
             if isSearchPresented {
                 PaneSearchBar(
@@ -200,74 +191,6 @@ struct TerminalPaneView: View {
             autoCloseTask?.cancel()
             autoCloseTask = nil
         }
-    }
-
-    private func paneHeaderDensity(for width: CGFloat) -> PaneHeaderDensity {
-        switch width {
-        case 340...:
-            return .full
-        case 250...:
-            return .compact
-        default:
-            return .minimal
-        }
-    }
-
-    @ViewBuilder
-    private func paneHeaderContent(for width: CGFloat) -> some View {
-        let density = paneHeaderDensity(for: width)
-
-        HStack(spacing: 8) {
-            Circle()
-                .fill(session.hasActiveProcess ? ArgoTheme.success : ArgoTheme.warning)
-                .frame(width: 7, height: 7)
-
-            Text(session.title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(ArgoTheme.tertiaryText)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .layoutPriority(1)
-
-            if density == .full {
-                PaneTag(text: directoryLabel, tone: .neutral)
-            }
-
-            if density != .minimal,
-               let statusTag = paneHeaderStatusTag,
-               density == .full || statusTag.tone == .warning {
-                PaneTag(text: statusTag.text, tone: statusTag.tone)
-            }
-
-            if density == .full, session.surfaceStatus.isReadOnly {
-                PaneTag(text: localized("terminal.tag.readOnly"), tone: .warning)
-            }
-
-            Spacer(minLength: 6)
-
-            HStack(spacing: 6) {
-                PaneHeaderButton(systemName: "magnifyingglass") {
-                    workspace.focusPane(paneID)
-                    presentSearch()
-                }
-
-                PaneHeaderButton(systemName: session.surfaceStatus.isReadOnly ? "lock.fill" : "lock.open") {
-                    workspace.focusPane(paneID)
-                    session.toggleReadOnly()
-                }
-
-                PaneHeaderButton(systemName: workspace.zoomedPaneID == paneID ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
-                    workspace.focusPane(paneID)
-                    store.toggleZoom(in: workspace, paneID: paneID)
-                }
-
-                PaneHeaderButton(systemName: "xmark") {
-                    store.closePane(in: workspace, paneID: paneID)
-                }
-            }
-            .fixedSize()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func presentSearch() {

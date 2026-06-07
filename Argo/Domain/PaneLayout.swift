@@ -229,6 +229,16 @@ indirect enum SessionLayoutNode: Codable, Equatable, Hashable {
         return panes[nextIndex]
     }
 
+    func nearestPane(afterRemoving paneID: UUID) -> UUID? {
+        guard let parentStep = pathToPane(paneID)?.last else { return nil }
+        switch parentStep.side {
+        case .first:
+            return parentStep.sibling.firstPaneID
+        case .second:
+            return parentStep.sibling.lastPaneID
+        }
+    }
+
     func paneID(in direction: PaneFocusDirection, from paneID: UUID) -> UUID? {
         guard let path = pathToPane(paneID) else { return nil }
         for step in path.reversed() {

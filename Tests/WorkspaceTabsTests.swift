@@ -166,6 +166,53 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertEqual(workspace.paneCount(for: initialCategoryID), initialPaneCount + 1)
     }
 
+    @MainActor
+    func testClosingFocusedPaneFocusesNearestRemainingPane() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argo-pane-close-focus-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let firstPaneID = try XCTUnwrap(workspace.paneOrder.first)
+
+        workspace.createPane(splitAxis: .vertical)
+        let secondPaneID = try XCTUnwrap(workspace.paneOrder.last)
+
+        workspace.createPane(splitAxis: .vertical)
+        let thirdPaneID = try XCTUnwrap(workspace.paneOrder.last)
+        XCTAssertEqual(workspace.paneOrder, [firstPaneID, secondPaneID, thirdPaneID])
+        XCTAssertEqual(workspace.sessionController.focusedPaneID, thirdPaneID)
+
+        workspace.closePane(thirdPaneID)
+
+        XCTAssertEqual(workspace.paneOrder, [firstPaneID, secondPaneID])
+        XCTAssertEqual(workspace.sessionController.focusedPaneID, secondPaneID)
+    }
+
+    @MainActor
+    func testClosingFocusedMiddlePaneFocusesSplitSibling() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argo-pane-close-middle-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let firstPaneID = try XCTUnwrap(workspace.paneOrder.first)
+
+        workspace.createPane(splitAxis: .vertical)
+        let secondPaneID = try XCTUnwrap(workspace.paneOrder.last)
+
+        workspace.createPane(splitAxis: .vertical)
+        let thirdPaneID = try XCTUnwrap(workspace.paneOrder.last)
+
+        workspace.focusPane(secondPaneID)
+        workspace.closePane(secondPaneID)
+
+        XCTAssertEqual(workspace.paneOrder, [firstPaneID, thirdPaneID])
+        XCTAssertEqual(workspace.sessionController.focusedPaneID, thirdPaneID)
+    }
+
     func testInactiveSplitPanesUseVisualOverlayWithoutBlockingInput() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

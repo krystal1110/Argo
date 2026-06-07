@@ -167,7 +167,12 @@ private struct WorkspaceSessionDetailView: View {
                         .fill(Color.white.opacity(0.105))
                         .frame(height: 0.8)
 
-                    SplitNodeView(workspace: workspace, sessionController: workspace.sessionController, node: layout)
+                    SplitNodeView(
+                        workspace: workspace,
+                        sessionController: workspace.sessionController,
+                        node: layout,
+                        dimsInactivePanes: shouldDimInactiveTerminalPanes
+                    )
                 }
             }
         } else {
@@ -204,6 +209,10 @@ private struct WorkspaceSessionDetailView: View {
     private var terminalChromePath: String {
         (terminalChromeTargetSession?.effectiveWorkingDirectory ?? workspace.activeWorktreePath)
             .terminalChromeDisplayPath
+    }
+
+    private var shouldDimInactiveTerminalPanes: Bool {
+        workspace.zoomedPaneID == nil && workspace.paneOrder.count > 1
     }
 
     private var terminalChromePaneDescriptors: [TerminalChromePaneDescriptor] {

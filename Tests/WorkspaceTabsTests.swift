@@ -106,6 +106,48 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(terminalChromeSource.contains("pathPill"))
     }
 
+    func testInactiveSplitPanesUseVisualOverlayWithoutBlockingInput() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalPaneSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
+            encoding: .utf8
+        )
+        let splitNodeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
+            encoding: .utf8
+        )
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalPaneSource.contains("let dimsWhenInactive: Bool"))
+        XCTAssertTrue(terminalPaneSource.contains("private var shouldDimInactivePane: Bool"))
+        XCTAssertTrue(terminalPaneSource.contains("TerminalInactivePaneOverlay()"))
+        XCTAssertTrue(terminalPaneSource.contains(".allowsHitTesting(false)"))
+        XCTAssertTrue(splitNodeSource.contains("let dimsInactivePanes: Bool"))
+        XCTAssertTrue(workspaceDetailSource.contains("dimsInactivePanes: shouldDimInactiveTerminalPanes"))
+    }
+
+    func testZoomedPaneDisablesInactiveDimming() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+        let splitNodeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("workspace.zoomedPaneID == nil && workspace.paneOrder.count > 1"))
+        XCTAssertTrue(splitNodeSource.contains("dimsWhenInactive: false"))
+    }
+
     func testUpsertingAndSelectingTabsKeepsLegacyFieldsInSync() throws {
         var state = WorktreeSessionStateRecord.makeDefault(for: "/tmp/argo-tabs")
         let firstTab = try XCTUnwrap(state.selectedTab)

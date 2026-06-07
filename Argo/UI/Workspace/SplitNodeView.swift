@@ -12,6 +12,7 @@ struct SplitNodeView: View {
     @ObservedObject var workspace: WorkspaceModel
     @ObservedObject var sessionController: WorkspaceSessionController
     let node: SessionLayoutNode
+    let dimsInactivePanes: Bool
 
     @State private var dragPreviewFraction: Double?
 
@@ -19,8 +20,14 @@ struct SplitNodeView: View {
         Group {
             if let zoomedPaneID = workspace.zoomedPaneID {
                 if let session = sessionController.session(for: zoomedPaneID) {
-                    TerminalPaneView(workspace: workspace, sessionController: sessionController, session: session, paneID: zoomedPaneID)
-                        .id(zoomedPaneID)
+                    TerminalPaneView(
+                        workspace: workspace,
+                        sessionController: sessionController,
+                        session: session,
+                        paneID: zoomedPaneID,
+                        dimsWhenInactive: false
+                    )
+                    .id(zoomedPaneID)
                 } else {
                     Color.clear
                 }
@@ -28,8 +35,14 @@ struct SplitNodeView: View {
                 switch node {
                 case .pane(let leaf):
                     if let session = sessionController.session(for: leaf.paneID) {
-                        TerminalPaneView(workspace: workspace, sessionController: sessionController, session: session, paneID: leaf.paneID)
-                            .id(leaf.paneID)
+                        TerminalPaneView(
+                            workspace: workspace,
+                            sessionController: sessionController,
+                            session: session,
+                            paneID: leaf.paneID,
+                            dimsWhenInactive: dimsInactivePanes
+                        )
+                        .id(leaf.paneID)
                     } else {
                         Color.clear
                     }
@@ -59,13 +72,23 @@ struct SplitNodeView: View {
             )
 
             HStack(spacing: 0) {
-                SplitNodeView(workspace: workspace, sessionController: sessionController, node: split.first)
-                    .frame(width: lengths.first)
+                SplitNodeView(
+                    workspace: workspace,
+                    sessionController: sessionController,
+                    node: split.first,
+                    dimsInactivePanes: dimsInactivePanes
+                )
+                .frame(width: lengths.first)
                 Color.clear
                     .frame(width: dividerThickness)
                     .allowsHitTesting(false)
-                SplitNodeView(workspace: workspace, sessionController: sessionController, node: split.second)
-                    .frame(width: lengths.second)
+                SplitNodeView(
+                    workspace: workspace,
+                    sessionController: sessionController,
+                    node: split.second,
+                    dimsInactivePanes: dimsInactivePanes
+                )
+                .frame(width: lengths.second)
             }
             .overlay(alignment: .leading) {
                 ZStack(alignment: .leading) {
@@ -116,13 +139,23 @@ struct SplitNodeView: View {
             )
 
             VStack(spacing: 0) {
-                SplitNodeView(workspace: workspace, sessionController: sessionController, node: split.first)
-                    .frame(height: lengths.first)
+                SplitNodeView(
+                    workspace: workspace,
+                    sessionController: sessionController,
+                    node: split.first,
+                    dimsInactivePanes: dimsInactivePanes
+                )
+                .frame(height: lengths.first)
                 Color.clear
                     .frame(height: dividerThickness)
                     .allowsHitTesting(false)
-                SplitNodeView(workspace: workspace, sessionController: sessionController, node: split.second)
-                    .frame(height: lengths.second)
+                SplitNodeView(
+                    workspace: workspace,
+                    sessionController: sessionController,
+                    node: split.second,
+                    dimsInactivePanes: dimsInactivePanes
+                )
+                .frame(height: lengths.second)
             }
             .overlay(alignment: .top) {
                 ZStack(alignment: .top) {

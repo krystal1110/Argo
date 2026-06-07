@@ -137,19 +137,15 @@ private struct WorkspaceSessionDetailView: View {
                 VStack(spacing: 0) {
                     TerminalLocalChrome(
                         path: terminalChromePath,
-                        paneDescriptors: terminalChromePaneDescriptors,
-                        tabs: workspace.tabs,
-                        activeTabID: workspace.activeTabID,
+                        categories: terminalChromeCategoryDescriptors,
+                        activeCategoryID: workspace.activeTabID,
                         isFocused: terminalChromeTargetPaneID == workspace.sessionController.focusedPaneID,
-                        canCreateTab: true,
+                        canCreateCategory: true,
                         canSplit: terminalChromeTargetPaneID != nil,
-                        paneCountForTab: { tabID in
-                            workspace.paneCount(for: tabID)
-                        },
-                        onSelectTab: selectTerminalTabFromChrome,
-                        onCloseTab: closeTerminalTabFromChrome,
-                        onSelectPane: focusTerminalPaneFromChrome,
-                        onCreateTab: createTerminalTabFromChrome,
+                        onSelectCategory: selectTerminalCategoryFromChrome,
+                        onCloseCategory: closeTerminalCategoryFromChrome,
+                        onRenameCategory: renameTerminalCategoryFromChrome,
+                        onCreateCategory: createTerminalCategoryFromChrome,
                         onSplitRight: {
                             splitTerminalFromChrome(axis: .vertical)
                         },
@@ -215,46 +211,51 @@ private struct WorkspaceSessionDetailView: View {
         workspace.zoomedPaneID == nil && workspace.paneOrder.count > 1
     }
 
-    private var terminalChromePaneDescriptors: [TerminalChromePaneDescriptor] {
-        if let zoomedPaneID = workspace.zoomedPaneID,
-           let session = workspace.sessionController.session(for: zoomedPaneID) {
-            return [
-                TerminalChromePaneDescriptor(
-                    paneID: zoomedPaneID,
-                    path: session.effectiveWorkingDirectory.terminalChromeDisplayPath,
-                    isFocused: true
-                )
-            ]
-        }
-
-        let focusedPaneID = workspace.sessionController.focusedPaneID
-        return workspace.paneOrder.compactMap { paneID in
-            guard let session = workspace.sessionController.session(for: paneID) else { return nil }
-            return TerminalChromePaneDescriptor(
-                paneID: paneID,
-                path: session.effectiveWorkingDirectory.terminalChromeDisplayPath,
-                isFocused: paneID == focusedPaneID
+    private var terminalChromeCategoryDescriptors: [TerminalChromeCategoryDescriptor] {
+        workspace.tabs.map { tab in
+            TerminalChromeCategoryDescriptor(
+                id: tab.id,
+                title: terminalChromeCategoryTitle(for: tab),
+                isSelected: tab.id == workspace.activeTabID,
+                canClose: workspace.tabs.count > 1
             )
         }
     }
 
-    private func createTerminalTabFromChrome() {
+    private func terminalChromeCategoryTitle(for tab: WorkspaceTabStateRecord) -> String {
+        if tab.isManuallyNamed {
+            return tab.title
+        }
+        if tab.id == workspace.activeTabID {
+            return terminalChromePath
+        }
+        let focusedPane = tab.focusedPaneID.flatMap { focusedPaneID in
+            tab.panes.first { $0.id == focusedPaneID }
+        }
+        let pane = focusedPane ?? tab.panes.first
+        return (pane?.preferredWorkingDirectory ?? workspace.activeWorktreePath)
+            .terminalChromeDisplayPath
+    }
+
+    private func createTerminalCategoryFromChrome() {
         if let terminalChromeTargetPaneID {
             workspace.focusPane(terminalChromeTargetPaneID)
         }
         store.createTab(in: workspace)
     }
 
-    private func selectTerminalTabFromChrome(_ tabID: UUID) {
-        store.selectTab(in: workspace, tabID: tabID)
+    private func selectTerminalCategoryFromChrome(_ categoryID: UUID) {
+        store.selectTab(in: workspace, tabID: categoryID)
     }
 
-    private func closeTerminalTabFromChrome(_ tabID: UUID) {
-        store.closeTab(in: workspace, tabID: tabID)
+    private func closeTerminalCategoryFromChrome(_ categoryID: UUID) {
+        store.closeTab(in: workspace, tabID: categoryID)
     }
 
-    private func focusTerminalPaneFromChrome(_ paneID: UUID) {
-        workspace.focusPane(paneID)
+    private func renameTerminalCategoryFromChrome(_ categoryID: UUID, title: String) {
+        let normalized = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return }
+        store.renameTab(in: workspace, tabID: categoryID, title: normalized)
     }
 
     private func splitTerminalFromChrome(axis: PaneSplitAxis) {

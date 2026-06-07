@@ -5,6 +5,7 @@
 //  Author: krystal
 //
 
+import AppKit
 import SwiftUI
 
 struct TerminalPaneView: View {
@@ -14,6 +15,7 @@ struct TerminalPaneView: View {
     @ObservedObject var sessionController: WorkspaceSessionController
     @ObservedObject var session: ShellSession
     let paneID: UUID
+    let dimsWhenInactive: Bool
 
     @FocusState private var searchFieldFocused: Bool
     @State private var isSearchPresented = false
@@ -23,6 +25,10 @@ struct TerminalPaneView: View {
 
     private var isFocused: Bool {
         sessionController.focusedPaneID == paneID
+    }
+
+    private var shouldDimInactivePane: Bool {
+        dimsWhenInactive && !isFocused
     }
 
     /// When the terminal background is translucent, the pane fill is cleared so
@@ -77,16 +83,23 @@ struct TerminalPaneView: View {
                 .background(isFocused ? ArgoTheme.panelRaised : ArgoTheme.paneHeaderBackground)
             }
 
-            TerminalHostView(session: session, shouldRestoreFocus: isFocused)
-                .background(paneFill)
-                .onTapGesture {
-                    workspace.focusPane(paneID)
+            ZStack {
+                TerminalHostView(session: session, shouldRestoreFocus: isFocused)
+                    .background(paneFill)
+                    .onTapGesture {
+                        workspace.focusPane(paneID)
+                    }
+                    .overlay(alignment: .trailing) {
+                        TerminalScrollbarOverlay(session: session)
+                            .padding(.trailing, 2)
+                            .padding(.vertical, 2)
+                    }
+
+                if shouldDimInactivePane {
+                    TerminalInactivePaneOverlay()
+                        .allowsHitTesting(false)
                 }
-                .overlay(alignment: .trailing) {
-                    TerminalScrollbarOverlay(session: session)
-                        .padding(.trailing, 2)
-                        .padding(.vertical, 2)
-                }
+            }
 
             PaneStatusStrip(
                 backendLabel: session.backendLabel,
@@ -235,6 +248,20 @@ struct TerminalPaneView: View {
                   session.lifecycle == .exited else { return }
             store.closePane(in: workspace, paneID: paneID)
         }
+    }
+}
+
+private struct TerminalInactivePaneOverlay: View {
+    var body: some View {
+        LinearGradient(
+            colors: [
+                Color(nsColor: NSColor(calibratedRed: 0.027, green: 0.035, blue: 0.059, alpha: 0.42)),
+                Color(nsColor: NSColor(calibratedRed: 0.027, green: 0.035, blue: 0.059, alpha: 0.50))
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

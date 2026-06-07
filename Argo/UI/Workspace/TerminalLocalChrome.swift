@@ -8,10 +8,19 @@
 import AppKit
 import SwiftUI
 
+struct TerminalChromePaneDescriptor: Identifiable, Equatable {
+    let paneID: UUID
+    let path: String
+    let isFocused: Bool
+
+    var id: UUID { paneID }
+}
+
 struct TerminalLocalChrome: View {
     @ObservedObject private var localization = LocalizationManager.shared
 
     let path: String
+    let paneDescriptors: [TerminalChromePaneDescriptor]
     let tabs: [WorkspaceTabStateRecord]
     let activeTabID: UUID?
     let isFocused: Bool
@@ -20,6 +29,7 @@ struct TerminalLocalChrome: View {
     let paneCountForTab: (UUID) -> Int
     let onSelectTab: (UUID) -> Void
     let onCloseTab: (UUID) -> Void
+    let onSelectPane: (UUID) -> Void
     let onCreateTab: () -> Void
     let onSplitRight: () -> Void
     let onSplitDown: () -> Void
@@ -64,7 +74,9 @@ struct TerminalLocalChrome: View {
 
     @ViewBuilder
     private var tabArea: some View {
-        if tabs.count > 1 {
+        if paneDescriptors.count > 1 {
+            paneChipStrip
+        } else if tabs.count > 1 {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(tabs) { tab in
@@ -89,6 +101,24 @@ struct TerminalLocalChrome: View {
         } else {
             pathPill
         }
+    }
+
+    private var paneChipStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(paneDescriptors) { descriptor in
+                    TerminalChromePaneChip(
+                        descriptor: descriptor,
+                        onSelect: {
+                            onSelectPane(descriptor.paneID)
+                        }
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
     }
 
     private var pathPill: some View {
@@ -122,6 +152,64 @@ struct TerminalLocalChrome: View {
             startPoint: .top,
             endPoint: .bottom
         )
+    }
+}
+
+private struct TerminalChromePaneChip: View {
+    let descriptor: TerminalChromePaneDescriptor
+    let onSelect: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 8) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(foreground.opacity(descriptor.isFocused ? 0.92 : 0.62))
+
+                Text(descriptor.path)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 12)
+            .frame(width: 190, height: 32)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(foreground)
+        .background(backgroundFill, in: Capsule())
+        .overlay(Capsule().stroke(borderColor, lineWidth: descriptor.isFocused ? 1 : 0.8))
+        .shadow(color: .black.opacity(descriptor.isFocused ? 0.16 : 0), radius: 8, y: 3)
+        .accessibilityLabel("Focus pane \(descriptor.path)")
+        .help(descriptor.path)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+
+    private var foreground: Color {
+        descriptor.isFocused ? Color.white.opacity(0.94) : Color.white.opacity(isHovered ? 0.70 : 0.44)
+    }
+
+    private var backgroundFill: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(descriptor.isFocused ? 0.28 : (isHovered ? 0.09 : 0.0)),
+                Color.white.opacity(descriptor.isFocused ? 0.18 : (isHovered ? 0.045 : 0.0))
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    private var borderColor: Color {
+        if descriptor.isFocused {
+            return Color.white.opacity(0.22)
+        }
+        return Color.white.opacity(isHovered ? 0.10 : 0.0)
     }
 }
 

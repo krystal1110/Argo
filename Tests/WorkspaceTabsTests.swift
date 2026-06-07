@@ -71,6 +71,41 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(terminalChromeSource.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
     }
 
+    func testSplitPaneChromeUsesPaneDescriptorsAndFocusCallback() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalChromeSource.contains("struct TerminalChromePaneDescriptor"))
+        XCTAssertTrue(terminalChromeSource.contains("let paneDescriptors: [TerminalChromePaneDescriptor]"))
+        XCTAssertTrue(terminalChromeSource.contains("ForEach(paneDescriptors)"))
+        XCTAssertTrue(terminalChromeSource.contains("onSelectPane(descriptor.paneID)"))
+        XCTAssertTrue(workspaceDetailSource.contains("paneDescriptors: terminalChromePaneDescriptors"))
+        XCTAssertTrue(workspaceDetailSource.contains("onSelectPane: focusTerminalPaneFromChrome"))
+    }
+
+    func testSplitPaneChromeKeepsSinglePanePathPillFallback() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalChromeSource.contains("if paneDescriptors.count > 1"))
+        XCTAssertTrue(terminalChromeSource.contains("} else if tabs.count > 1 {"))
+        XCTAssertTrue(terminalChromeSource.contains("pathPill"))
+    }
+
     func testUpsertingAndSelectingTabsKeepsLegacyFieldsInSync() throws {
         var state = WorktreeSessionStateRecord.makeDefault(for: "/tmp/argo-tabs")
         let firstTab = try XCTUnwrap(state.selectedTab)

@@ -95,6 +95,20 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(workspaceDetailSource.contains("store.renameTab(in: workspace, tabID: categoryID, title: normalized)"))
     }
 
+    func testTerminalCategoryPillAvoidsParentTapGestureConflicts() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalChromeSource.contains("Button(action: onSelect)"))
+        XCTAssertFalse(terminalChromeSource.contains(".onTapGesture(perform: onSelect)"))
+        XCTAssertFalse(terminalChromeSource.contains(".onTapGesture(count: 2, perform: onRename)"))
+    }
+
     @MainActor
     func testSplittingFocusedPaneAddsPaneInsideSelectedCategoryWithoutCreatingCategory() throws {
         let directoryURL = FileManager.default.temporaryDirectory

@@ -306,6 +306,12 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(WorkspaceActivityKind.workflow.displayName, "工作流")
         XCTAssertEqual(GlobalCanvasColorGroup.slate.title, "石板灰")
         XCTAssertEqual(WorkspaceTabStateRecord.makeDefault(for: "/tmp/argo").title, "标签页 1")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.new", language: .english), "New Category")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.rename", language: .english), "Rename Category")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.close", language: .english), "Close Category")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.new", language: .simplifiedChinese), "新建分类")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.rename", language: .simplifiedChinese), "重命名分类")
+        XCTAssertEqual(L10nTable.string(for: "terminal.category.close", language: .simplifiedChinese), "关闭分类")
     }
 
     func testMainWindowModeMetadataIsStable() {

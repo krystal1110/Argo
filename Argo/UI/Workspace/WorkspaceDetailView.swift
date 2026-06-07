@@ -137,6 +137,7 @@ private struct WorkspaceSessionDetailView: View {
                 VStack(spacing: 0) {
                     TerminalLocalChrome(
                         path: terminalChromePath,
+                        paneDescriptors: terminalChromePaneDescriptors,
                         tabs: workspace.tabs,
                         activeTabID: workspace.activeTabID,
                         isFocused: terminalChromeTargetPaneID == workspace.sessionController.focusedPaneID,
@@ -147,6 +148,7 @@ private struct WorkspaceSessionDetailView: View {
                         },
                         onSelectTab: selectTerminalTabFromChrome,
                         onCloseTab: closeTerminalTabFromChrome,
+                        onSelectPane: focusTerminalPaneFromChrome,
                         onCreateTab: createTerminalTabFromChrome,
                         onSplitRight: {
                             splitTerminalFromChrome(axis: .vertical)
@@ -204,6 +206,29 @@ private struct WorkspaceSessionDetailView: View {
             .terminalChromeDisplayPath
     }
 
+    private var terminalChromePaneDescriptors: [TerminalChromePaneDescriptor] {
+        if let zoomedPaneID = workspace.zoomedPaneID,
+           let session = workspace.sessionController.session(for: zoomedPaneID) {
+            return [
+                TerminalChromePaneDescriptor(
+                    paneID: zoomedPaneID,
+                    path: session.effectiveWorkingDirectory.terminalChromeDisplayPath,
+                    isFocused: true
+                )
+            ]
+        }
+
+        let focusedPaneID = workspace.sessionController.focusedPaneID
+        return workspace.paneOrder.compactMap { paneID in
+            guard let session = workspace.sessionController.session(for: paneID) else { return nil }
+            return TerminalChromePaneDescriptor(
+                paneID: paneID,
+                path: session.effectiveWorkingDirectory.terminalChromeDisplayPath,
+                isFocused: paneID == focusedPaneID
+            )
+        }
+    }
+
     private func createTerminalTabFromChrome() {
         if let terminalChromeTargetPaneID {
             workspace.focusPane(terminalChromeTargetPaneID)
@@ -217,6 +242,10 @@ private struct WorkspaceSessionDetailView: View {
 
     private func closeTerminalTabFromChrome(_ tabID: UUID) {
         store.closeTab(in: workspace, tabID: tabID)
+    }
+
+    private func focusTerminalPaneFromChrome(_ paneID: UUID) {
+        workspace.focusPane(paneID)
     }
 
     private func splitTerminalFromChrome(axis: PaneSplitAxis) {

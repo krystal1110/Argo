@@ -247,6 +247,47 @@ final class WorkspaceStoreTests: XCTestCase {
         }
     }
 
+    func testStaleTerminalCloseActionDoesNotCloseRemainingPaneAfterSmartClose() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let originalPane = PaneSnapshot.makeDefault(cwd: directoryURL.path)
+        let focusedPane = PaneSnapshot.makeDefault(cwd: directoryURL.path)
+        let layout = SessionLayoutNode.split(PaneSplitNode(
+            axis: .vertical,
+            first: .pane(PaneLeaf(paneID: originalPane.id)),
+            second: .pane(PaneLeaf(paneID: focusedPane.id))
+        ))
+        let state = WorktreeSessionStateRecord(
+            worktreePath: directoryURL.path,
+            layout: layout,
+            panes: [originalPane, focusedPane],
+            focusedPaneID: focusedPane.id
+        )
+        let workspace = WorkspaceModel(record: WorkspaceRecord(
+            id: UUID(),
+            kind: .localTerminal,
+            name: "demo",
+            repositoryRoot: directoryURL.path,
+            activeWorktreePath: directoryURL.path,
+            worktreeStates: [state],
+            isSidebarExpanded: false,
+            settings: WorkspaceSettings(),
+            activityLog: []
+        ))
+
+        XCTAssertEqual(workspace.paneOrder.count, 2)
+
+        workspace.closePane(focusedPane.id)
+        XCTAssertEqual(workspace.paneOrder, [originalPane.id])
+
+        let originalSession = try XCTUnwrap(workspace.sessionController.session(for: originalPane.id))
+        originalSession.onWorkspaceAction?(.closePane)
+
+        XCTAssertEqual(workspace.paneOrder, [originalPane.id])
+        XCTAssertNotNil(workspace.sessionController.session(for: originalPane.id))
+    }
+
     func testSleepPreventionStringsLocalizeForSimplifiedChinese() async throws {
         LocalizationManager.shared.updateSelectedLanguage(.simplifiedChinese)
         let store = WorkspaceStore(persistsWorkspaceState: false)

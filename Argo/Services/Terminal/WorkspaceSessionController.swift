@@ -25,6 +25,11 @@ final class WorkspaceSessionController: ObservableObject {
         replaceSessions(with: paneSnapshots, focusedPaneID: paneSnapshots.first?.id, defaultWorkingDirectory: paneSnapshots.first?.preferredWorkingDirectory ?? NSHomeDirectory())
     }
 
+    /// Avoid a main-actor deinit hop, which trips a libmalloc abort in XCTest
+    /// on this Swift/macOS toolchain. Sessions are explicitly terminated when
+    /// panes are removed or replaced.
+    nonisolated deinit {}
+
     var activeSessionCount: Int {
         sessions.values.filter(\.hasActiveProcess).count
     }

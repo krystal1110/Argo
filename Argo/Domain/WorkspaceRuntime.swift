@@ -133,6 +133,11 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         bootstrapIfNeeded()
     }
 
+    /// Avoid a main-actor deinit hop, which trips a libmalloc abort in XCTest
+    /// on this Swift/macOS toolchain. Runtime cleanup is explicit through
+    /// session and persistence controllers.
+    nonisolated deinit {}
+
     convenience init(snapshot: RepositorySnapshot) {
         let initialPane = PaneSnapshot.makeDefault(cwd: snapshot.rootPath)
         self.init(
@@ -543,8 +548,18 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         wireWorkspaceActions()
         if let first = paneOrder.first {
             sessionController.focus(first)
+            refocusPaneAfterLayout(first)
         }
         saveActiveWorktreeState()
+    }
+
+    private func refocusPaneAfterLayout(_ paneID: UUID) {
+        Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let session = self?.sessionController.session(for: paneID) else { return }
+            session.surfaceHostDidAttach()
+            session.focus()
+        }
     }
 
     func focusPane(_ paneID: UUID) {
@@ -1178,6 +1193,7 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         case .togglePaneZoom:
             toggleZoom(on: paneID)
         case .closePane:
+            guard paneOrder.count > 1 else { return }
             closePane(paneID)
         case .desktopNotification(let title, let body):
             postAgentNotification(

@@ -94,6 +94,10 @@ final class ArgoGhosttyController: ManagedTerminalSessionSurfaceController {
         _ = terminalView.performBindingAction("reset")
     }
 
+    func surfaceHostDidAttach() {
+        terminalView.refreshAfterHostAttach()
+    }
+
     func scrollByLines(_ delta: Int) {
         guard delta != 0 else { return }
         // Prefer ghostty's `scroll_page_lines` binding which scrolls an exact
@@ -607,6 +611,23 @@ private final class ArgoGhosttySurfaceView: NSView {
         updateCursorVisibility()
     }
 
+    func refreshAfterHostAttach() {
+        applyBackingLayerBackground()
+        syncSurfaceMetrics()
+        refreshSurface()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.syncSurfaceMetrics()
+            self.refreshSurface()
+        }
+    }
+
+    private func refreshSurface() {
+        guard let surface else { return }
+        ghostty_surface_refresh(surface)
+        ghostty_surface_draw(surface)
+    }
+
     var statusSnapshot: TerminalSurfaceStatusSnapshot {
         TerminalSurfaceStatusSnapshot(
             rendererHealthy: rendererHealthy,
@@ -751,7 +772,7 @@ private final class ArgoGhosttySurfaceView: NSView {
             displayID: displayID
         )
         if argoGhosttyShouldRefreshSurface(after: lastMetricsSignature, next: nextSignature) {
-            ghostty_surface_refresh(surface)
+            refreshSurface()
         }
         lastMetricsSignature = nextSignature
 

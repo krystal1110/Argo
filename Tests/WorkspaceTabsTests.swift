@@ -45,7 +45,7 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(terminalPaneSource.contains(".shadow(color:"))
     }
 
-    func testTerminalTabsUseIntegratedChromeInsteadOfSeparateTopStrip() throws {
+    func testTerminalChromeUsesCategoriesInsteadOfPaneChips() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -63,15 +63,18 @@ final class WorkspaceTabsTests: XCTestCase {
         workspace.previewPanel != nil
     }
 """))
-        XCTAssertTrue(workspaceDetailSource.contains("tabs: workspace.tabs"))
-        XCTAssertTrue(workspaceDetailSource.contains("activeTabID: workspace.activeTabID"))
-        XCTAssertTrue(workspaceDetailSource.contains("onSelectTab: selectTerminalTabFromChrome"))
-        XCTAssertTrue(terminalChromeSource.contains("ForEach(tabs)"))
-        XCTAssertFalse(terminalChromeSource.contains(".frame(maxWidth: 430"))
-        XCTAssertTrue(terminalChromeSource.contains(".frame(maxWidth: .infinity, alignment: .leading)"))
+        XCTAssertTrue(workspaceDetailSource.contains("categories: terminalChromeCategoryDescriptors"))
+        XCTAssertTrue(workspaceDetailSource.contains("activeCategoryID: workspace.activeTabID"))
+        XCTAssertTrue(workspaceDetailSource.contains("onSelectCategory: selectTerminalCategoryFromChrome"))
+        XCTAssertTrue(terminalChromeSource.contains("struct TerminalChromeCategoryDescriptor"))
+        XCTAssertTrue(terminalChromeSource.contains("let categories: [TerminalChromeCategoryDescriptor]"))
+        XCTAssertTrue(terminalChromeSource.contains("ForEach(categories)"))
+        XCTAssertFalse(terminalChromeSource.contains("TerminalChromePaneChip"))
+        XCTAssertFalse(terminalChromeSource.contains("ForEach(paneDescriptors)"))
+        XCTAssertFalse(terminalChromeSource.contains("combinedTabAndPaneStrip"))
     }
 
-    func testSplitPaneChromeUsesPaneDescriptorsAndFocusCallback() throws {
+    func testTerminalChromeExposesInlineCategoryRename() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -84,46 +87,32 @@ final class WorkspaceTabsTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(terminalChromeSource.contains("struct TerminalChromePaneDescriptor"))
-        XCTAssertTrue(terminalChromeSource.contains("let paneDescriptors: [TerminalChromePaneDescriptor]"))
-        XCTAssertTrue(terminalChromeSource.contains("ForEach(paneDescriptors)"))
-        XCTAssertTrue(terminalChromeSource.contains("onSelectPane(descriptor.paneID)"))
-        XCTAssertTrue(workspaceDetailSource.contains("paneDescriptors: terminalChromePaneDescriptors"))
-        XCTAssertTrue(workspaceDetailSource.contains("onSelectPane: focusTerminalPaneFromChrome"))
+        XCTAssertTrue(terminalChromeSource.contains("let onRenameCategory: (UUID, String) -> Void"))
+        XCTAssertTrue(terminalChromeSource.contains("@State private var editingCategoryID: UUID?"))
+        XCTAssertTrue(terminalChromeSource.contains("@State private var renameDraft = \"\""))
+        XCTAssertTrue(terminalChromeSource.contains("TextField(\"\", text: $renameDraft)"))
+        XCTAssertTrue(workspaceDetailSource.contains("onRenameCategory: renameTerminalCategoryFromChrome"))
+        XCTAssertTrue(workspaceDetailSource.contains("store.renameTab(in: workspace, tabID: categoryID, title: normalized)"))
     }
 
-    func testSplitPaneChromeKeepsSinglePanePathPillFallback() throws {
-        let rootURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+    @MainActor
+    func testSplittingFocusedPaneAddsPaneInsideSelectedCategoryWithoutCreatingCategory() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argo-category-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        XCTAssertTrue(terminalChromeSource.contains("if paneDescriptors.count > 1"))
-        XCTAssertTrue(terminalChromeSource.contains("} else if tabs.count > 1 {"))
-        XCTAssertTrue(terminalChromeSource.contains("pathPill"))
-    }
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let initialCategoryCount = workspace.tabs.count
+        let initialCategoryID = try XCTUnwrap(workspace.activeTabID)
+        let initialPaneCount = workspace.paneOrder.count
 
-    func testSplitPaneChromeKeepsTerminalTabsReachableWhenMultipleTabsExist() throws {
-        let rootURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        workspace.createPane(splitAxis: .vertical)
 
-        XCTAssertTrue(terminalChromeSource.contains("if paneDescriptors.count > 1 && tabs.count > 1"))
-        XCTAssertTrue(terminalChromeSource.contains("combinedTabAndPaneStrip"))
-        XCTAssertTrue(terminalChromeSource.contains("} else if paneDescriptors.count > 1 {"))
-        XCTAssertTrue(terminalChromeSource.contains("} else if tabs.count > 1 {"))
-
-        let combinedStripRange = try XCTUnwrap(terminalChromeSource.range(of: "private var combinedTabAndPaneStrip"))
-        let combinedStripSource = String(terminalChromeSource[combinedStripRange.lowerBound...])
-        XCTAssertTrue(combinedStripSource.contains("terminalTabStrip"))
-        XCTAssertTrue(combinedStripSource.contains("paneChipStrip"))
+        XCTAssertEqual(workspace.tabs.count, initialCategoryCount)
+        XCTAssertEqual(workspace.activeTabID, initialCategoryID)
+        XCTAssertEqual(workspace.paneOrder.count, initialPaneCount + 1)
+        XCTAssertEqual(workspace.paneCount(for: initialCategoryID), initialPaneCount + 1)
     }
 
     func testInactiveSplitPanesUseVisualOverlayWithoutBlockingInput() throws {

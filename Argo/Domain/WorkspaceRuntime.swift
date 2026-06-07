@@ -538,19 +538,43 @@ final class WorkspaceModel: ObservableObject, Identifiable {
             return
         }
 
+        let focusAfterClose = paneToFocus(afterClosing: paneID)
         _ = layout.removePane(paneID)
         self.layout = layout
         sessionController.closePane(paneID)
         if zoomedPaneID == paneID {
-            zoomedPaneID = sessionController.focusedPaneID
+            zoomedPaneID = focusAfterClose
         }
         sessionController.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
         wireWorkspaceActions()
-        if let first = paneOrder.first {
+        if let focusAfterClose, paneOrder.contains(focusAfterClose) {
+            sessionController.focus(focusAfterClose)
+            refocusPaneAfterLayout(focusAfterClose)
+        } else if let first = paneOrder.first {
             sessionController.focus(first)
             refocusPaneAfterLayout(first)
         }
         saveActiveWorktreeState()
+    }
+
+    private func paneToFocus(afterClosing paneID: UUID) -> UUID? {
+        let orderedPanes = paneOrder
+        if let focusedPaneID = sessionController.focusedPaneID,
+           focusedPaneID != paneID,
+           orderedPanes.contains(focusedPaneID) {
+            return focusedPaneID
+        }
+        guard let index = orderedPanes.firstIndex(of: paneID) else {
+            return orderedPanes.first
+        }
+        if let nearestPaneID = layout?.nearestPane(afterRemoving: paneID) {
+            return nearestPaneID
+        }
+        if index > orderedPanes.startIndex {
+            return orderedPanes[orderedPanes.index(before: index)]
+        }
+        let nextIndex = orderedPanes.index(after: index)
+        return nextIndex < orderedPanes.endIndex ? orderedPanes[nextIndex] : nil
     }
 
     private func refocusPaneAfterLayout(_ paneID: UUID) {

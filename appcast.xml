@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+    <channel>
+        <title>Argo Updates</title>
+        <link>https://code.devops.xiaohongshu.com/huying/Argo/-/releases</link>
+        <description>Signed Sparkle updates for Argo.</description>
+        <language>en</language>
+        <item>
+            <title>1.0.0</title>
+            <pubDate>Mon, 01 Jun 2026 16:52:44 +0800</pubDate>
+            <link>https://code.devops.xiaohongshu.com/huying/Argo</link>
+            <sparkle:fullReleaseNotesLink>https://code.devops.xiaohongshu.com/huying/Argo/-/releases/v1.0.0</sparkle:fullReleaseNotesLink>
+            <sparkle:version>151</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://code.devops.xiaohongshu.com/huying/Argo/uploads/86b831c2104c3b45f15335896c17ce0d/Argo-1.0.0.app.zip" length="29333552" type="application/octet-stream" sparkle:edSignature="DjGjyAqcseVFTotrC1X5EIEcAWlCT7bmgeTxkC8ZoL96lMnHk2Z7FPAJnUnLBZSj+2qlJuuRMLwLxacoEujnBA=="/>
+        </item>
+    </channel>
+</rss>

@@ -74,33 +74,54 @@ struct TerminalLocalChrome: View {
 
     @ViewBuilder
     private var tabArea: some View {
-        if paneDescriptors.count > 1 {
+        if paneDescriptors.count > 1 && tabs.count > 1 {
+            combinedTabAndPaneStrip
+        } else if paneDescriptors.count > 1 {
             paneChipStrip
         } else if tabs.count > 1 {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(tabs) { tab in
-                        TerminalChromeTabButton(
-                            title: tab.title,
-                            paneCount: paneCountForTab(tab.id),
-                            isSelected: tab.id == activeTabID,
-                            canClose: tabs.count > 1,
-                            onSelect: {
-                                onSelectTab(tab.id)
-                            },
-                            onClose: {
-                                onCloseTab(tab.id)
-                            }
-                        )
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .layoutPriority(1)
+            terminalTabStrip
         } else {
             pathPill
         }
+    }
+
+    private var combinedTabAndPaneStrip: some View {
+        HStack(spacing: 8) {
+            terminalTabStrip
+                .frame(maxWidth: 260)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.10))
+                .frame(width: 1, height: 22)
+
+            paneChipStrip
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
+    }
+
+    private var terminalTabStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(tabs) { tab in
+                    TerminalChromeTabButton(
+                        title: tab.title,
+                        paneCount: paneCountForTab(tab.id),
+                        isSelected: tab.id == activeTabID,
+                        canClose: tabs.count > 1,
+                        onSelect: {
+                            onSelectTab(tab.id)
+                        },
+                        onClose: {
+                            onCloseTab(tab.id)
+                        }
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
     }
 
     private var paneChipStrip: some View {

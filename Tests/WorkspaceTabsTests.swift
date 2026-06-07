@@ -106,6 +106,26 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(terminalChromeSource.contains("pathPill"))
     }
 
+    func testSplitPaneChromeKeepsTerminalTabsReachableWhenMultipleTabsExist() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalChromeSource.contains("if paneDescriptors.count > 1 && tabs.count > 1"))
+        XCTAssertTrue(terminalChromeSource.contains("combinedTabAndPaneStrip"))
+        XCTAssertTrue(terminalChromeSource.contains("} else if paneDescriptors.count > 1 {"))
+        XCTAssertTrue(terminalChromeSource.contains("} else if tabs.count > 1 {"))
+
+        let combinedStripRange = try XCTUnwrap(terminalChromeSource.range(of: "private var combinedTabAndPaneStrip"))
+        let combinedStripSource = String(terminalChromeSource[combinedStripRange.lowerBound...])
+        XCTAssertTrue(combinedStripSource.contains("terminalTabStrip"))
+        XCTAssertTrue(combinedStripSource.contains("paneChipStrip"))
+    }
+
     func testInactiveSplitPanesUseVisualOverlayWithoutBlockingInput() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

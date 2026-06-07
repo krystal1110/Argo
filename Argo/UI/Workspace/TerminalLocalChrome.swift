@@ -210,16 +210,24 @@ private struct TerminalChromeCategoryPill: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.white.opacity(category.isSelected ? 0.72 : 0.46))
+            Button(action: onSelect) {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.white.opacity(category.isSelected ? 0.72 : 0.46))
 
-            Text(category.title)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundStyle(foreground)
-                .lineLimit(1)
-                .truncationMode(.tail)
+                    Text(category.title)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(foreground)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if category.isSelected {
                 Button(action: onRename) {
@@ -253,8 +261,6 @@ private struct TerminalChromeCategoryPill: View {
         .background(backgroundFill, in: Capsule())
         .overlay(Capsule().stroke(borderColor, lineWidth: category.isSelected ? 1 : 0.8))
         .shadow(color: .black.opacity(category.isSelected ? 0.07 : 0), radius: 8, y: 3)
-        .onTapGesture(perform: onSelect)
-        .onTapGesture(count: 2, perform: onRename)
         .onHover { hovering in
             isHovered = hovering
         }

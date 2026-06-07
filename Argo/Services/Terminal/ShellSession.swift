@@ -140,6 +140,8 @@ final class ShellSession: ObservableObject, Identifiable {
         configureSurfaceCallbacks()
     }
 
+    nonisolated deinit {}
+
     private func configureSurfaceCallbacks() {
         self.resolvedEngine = surfaceController.resolvedEngine
 
@@ -179,6 +181,10 @@ final class ShellSession: ObservableObject, Identifiable {
 
     var nsView: NSView {
         surfaceController.view
+    }
+
+    func surfaceHostDidAttach() {
+        surfaceController.surfaceHostDidAttach()
     }
 
     var effectiveWorkingDirectory: String {

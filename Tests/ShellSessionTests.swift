@@ -397,6 +397,20 @@ final class ShellSessionTests: XCTestCase {
         }
     }
 
+    func testSurfaceHostAttachNotificationForwardsToSurfaceController() async {
+        await MainActor.run {
+            let surface = FakeManagedTerminalSurfaceController()
+            let session = ShellSession(
+                snapshot: PaneSnapshot.makeDefault(cwd: "/tmp/argo-shell-session-host-attach"),
+                surfaceController: surface
+            )
+
+            session.surfaceHostDidAttach()
+
+            XCTAssertEqual(surface.hostAttachCallCount, 1)
+        }
+    }
+
     func testDuplicateSurfaceResizeDoesNotPublishUnchangedTerminalSize() async {
         await MainActor.run {
             let surface = FakeManagedTerminalSurfaceController()
@@ -537,6 +551,7 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     private(set) var terminateCallCount = 0
     private(set) var sentTexts: [String] = []
     private(set) var sendReturnCallCount = 0
+    private(set) var hostAttachCallCount = 0
 
     func updateLaunchConfiguration(_ configuration: TerminalLaunchConfiguration) {}
 
@@ -578,6 +593,9 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     func toggleReadOnly() {}
     func scrollByLines(_ delta: Int) {}
     func resetTerminal() {}
+    func surfaceHostDidAttach() {
+        hostAttachCallCount += 1
+    }
 
     func emitProcessExit(_ exitCode: Int32?) {
         needsConfirmQuit = false

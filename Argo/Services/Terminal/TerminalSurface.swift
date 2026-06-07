@@ -51,6 +51,7 @@ protocol TerminalSurfaceController: AnyObject {
     func toggleReadOnly()
     func scrollByLines(_ delta: Int)
     func resetTerminal()
+    func surfaceHostDidAttach()
 }
 
 @MainActor
@@ -78,8 +79,7 @@ enum TerminalSurfaceFactory {
     }
 }
 
-@MainActor
-private final class ArgoTestManagedTerminalSurfaceController: ManagedTerminalSessionSurfaceController {
+nonisolated private final class ArgoTestManagedTerminalSurfaceController: ManagedTerminalSessionSurfaceController {
     let resolvedEngine: TerminalEngineKind = .libghosttyPreferred
     let view = NSView(frame: .zero)
 
@@ -127,6 +127,8 @@ private final class ArgoTestManagedTerminalSurfaceController: ManagedTerminalSes
     func scrollByLines(_ delta: Int) {}
 
     func resetTerminal() {}
+
+    func surfaceHostDidAttach() {}
 
     func updateLaunchConfiguration(_ configuration: TerminalLaunchConfiguration) {
         launchConfiguration = configuration

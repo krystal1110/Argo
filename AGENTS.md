@@ -6,6 +6,17 @@
 
 **Always reply in Simplified Chinese.** Regardless of the language the user writes in, all user-facing responses, explanations, and summaries must be in Simplified Chinese. Keep code, identifiers, commands, file paths, and in-code comments as-is (usually English); do not translate them.
 
+## Superpowers Requirement
+
+When developing Argo, agents must use the relevant `superpowers:*` skills before acting. Treat Superpowers as mandatory for implementation, debugging, planning, review, and completion checks in this repository.
+
+- Use `superpowers:brainstorming` before designing or changing behavior.
+- Use `superpowers:test-driven-development` before implementing features or bug fixes.
+- Use `superpowers:systematic-debugging` before diagnosing bugs, failures, or unexpected behavior.
+- Use `superpowers:writing-plans` before executing multi-step implementation work.
+- Use `superpowers:verification-before-completion` before claiming work is complete, fixed, or passing.
+- Use other applicable `superpowers:*` skills whenever their trigger conditions match the task.
+
 ## Project Overview
 
 Argo is a native macOS terminal workspace app built around `AppKit + SwiftUI + a vendored Ghostty runtime`.

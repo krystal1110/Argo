@@ -109,6 +109,43 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(terminalChromeSource.contains(".onTapGesture(count: 2, perform: onRename)"))
     }
 
+    func testTerminalCategoryDefaultTitleStaysBoundToCategoryRootPane() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("tab.panes.first?.preferredWorkingDirectory"))
+        XCTAssertFalse(workspaceDetailSource.contains("return terminalChromePath"))
+        XCTAssertFalse(workspaceDetailSource.contains("tab.focusedPaneID.flatMap"))
+    }
+
+    @MainActor
+    func testClosingInactiveCategoryPreservesSelectedCategory() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argo-category-close-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let firstCategoryID = try XCTUnwrap(workspace.activeTabID)
+
+        workspace.createTab()
+        let secondCategoryID = try XCTUnwrap(workspace.activeTabID)
+
+        workspace.createTab()
+        let thirdCategoryID = try XCTUnwrap(workspace.activeTabID)
+
+        workspace.selectTab(firstCategoryID)
+        workspace.closeTab(thirdCategoryID)
+
+        XCTAssertEqual(workspace.activeTabID, firstCategoryID)
+        XCTAssertEqual(workspace.tabs.map(\.id), [firstCategoryID, secondCategoryID])
+    }
+
     @MainActor
     func testSplittingFocusedPaneAddsPaneInsideSelectedCategoryWithoutCreatingCategory() throws {
         let directoryURL = FileManager.default.temporaryDirectory

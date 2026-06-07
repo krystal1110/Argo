@@ -901,9 +901,14 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         } else {
             let tabs = state.tabs
             let currentIndex = tabs.firstIndex(where: { $0.id == tabID }) ?? 0
+            let selectedTabIDBeforeClose = state.selectedTabID
             state.removeTab(tabID)
-            let fallbackIndex = min(currentIndex, max(state.tabs.count - 1, 0))
-            state.setSelectedTabID(state.tabs[fallbackIndex].id)
+            if selectedTabIDBeforeClose == tabID || state.selectedTabID == nil {
+                let fallbackIndex = min(currentIndex, max(state.tabs.count - 1, 0))
+                state.setSelectedTabID(state.tabs[fallbackIndex].id)
+            } else if let selectedTabIDBeforeClose {
+                state.setSelectedTabID(selectedTabIDBeforeClose)
+            }
         }
 
         if var controllers = worktreeControllers[activeWorktreePath] {

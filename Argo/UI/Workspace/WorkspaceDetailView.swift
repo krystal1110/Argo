@@ -226,14 +226,7 @@ private struct WorkspaceSessionDetailView: View {
         if tab.isManuallyNamed {
             return tab.title
         }
-        if tab.id == workspace.activeTabID {
-            return terminalChromePath
-        }
-        let focusedPane = tab.focusedPaneID.flatMap { focusedPaneID in
-            tab.panes.first { $0.id == focusedPaneID }
-        }
-        let pane = focusedPane ?? tab.panes.first
-        return (pane?.preferredWorkingDirectory ?? workspace.activeWorktreePath)
+        return (tab.panes.first?.preferredWorkingDirectory ?? workspace.activeWorktreePath)
             .terminalChromeDisplayPath
     }
 

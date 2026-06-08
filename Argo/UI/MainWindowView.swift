@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import Combine
 import ObjectiveC
 import SwiftUI
 
@@ -13,6 +14,7 @@ struct MainWindowView: View {
     @EnvironmentObject private var store: WorkspaceStore
     @ObservedObject private var localization = LocalizationManager.shared
     @State private var layoutState = MainWindowLayoutState()
+    @State private var commandPaletteClockDate = Date()
 
     private func localized(_ key: String) -> String {
         localization.string(key)
@@ -182,17 +184,7 @@ struct MainWindowView: View {
             Button {
                 store.dispatch(.toggleCommandPalette)
             } label: {
-                GlassToolbarGroup(horizontalPadding: 16, spacing: 8) {
-                    Image(systemName: "sparkle")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(ArgoTheme.danger.opacity(0.95))
-                    Text(localized("menu.view.commandPalette"))
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(ArgoTheme.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                .frame(minWidth: 230, idealWidth: 320, maxWidth: 360)
+                TimeCommandPaletteButtonLabel(date: commandPaletteClockDate)
             }
             .buttonStyle(.plain)
             .scaleEffect(uiScale)
@@ -402,6 +394,9 @@ struct MainWindowView: View {
         .ignoresSafeArea(.container, edges: .top)
         .task {
             await store.refreshHAPIIntegrationStatus()
+        }
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { date in
+            commandPaletteClockDate = date
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task { @MainActor in
@@ -781,6 +776,89 @@ struct MainWindowView: View {
         }
 
         return menu
+    }
+}
+
+private struct TimeCommandPaletteButtonLabel: View {
+    let date: Date
+
+    private var phase: TimeCommandPalettePhase {
+        TimeCommandPaletteClock.phase(for: date)
+    }
+
+    private var timeText: String {
+        TimeCommandPaletteClock.timeText(for: date)
+    }
+
+    private var iconSystemName: String {
+        switch phase {
+        case .morning:
+            return "sunrise.fill"
+        case .afternoon:
+            return "sun.max.fill"
+        case .sunset:
+            return "sunset.fill"
+        case .night:
+            return "moon.stars.fill"
+        }
+    }
+
+    private var iconGradientColors: [Color] {
+        switch phase {
+        case .morning:
+            return [Color(red: 1.0, green: 0.88, blue: 0.52), Color(red: 1.0, green: 0.62, blue: 0.24)]
+        case .afternoon:
+            return [Color(red: 0.99, green: 0.95, blue: 0.45), Color(red: 0.22, green: 0.74, blue: 0.97)]
+        case .sunset:
+            return [Color(red: 0.98, green: 0.44, blue: 0.52), Color(red: 0.96, green: 0.62, blue: 0.08), Color(red: 0.19, green: 0.18, blue: 0.51)]
+        case .night:
+            return [Color(red: 0.36, green: 0.42, blue: 0.72), Color(red: 0.12, green: 0.16, blue: 0.29)]
+        }
+    }
+
+    var body: some View {
+        GlassToolbarGroup(horizontalPadding: 10, spacing: 8) {
+            Image(systemName: iconSystemName)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.92))
+                .frame(width: 24, height: 24)
+                .background(
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: iconGradientColors,
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .shadow(color: iconGradientColors.first?.opacity(0.22) ?? .clear, radius: 10, y: 4)
+
+            Text(timeText)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(ArgoTheme.tertiaryText)
+                .monospacedDigit()
+                .frame(minWidth: 42, alignment: .leading)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(width: 1, height: 18)
+
+            Text("Open command")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(ArgoTheme.secondaryText)
+
+            Text("P")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(ArgoTheme.tertiaryText)
+                .padding(.horizontal, 6)
+                .frame(height: 21)
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                )
+        }
     }
 }
 

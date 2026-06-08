@@ -4,7 +4,11 @@
 
 **始终使用简体中文回复。** 无论用户使用何种语言提问,所有面向用户的回复、解释和总结都必须用简体中文。代码、标识符、命令、文件路径以及代码内的注释保持原样(通常为英文),不要翻译。
 
+**方案文档也必须使用简体中文。** 所有设计方案、spec、implementation plan、执行计划、评审总结以及其他面向协作的计划类文档默认使用简体中文撰写。代码、标识符、命令、文件路径、测试名称和代码注释保持原样(通常为英文),除非用户明确要求翻译。
+
 **Always reply in Simplified Chinese.** Regardless of the language the user writes in, all user-facing responses, explanations, and summaries must be in Simplified Chinese. Keep code, identifiers, commands, file paths, and in-code comments as-is (usually English); do not translate them.
+
+**Planning documents must also be written in Simplified Chinese.** Design proposals, specs, implementation plans, execution plans, review summaries, and other collaboration-facing planning documents should default to Simplified Chinese. Keep code, identifiers, commands, file paths, test names, and in-code comments unchanged (usually English), unless the user explicitly asks for translation.
 
 ## Superpowers Requirement
 

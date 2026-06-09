@@ -403,6 +403,22 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(controlsSource.contains(".shadow(color: .black.opacity(0.18), radius: 12, y: 6)"))
     }
 
+    func testSleepPreventionToolbarMainButtonOpensDurationMenu() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let menuButtonPattern = #"GlassToolbarMenuIconButton\(\s*systemName: sleepPreventionIconName,[\s\S]*?\)\s*\{\s*anchorView in\s*present\(menu: makeSleepPreventionMenu\(\), from: anchorView\)\s*\}"#
+
+        XCTAssertNotNil(
+            source.range(of: menuButtonPattern, options: .regularExpression),
+            "The visible sleep prevention toolbar button should open the duration menu."
+        )
+    }
+
     func testRemovedSessionAndLayoutActionsDoNotLocalize() {
         let removedKeys = [
             "main.menu.restartFocusedSession",

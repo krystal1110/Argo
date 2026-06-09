@@ -56,4 +56,37 @@ final class TimeCommandPaletteSupportTests: XCTestCase {
 
         XCTAssertEqual(TimeCommandPaletteClock.phase(for: date, calendar: calendar), .sunset)
     }
+
+    func testCommandTextUsesDefaultCommandPaletteShortcut() {
+        let settings = AppSettings()
+
+        XCTAssertEqual(
+            TimeCommandPaletteCommandDisplay.commandText(in: settings),
+            "Open Command Palette (⇧⌘P)"
+        )
+    }
+
+    func testCommandTextUsesCustomizedCommandPaletteShortcut() {
+        var settings = AppSettings()
+        ArgoKeyboardShortcuts.setShortcut(
+            StoredShortcut(key: "k", command: true, shift: true, option: false, control: false),
+            for: .toggleCommandPalette,
+            in: &settings
+        )
+
+        XCTAssertEqual(
+            TimeCommandPaletteCommandDisplay.commandText(in: settings),
+            "Open Command Palette (⇧⌘K)"
+        )
+    }
+
+    func testCommandTextOmitsShortcutWhenCommandPaletteShortcutIsDisabled() {
+        var settings = AppSettings()
+        ArgoKeyboardShortcuts.disableShortcut(for: .toggleCommandPalette, in: &settings)
+
+        XCTAssertEqual(
+            TimeCommandPaletteCommandDisplay.commandText(in: settings),
+            "Open Command Palette"
+        )
+    }
 }

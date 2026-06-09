@@ -358,6 +358,15 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(actionIDs.contains("openHistory"))
     }
 
+    func testCommandPaletteShortcutDefaultsToCommandShiftP() {
+        let settings = AppSettings()
+
+        XCTAssertEqual(
+            ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in: settings),
+            StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
+        )
+    }
+
     func testMainWindowDoesNotExposeMoreActionsMenu() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -369,6 +378,29 @@ final class QuickCommandSupportTests: XCTestCase {
 
         XCTAssertFalse(source.contains("ellipsis.circle"))
         XCTAssertFalse(source.contains("main.menu.moreActions"))
+    }
+
+    func testTopChromeUsesInsetToolbarSurfaces() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let controlsSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlassChromeControls.swift"),
+            encoding: .utf8
+        )
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(controlsSource.contains("InsetToolbarCapsuleSurface"))
+        XCTAssertTrue(controlsSource.contains("fillOpacity: Double = 0.12"))
+        XCTAssertTrue(controlsSource.contains("glassHighlightOpacity: Double = 0.05"))
+        XCTAssertTrue(controlsSource.contains("topShadowOpacity: Double = 0.2"))
+        XCTAssertTrue(mainWindowSource.contains(".insetToolbarCapsuleSurface()"))
+        XCTAssertTrue(mainWindowSource.contains(".fill(.ultraThinMaterial)"))
+        XCTAssertTrue(mainWindowSource.contains("ArgoTheme.chromeBackground.opacity(0.68)"))
+        XCTAssertFalse(controlsSource.contains(".shadow(color: .black.opacity(0.18), radius: 12, y: 6)"))
     }
 
     func testRemovedSessionAndLayoutActionsDoNotLocalize() {
@@ -398,13 +430,56 @@ final class QuickCommandSupportTests: XCTestCase {
 
     func testShortcutAssignmentDisablesConflictingAction() {
         var settings = AppSettings()
-        let shortcut = StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)
+        let shortcut = StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
 
         ArgoKeyboardShortcuts.setShortcut(shortcut, for: .toggleOverview, in: &settings)
 
         XCTAssertEqual(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleOverview, in: settings), shortcut)
         XCTAssertNil(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in: settings))
         XCTAssertEqual(ArgoKeyboardShortcuts.state(for: .toggleCommandPalette, in: settings), .disabled)
+    }
+
+    func testCommandPDoesNotMatchCommandPaletteByDefault() {
+        let settings = AppSettings()
+        let event = try! XCTUnwrap(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [.command],
+                timestamp: 1,
+                windowNumber: 0,
+                context: nil,
+                characters: "p",
+                charactersIgnoringModifiers: "p",
+                isARepeat: false,
+                keyCode: UInt16(kVK_ANSI_P)
+            )
+        )
+
+        XCTAssertNil(argoShortcutMatch(for: event, in: settings))
+    }
+
+    func testCommandShiftPMatchesCommandPaletteByDefault() {
+        let settings = AppSettings()
+        let event = try! XCTUnwrap(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [.command, .shift],
+                timestamp: 1,
+                windowNumber: 0,
+                context: nil,
+                characters: "P",
+                charactersIgnoringModifiers: "p",
+                isARepeat: false,
+                keyCode: UInt16(kVK_ANSI_P)
+            )
+        )
+
+        XCTAssertEqual(
+            argoShortcutMatch(for: event, in: settings),
+            ArgoShortcutMatch(action: .toggleCommandPalette, tabNumber: nil)
+        )
     }
 
     func testShortcutResetRestoresDefaultBinding() {

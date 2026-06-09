@@ -31,7 +31,6 @@ struct TerminalLocalChrome: View {
     let onSplitRight: () -> Void
     let onSplitDown: () -> Void
 
-    @FocusState private var isRenameFieldFocused: Bool
     @State private var editingCategoryID: UUID?
     @State private var renameDraft = ""
 
@@ -89,23 +88,27 @@ struct TerminalLocalChrome: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(categories) { category in
-                    if editingCategoryID == category.id {
-                        renameField(for: category)
-                    } else {
-                        TerminalChromeCategoryPill(
-                            category: category,
-                            isFocused: isFocused && category.isSelected,
-                            onSelect: {
-                                onSelectCategory(category.id)
-                            },
-                            onRename: {
-                                beginRename(category)
-                            },
-                            onClose: {
-                                onCloseCategory(category.id)
-                            }
-                        )
-                    }
+                    TerminalChromeCategoryPill(
+                        category: category,
+                        isFocused: isFocused && category.isSelected,
+                        renamePopoverBinding: renamePopoverBinding(for: category.id),
+                        onSelect: {
+                            onSelectCategory(category.id)
+                        },
+                        onRename: {
+                            beginRename(category)
+                        },
+                        onClose: {
+                            onCloseCategory(category.id)
+                        },
+                        renamePopover: {
+                            TerminalChromeCategoryRenamePopover(
+                                draft: $renameDraft,
+                                onCommit: commitRename,
+                                onCancel: cancelRename
+                            )
+                        }
+                    )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,36 +139,22 @@ struct TerminalLocalChrome: View {
         .layoutPriority(1)
     }
 
-    private func renameField(for category: TerminalChromeCategoryDescriptor) -> some View {
-        TextField("", text: $renameDraft)
-            .textFieldStyle(.plain)
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            .foregroundStyle(Color.white.opacity(0.96))
-            .focused($isRenameFieldFocused)
-            .onSubmit {
-                commitRename()
-            }
-            .onExitCommand {
-                cancelRename()
-            }
-            .frame(width: 220, height: 32)
-            .padding(.horizontal, 12)
-            .background(pathFill(isSelected: true), in: Capsule())
-            .overlay(Capsule().stroke(ArgoTheme.accent.opacity(0.42), lineWidth: 1))
-            .onAppear {
-                renameDraft = category.title
-                DispatchQueue.main.async {
-                    isRenameFieldFocused = true
+    private func renamePopoverBinding(for categoryID: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                editingCategoryID == categoryID
+            },
+            set: { isPresented in
+                if !isPresented, editingCategoryID == categoryID {
+                    cancelRename()
                 }
             }
+        )
     }
 
     private func beginRename(_ category: TerminalChromeCategoryDescriptor) {
         renameDraft = category.title
         editingCategoryID = category.id
-        DispatchQueue.main.async {
-            isRenameFieldFocused = true
-        }
     }
 
     private func commitRename() {
@@ -183,7 +172,6 @@ struct TerminalLocalChrome: View {
     private func cancelRename() {
         editingCategoryID = nil
         renameDraft = ""
-        isRenameFieldFocused = false
     }
 
     private func pathFill(isSelected: Bool) -> some ShapeStyle {
@@ -198,12 +186,14 @@ struct TerminalLocalChrome: View {
     }
 }
 
-private struct TerminalChromeCategoryPill: View {
+private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
     let category: TerminalChromeCategoryDescriptor
     let isFocused: Bool
+    let renamePopoverBinding: Binding<Bool>
     let onSelect: () -> Void
     let onRename: () -> Void
     let onClose: () -> Void
+    @ViewBuilder let renamePopover: () -> RenamePopover
 
     @State private var isHovered = false
     @State private var isCloseHovered = false
@@ -236,8 +226,14 @@ private struct TerminalChromeCategoryPill: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.plain)
+                .frame(width: 16, height: 16)
+                .contentShape(Rectangle())
                 .foregroundStyle(Color.white.opacity(isHovered ? 0.76 : 0.48))
+                .accessibilityLabel(Text(LocalizationManager.shared.string("terminal.category.rename")))
                 .help(LocalizationManager.shared.string("terminal.category.rename"))
+                .popover(isPresented: renamePopoverBinding) {
+                    renamePopover()
+                }
             }
 
             if category.canClose {
@@ -300,6 +296,73 @@ private struct TerminalChromeCategoryPill: View {
             return 0.68
         }
         return 0.42
+    }
+}
+
+private struct TerminalChromeCategoryRenamePopover: View {
+    @Binding var draft: String
+    let onCommit: () -> Void
+    let onCancel: () -> Void
+
+    @State private var isCommitHovered = false
+    @State private var isCancelHovered = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(LocalizationManager.shared.string("terminal.category.rename"))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.72))
+
+            HStack(spacing: 8) {
+                TextField(LocalizationManager.shared.string("main.tab.namePlaceholder"), text: $draft)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color.white.opacity(0.95))
+                    .padding(.horizontal, 10)
+                    .frame(height: 30)
+                    .background(Color.white.opacity(0.095), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+                    .onSubmit(onCommit)
+
+                Button(action: onCommit) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.white.opacity(isCommitHovered ? 0.96 : 0.72))
+                .background(Color.white.opacity(isCommitHovered ? 0.16 : 0.08), in: Circle())
+                .accessibilityLabel(Text(LocalizationManager.shared.string("common.ok")))
+                .help(LocalizationManager.shared.string("common.ok"))
+                .onHover { hovering in
+                    isCommitHovered = hovering
+                }
+
+                Button(action: onCancel) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.white.opacity(isCancelHovered ? 0.90 : 0.58))
+                .background(Color.white.opacity(isCancelHovered ? 0.14 : 0.06), in: Circle())
+                .accessibilityLabel(Text(LocalizationManager.shared.string("common.cancel")))
+                .help(LocalizationManager.shared.string("common.cancel"))
+                .onHover { hovering in
+                    isCancelHovered = hovering
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 320)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+        )
     }
 }
 

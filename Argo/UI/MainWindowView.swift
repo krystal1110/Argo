@@ -184,7 +184,10 @@ struct MainWindowView: View {
             Button {
                 store.dispatch(.toggleCommandPalette)
             } label: {
-                TimeCommandPaletteButtonLabel(date: commandPaletteClockDate)
+                TimeCommandPaletteButtonLabel(
+                    date: commandPaletteClockDate,
+                    commandText: TimeCommandPaletteCommandDisplay.commandText(in: store.appSettings)
+                )
             }
             .buttonStyle(.plain)
             .scaleEffect(uiScale)
@@ -308,11 +311,12 @@ struct MainWindowView: View {
         .frame(height: 62)
         .background(
             ZStack {
-                ArgoTheme.chromeBackground
+                Rectangle().fill(.ultraThinMaterial)
+                ArgoTheme.chromeBackground.opacity(0.68)
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.04),
-                        Color.black.opacity(0.06)
+                        Color.white.opacity(0.055),
+                        Color.clear
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -781,6 +785,7 @@ struct MainWindowView: View {
 
 private struct TimeCommandPaletteButtonLabel: View {
     let date: Date
+    let commandText: String
 
     private var phase: TimeCommandPalettePhase {
         TimeCommandPaletteClock.phase(for: date)
@@ -803,62 +808,46 @@ private struct TimeCommandPaletteButtonLabel: View {
         }
     }
 
-    private var iconGradientColors: [Color] {
+    private var iconColor: Color {
         switch phase {
         case .morning:
-            return [Color(red: 1.0, green: 0.88, blue: 0.52), Color(red: 1.0, green: 0.62, blue: 0.24)]
+            return Color(red: 1.0, green: 0.63, blue: 0.25)
         case .afternoon:
-            return [Color(red: 0.99, green: 0.95, blue: 0.45), Color(red: 0.22, green: 0.74, blue: 0.97)]
+            return Color(red: 1.0, green: 0.82, blue: 0.22)
         case .sunset:
-            return [Color(red: 0.98, green: 0.44, blue: 0.52), Color(red: 0.96, green: 0.62, blue: 0.08), Color(red: 0.19, green: 0.18, blue: 0.51)]
+            return Color(red: 1.0, green: 0.16, blue: 0.31)
         case .night:
-            return [Color(red: 0.36, green: 0.42, blue: 0.72), Color(red: 0.12, green: 0.16, blue: 0.29)]
+            return Color(red: 0.56, green: 0.64, blue: 1.0)
         }
     }
 
     var body: some View {
-        GlassToolbarGroup(horizontalPadding: 10, spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: iconSystemName)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color.white.opacity(0.92))
-                .frame(width: 24, height: 24)
-                .background(
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: iconGradientColors,
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-                .shadow(color: iconGradientColors.first?.opacity(0.22) ?? .clear, radius: 10, y: 4)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(iconColor)
+                .frame(width: 18, height: 18)
 
             Text(timeText)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(ArgoTheme.tertiaryText)
                 .monospacedDigit()
                 .frame(minWidth: 42, alignment: .leading)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 1, height: 18)
+            Text("–")
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundStyle(ArgoTheme.mutedText)
 
-            Text("Open command")
-                .font(.system(size: 12, weight: .semibold))
+            Text(commandText)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(ArgoTheme.secondaryText)
-
-            Text("P")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(ArgoTheme.tertiaryText)
-                .padding(.horizontal, 6)
-                .frame(height: 21)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                )
+                .lineLimit(1)
+                .minimumScaleFactor(0.88)
         }
+        .padding(.horizontal, 18)
+        .frame(height: 42)
+        .insetToolbarCapsuleSurface()
+        .contentShape(Capsule())
     }
 }
 

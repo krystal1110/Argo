@@ -2,9 +2,9 @@
 
 > **给 agentic workers：** 必须使用子技能：推荐 `superpowers:subagent-driven-development`，也可以使用 `superpowers:executing-plans` 按任务逐项执行。本计划使用 checkbox（`- [ ]`）跟踪进度。
 
-**目标：** 把顶部玻璃栏里的宽版命令面板入口替换成“时段图标 + 当前时间 + Open command + P”的紧凑胶囊按钮。
+**目标：** 把顶部玻璃栏里的宽版命令面板入口替换成“无背景时段图标 + 当前时间 + Open Command Palette + 当前真实快捷键”的内嵌胶囊按钮。
 
-**架构：** 把可测试的时段判断和时间格式化放到一个小型支持文件中，SwiftUI 顶部栏只负责渲染和派发原有 `toggleCommandPalette` 动作。UI 不改命令面板弹层、不改命令列表、不引入定位、日出日落 API 或额外权限。
+**架构：** 把可测试的时段判断、时间格式化、命令面板快捷键展示文本放到一个小型支持文件中，SwiftUI 顶部栏只负责渲染和派发原有 `toggleCommandPalette` 动作。UI 不改命令面板弹层、不改命令列表、不引入定位、日出日落 API 或额外权限。命令面板默认快捷键改为 `⇧⌘P`，避免 `⌘P` 和快速打开/搜索语义混淆。
 
 **技术栈：** Swift、SwiftUI、Foundation `Calendar`/`Date`、XCTest、Xcode filesystem-synchronized groups。
 
@@ -13,12 +13,13 @@
 ## 文件结构
 
 - 新建 `Argo/Support/TimeCommandPaletteSupport.swift`
-  - 负责时段枚举、小时区间判断、`HH:mm` 时间文本格式化。
+  - 负责时段枚举、小时区间判断、`HH:mm` 时间文本格式化、命令面板快捷键文案。
 - 新建 `Tests/TimeCommandPaletteSupportTests.swift`
-  - 覆盖早上、下午、日落、夜间 fallback 的时段边界，以及两位数 24 小时时间格式。
+  - 覆盖早上、下午、日落、夜间 fallback 的时段边界、两位数 24 小时时间格式，以及默认/自定义/禁用快捷键文案。
 - 修改 `Argo/UI/MainWindowView.swift`
   - 用新的时间命令胶囊替换现有宽版 `Command Palette` 按钮 label。
   - 增加分钟级时间刷新状态。
+  - 图标去掉背景，只用时段颜色；胶囊改成暗色内嵌槽效果。
   - 保留原来的 `store.dispatch(.toggleCommandPalette)`、`accessibilityLabel` 和 `help`。
 
 不改动：
@@ -26,7 +27,60 @@
 - `Argo/UI/Components/CommandPaletteView.swift`
 - `Argo/App/WorkspaceStore.swift`
 - `Argo/Support/WorkspaceCommands.swift`
-- 命令面板快捷键、命令列表、命令执行逻辑
+- 命令面板弹层、命令列表、命令执行逻辑
+
+## 精修补充：跟随真实快捷键和内嵌视觉
+
+**Files:**
+- Modify: `Argo/Support/TimeCommandPaletteSupport.swift`
+- Modify: `Tests/TimeCommandPaletteSupportTests.swift`
+- Modify: `Argo/UI/MainWindowView.swift`
+
+- [x] **Step 1: 先写失败测试**
+
+新增测试覆盖：
+
+- 默认设置下显示 `Open Command Palette (⇧⌘P)`。
+- 用户把命令面板快捷键改成 `⇧⌘K` 后，顶部文案跟随显示 `Open Command Palette (⇧⌘K)`。
+- 用户禁用命令面板快捷键后，只显示 `Open Command Palette`。
+
+RED 结果：聚焦测试编译失败，错误为 `cannot find 'TimeCommandPaletteCommandDisplay' in scope`。
+
+- [x] **Step 2: 实现快捷键文案支持**
+
+在 `TimeCommandPaletteSupport.swift` 中新增 `TimeCommandPaletteCommandDisplay`，从 `ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in:)` 读取当前真实快捷键；禁用时不显示括号。
+
+- [x] **Step 3: 精修 SwiftUI 视觉**
+
+在 `TimeCommandPaletteButtonLabel` 中：
+
+- 去掉图标圆形渐变背景和外发光。
+- 日落时段使用红色 `sunset.fill`。
+- 文案改成 `HH:mm – Open Command Palette (快捷键)`。
+- 胶囊改成暗色内嵌槽，弱描边和顶部内阴影，不再使用突出键帽。
+
+## 快捷键修正：命令面板默认改为 `⇧⌘P`
+
+**Files:**
+- Modify: `Argo/Domain/AppSettings.swift`
+- Modify: `Tests/QuickCommandSupportTests.swift`
+- Modify: `Tests/TimeCommandPaletteSupportTests.swift`
+
+- [x] **Step 1: 先写失败测试**
+
+新增或更新测试覆盖：
+
+- `TimeCommandPaletteCommandDisplay` 默认显示 `Open Command Palette (⇧⌘P)`。
+- `ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in:)` 默认返回 `⇧⌘P`。
+- `⌘P` 默认不匹配 `toggleCommandPalette`。
+- `⇧⌘P` 默认匹配 `toggleCommandPalette`。
+- 把 `⇧⌘P` 分配给其他动作会禁用命令面板，证明冲突处理仍然生效。
+
+RED 结果：上述聚焦测试失败，旧实现仍返回和匹配 `⌘P`。
+
+- [x] **Step 2: 实现默认快捷键修正**
+
+在 `ArgoShortcutAction.toggleCommandPalette.defaultShortcut` 中把默认值从 `StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)` 改为 `StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)`。
 
 ## Task 1: 写时段和时间格式的失败测试
 

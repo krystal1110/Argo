@@ -74,7 +74,7 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(terminalChromeSource.contains("combinedTabAndPaneStrip"))
     }
 
-    func testTerminalChromeExposesInlineCategoryRename() throws {
+    func testTerminalChromeExposesPopoverCategoryRename() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -90,9 +90,35 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(terminalChromeSource.contains("let onRenameCategory: (UUID, String) -> Void"))
         XCTAssertTrue(terminalChromeSource.contains("@State private var editingCategoryID: UUID?"))
         XCTAssertTrue(terminalChromeSource.contains("@State private var renameDraft = \"\""))
-        XCTAssertTrue(terminalChromeSource.contains("TextField(\"\", text: $renameDraft)"))
+        XCTAssertTrue(terminalChromeSource.contains("renamePopoverBinding: renamePopoverBinding(for: category.id)"))
+        XCTAssertTrue(terminalChromeSource.contains(".popover(isPresented: renamePopoverBinding)"))
+        XCTAssertTrue(terminalChromeSource.contains("private struct TerminalChromeCategoryRenamePopover"))
+        XCTAssertTrue(terminalChromeSource.contains("TextField(LocalizationManager.shared.string(\"main.tab.namePlaceholder\"), text: $draft)"))
+        XCTAssertTrue(terminalChromeSource.contains("Image(systemName: \"checkmark\")"))
+        XCTAssertTrue(terminalChromeSource.contains("Image(systemName: \"xmark\")"))
+        XCTAssertTrue(terminalChromeSource.contains(".accessibilityLabel(Text(LocalizationManager.shared.string(\"terminal.category.rename\")))"))
+        XCTAssertFalse(terminalChromeSource.contains("TerminalChromeRenameTextField"))
+        XCTAssertFalse(terminalChromeSource.contains("NSViewRepresentable"))
+        XCTAssertFalse(terminalChromeSource.contains("controlTextDidEndEditing"))
         XCTAssertTrue(workspaceDetailSource.contains("onRenameCategory: renameTerminalCategoryFromChrome"))
         XCTAssertTrue(workspaceDetailSource.contains("store.renameTab(in: workspace, tabID: categoryID, title: normalized)"))
+    }
+
+    func testTerminalChromeRenameAvoidsAppKitFocusHandoffLoop() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(terminalChromeSource.contains("renamePopoverBinding(for categoryID: UUID) -> Binding<Bool>"))
+        XCTAssertTrue(terminalChromeSource.contains("renameDraft = category.title"))
+        XCTAssertTrue(terminalChromeSource.contains("editingCategoryID = category.id"))
+        XCTAssertFalse(terminalChromeSource.contains("makeFirstResponder"))
+        XCTAssertFalse(terminalChromeSource.contains("selectText(nil)"))
+        XCTAssertFalse(terminalChromeSource.contains("refocusAfterInitialHandoffIfNeeded"))
     }
 
     func testTerminalCategoryPillAvoidsParentTapGestureConflicts() throws {

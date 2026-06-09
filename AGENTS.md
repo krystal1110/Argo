@@ -79,7 +79,7 @@ xcodebuild \
 Additional notes:
 
 - The current project targets are `Argo` and `ArgoTests`, and the main scheme is `Argo`.
-- Dependencies are resolved through Xcode. Current Swift packages include Sparkle and Sentry.
+- Dependencies are resolved through Xcode. Current Swift packages include Sparkle.
 - Release-oriented scripts include `scripts/build_macos_app.sh`, `scripts/release_macos.sh`, and the root `deploy.sh`. They depend on signing, notarization, or release credentials and are not the default verification path for routine changes.
 - Documentation, script, or website changes do not automatically require a full app build, but command examples, paths, and references must remain valid.
 
@@ -109,5 +109,5 @@ Additional notes:
 - The sidebar relies on a custom `NSOutlineView` bridge. Changes there must not break multi-selection, context menus, keyboard interaction, or drag reordering.
 - The terminal stack depends on the vendored Ghostty runtime and the adapters under `Argo/Services/Terminal/Ghostty/`. Do not introduce an alternate terminal implementation.
 - Unless explicitly required, do not modify binary dependencies under `Argo/Vendor/` or casually alter signing and notarization behavior in release scripts.
-- For GitHub CLI, Sparkle, Sentry, or external-editor-related work, prefer the existing service or support-layer entry points instead of scattering process execution logic into the UI layer.
+- For GitHub CLI, Sparkle, or external-editor-related work, prefer the existing service or support-layer entry points instead of scattering process execution logic into the UI layer.
 - If code changes invalidate directory descriptions, build commands, test entry points, or release paths, update `README.md`, `DEVELOP.md`, `docs/`, `RELEASING.md`, or nearby script comments so documentation does not drift.

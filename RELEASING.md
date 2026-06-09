@@ -132,7 +132,6 @@ Default behavior:
 - builds and signs the universal release DMG
 - archives `Argo.app.dSYM` to `dist/dSYMs/Argo-<version>.app.dSYM`
 - packages `dist/dSYMs/Argo-<version>.app.dSYM.zip`
-- uploads `Argo.app.dSYM` to Sentry using the default target `xnu/argo`
 - packages `Argo-<version>.app.zip` for Sparkle
 - notarizes unless `SKIP_NOTARIZE=1`
 - updates the repository `appcast.xml`
@@ -149,7 +148,6 @@ Useful overrides:
 - `SKIP_NOTARIZE=1 ./deploy.sh`
 - `SKIP_GITLAB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
-- `SKIP_SENTRY_DSYM_UPLOAD=1 ./deploy.sh`
 - `GITLAB_ASSET_BACKEND=project_uploads ./deploy.sh`
 - `GITLAB_ASSET_BACKEND=generic_packages ./deploy.sh`
 - `GITLAB_PROJECT_PATH=huying/Argo ./deploy.sh`
@@ -161,15 +159,6 @@ Useful overrides:
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
 
 `GITLAB_PROJECT_PATH` is inferred from `origin` when the remote is `git@code.devops.xiaohongshu.com:huying/Argo.git`. Set `GITLAB_PROJECT_ID` only if you prefer numeric GitLab API URLs. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitLab authentication headers during update checks.
-
-Sentry dSYM upload uses `sentry-cli` authentication by default. `SENTRY_AUTH_TOKEN` also works.
-
-Optional Sentry environment:
-
-- `SENTRY_ORG` to override the default org `xnu`
-- `SENTRY_PROJECT` to override the default project `argo`
-- `SENTRY_URL` for self-hosted Sentry
-- `SENTRY_INCLUDE_SOURCES=1` to upload source bundles together with the dSYM
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 

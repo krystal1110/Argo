@@ -8,7 +8,6 @@ source "$ROOT_DIR/scripts/sparkle_tools.sh"
 source "$ROOT_DIR/scripts/gitlab_release_tools.sh"
 
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
-UPLOAD_DSYM_SCRIPT="${UPLOAD_DSYM_SCRIPT:-$ROOT_DIR/scripts/upload_dsym_to_sentry.sh}"
 PROJECT_PATH="${PROJECT_PATH:-$ROOT_DIR/Argo.xcodeproj}"
 SCHEME="${SCHEME:-Argo}"
 APP_NAME="${APP_NAME:-Argo}"
@@ -34,7 +33,6 @@ SKIP_PUSH="${SKIP_PUSH:-0}"
 SKIP_TAG="${SKIP_TAG:-0}"
 SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
-SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
 
@@ -58,11 +56,6 @@ trap cleanup EXIT
 for cmd in git curl python3 xcodebuild xcrun; do
   require_cmd "$cmd"
 done
-
-if [[ "$SKIP_SENTRY_DSYM_UPLOAD" != "1" && ! -x "$UPLOAD_DSYM_SCRIPT" ]]; then
-  echo "Missing executable dSYM upload script: $UPLOAD_DSYM_SCRIPT" >&2
-  exit 1
-fi
 
 if [[ ! -x "$ARCHIVE_DSYM_SCRIPT" ]]; then
   echo "Missing executable dSYM archive script: $ARCHIVE_DSYM_SCRIPT" >&2
@@ -201,13 +194,6 @@ OUTPUT_DIR="$OUTPUT_DIR" \
 if [[ ! -d "$DSYM_PATH" || ! -f "$DSYM_ZIP_PATH" ]]; then
   echo "Missing archived dSYM artifacts: $DSYM_PATH / $DSYM_ZIP_PATH" >&2
   exit 1
-fi
-
-if [[ "$SKIP_SENTRY_DSYM_UPLOAD" != "1" ]]; then
-  APP_NAME="$APP_NAME" \
-  OUTPUT_DIR="$OUTPUT_DIR" \
-  DSYM_PATH="$DSYM_PATH" \
-  "$UPLOAD_DSYM_SCRIPT"
 fi
 
 if [[ "$SKIP_TAG" != "1" ]]; then

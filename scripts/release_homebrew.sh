@@ -13,7 +13,6 @@ OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/dist}"
 APPCAST_FILE="${APPCAST_FILE:-$ROOT_DIR/appcast.xml}"
 SIGN_SCRIPT="${SIGN_SCRIPT:-$ROOT_DIR/scripts/sign_macos.sh}"
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
-UPLOAD_DSYM_SCRIPT="${UPLOAD_DSYM_SCRIPT:-$ROOT_DIR/scripts/upload_dsym_to_sentry.sh}"
 TAP_PROJECT_PATH="${TAP_PROJECT_PATH:-${TAP_REPO:-}}"
 TAP_REMOTE_URL="${TAP_REMOTE_URL:-}"
 TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-tap"
@@ -37,7 +36,6 @@ BUMP_PART="${BUMP_PART:-patch}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
 SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
 SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
-SKIP_SENTRY_DSYM_UPLOAD="${SKIP_SENTRY_DSYM_UPLOAD:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
 BUMP_VERSION="${BUMP_VERSION:-}"
 RELEASE_NOTES_FILE=""
@@ -60,7 +58,6 @@ Environment:
   SKIP_NOTARIZE=1        Skip notarization in sign_macos.sh.
   SKIP_GITLAB_RELEASE=1  Skip GitLab package upload and release asset links.
   SKIP_CASK_UPDATE=1     Skip updating the Homebrew tap repository.
-  SKIP_SENTRY_DSYM_UPLOAD=1  Skip uploading the release dSYM to Sentry.
   GITLAB_HOST=code.devops.xiaohongshu.com  GitLab host for releases and packages.
   GITLAB_PROJECT_PATH=huying/Argo  GitLab project path. Inferred from origin when omitted.
   GITLAB_PROJECT_ID=12345  Optional numeric project id. Overrides path encoding for API calls.
@@ -191,11 +188,6 @@ fi
 
 if [[ ! -x "$ARCHIVE_DSYM_SCRIPT" ]]; then
   echo "Missing executable dSYM archive script: $ARCHIVE_DSYM_SCRIPT" >&2
-  exit 1
-fi
-
-if [[ "$SKIP_SENTRY_DSYM_UPLOAD" != "1" && ! -x "$UPLOAD_DSYM_SCRIPT" ]]; then
-  echo "Missing executable dSYM upload script: $UPLOAD_DSYM_SCRIPT" >&2
   exit 1
 fi
 
@@ -377,13 +369,6 @@ fi
 if [[ ! -d "$DIST_DSYM_PATH" || ! -f "$DIST_DSYM_ZIP_PATH" ]]; then
   echo "Missing archived dSYM artifacts: $DIST_DSYM_PATH / $DIST_DSYM_ZIP_PATH" >&2
   exit 1
-fi
-
-if [[ "$RESUMING" != "1" && "$SKIP_SENTRY_DSYM_UPLOAD" != "1" ]]; then
-  APP_NAME="$APP_NAME" \
-  OUTPUT_DIR="$OUTPUT_DIR" \
-  DSYM_PATH="$DIST_DSYM_PATH" \
-  "$UPLOAD_DSYM_SCRIPT"
 fi
 
 RELEASE_NOTES_FILE="$(generate_release_notes "$VERSION" "$TAG" "$PREVIOUS_TAG" "$(basename "$DIST_DMG_PATH")")"

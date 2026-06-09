@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5A4973AA2F6F90ED00B79656 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4973A92F6F90ED00B79656 /* Sentry */; };
 		7F0A1B2C3D4E5F6071829301 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 7F0A1B2C3D4E5F6071829302 /* Sparkle */; };
 		8B1A2B3C4D5E6F708090A001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1A2B3C4D5E6F708090A002 /* XCTest.framework */; };
 		9D1A2B3C4D5E6F708091A001 /* YiTong in Frameworks */ = {isa = PBXBuildFile; productRef = 9D1A2B3C4D5E6F708091A002 /* YiTong */; };
@@ -64,7 +63,6 @@
 			files = (
 				9D1A2B3C4D5E6F708091A001 /* YiTong in Frameworks */,
 				7F0A1B2C3D4E5F6071829301 /* Sparkle in Frameworks */,
-				5A4973AA2F6F90ED00B79656 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,7 +141,6 @@
 			packageProductDependencies = (
 				9D1A2B3C4D5E6F708091A002 /* YiTong */,
 				7F0A1B2C3D4E5F6071829302 /* Sparkle */,
-				5A4973A92F6F90ED00B79656 /* Sentry */,
 			);
 			productName = Argo;
 			productReference = 5A45CEF92F67D58F00861AB5 /* Argo.app */;
@@ -200,7 +197,6 @@
 			packageReferences = (
 				9D1A2B3C4D5E6F708091A003 /* XCRemoteSwiftPackageReference "YiTong" */,
 				7F0A1B2C3D4E5F6071829303 /* XCRemoteSwiftPackageReference "Sparkle" */,
-				5A4973A82F6F90ED00B79656 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5A45CEFA2F67D58F00861AB5 /* Products */;
@@ -662,14 +658,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		5A4973A82F6F90ED00B79656 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
-			requirement = {
-				kind = exactVersion;
-				version = 9.8.0;
-			};
-		};
 		7F0A1B2C3D4E5F6071829303 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
@@ -689,11 +677,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5A4973A92F6F90ED00B79656 /* Sentry */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A4973A82F6F90ED00B79656 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
-			productName = Sentry;
-		};
 		7F0A1B2C3D4E5F6071829302 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7F0A1B2C3D4E5F6071829303 /* XCRemoteSwiftPackageReference "Sparkle" */;

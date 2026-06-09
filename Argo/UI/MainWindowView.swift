@@ -339,8 +339,10 @@ struct MainWindowView: View {
                     )
 
                     NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
-                        WorkspaceSidebarView()
-                            .navigationSplitViewColumnWidth(min: 190, ideal: 240, max: 320)
+                        FloatingWorkspaceSidebarSurface {
+                            WorkspaceSidebarView()
+                        }
+                        .navigationSplitViewColumnWidth(min: 210, ideal: 260, max: 340)
                     } detail: {
                         Group {
                             switch store.mainWindowMode {
@@ -771,6 +773,38 @@ struct MainWindowView: View {
         }
 
         return menu
+    }
+}
+
+private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    private var panelShape: some Shape {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+    }
+
+    var body: some View {
+        content()
+            .clipShape(panelShape)
+            .overlay {
+                panelShape
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .overlay(alignment: .top) {
+                panelShape
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                    .mask(
+                        LinearGradient(
+                            colors: [.black, .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .padding(1)
+            }
+            .shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)
+            .padding(.init(top: 10, leading: 10, bottom: 10, trailing: 10))
+            .background(ArgoTheme.appBackground)
     }
 }
 

@@ -403,6 +403,36 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(controlsSource.contains(".shadow(color: .black.opacity(0.18), radius: 12, y: 6)"))
     }
 
+    func testMainWindowWrapsWorkspaceSidebarInFloatingSurface() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let sidebarSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"),
+            encoding: .utf8
+        )
+        let floatingSidebarPattern = #"FloatingWorkspaceSidebarSurface\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.navigationSplitViewColumnWidth\(min: 210, ideal: 260, max: 340\)"#
+
+        XCTAssertNotNil(
+            mainWindowSource.range(of: floatingSidebarPattern, options: .regularExpression),
+            "WorkspaceSidebarView should be wrapped by the floating surface at the NavigationSplitView boundary."
+        )
+        XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
+        XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
+        XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 10, leading: 10, bottom: 10, trailing: 10))"))
+        XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)"))
+        XCTAssertFalse(
+            sidebarSource.contains("FloatingWorkspaceSidebarSurface"),
+            "The existing sidebar contents should not own the floating shell."
+        )
+        XCTAssertTrue(sidebarSource.contains("let outlineView = SidebarOutlineView()"))
+        XCTAssertTrue(sidebarSource.contains("private final class SidebarOutlineContainerView: NSView"))
+    }
+
     func testSleepPreventionToolbarMainButtonOpensDurationMenu() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

@@ -40,3 +40,14 @@ enum TimeCommandPaletteClock {
         return String(format: "%02d:%02d", hour, minute)
     }
 }
+
+enum TimeCommandPaletteCommandDisplay {
+    private static let title = "Open Command Palette"
+
+    static func commandText(in settings: AppSettings) -> String {
+        guard let shortcut = ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in: settings) else {
+            return title
+        }
+        return "\(title) (\(ArgoShortcutAction.toggleCommandPalette.displayedShortcutString(for: shortcut)))"
+    }
+}

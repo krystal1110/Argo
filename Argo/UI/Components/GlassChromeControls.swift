@@ -20,20 +20,7 @@ struct GlassToolbarGroup<Content: View>: View {
         }
         .padding(.horizontal, horizontalPadding)
         .frame(minHeight: minHeight)
-        .background(glassFill, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
-    }
-
-    private var glassFill: some ShapeStyle {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(0.155),
-                Color.white.opacity(0.055)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        .insetToolbarCapsuleSurface()
     }
 }
 
@@ -145,20 +132,78 @@ struct GlassToolbarSplitButton<LeadingContent: View, TrailingContent: View>: Vie
             .help(trailingHelp)
         }
         .frame(height: 38)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.155),
-                    Color.white.opacity(0.055)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: Capsule()
-        )
-        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
+        .insetToolbarCapsuleSurface()
         .opacity(isLeadingDisabled && isTrailingDisabled ? 0.5 : 1)
+    }
+}
+
+struct InsetToolbarCapsuleSurface: ViewModifier {
+    var fillOpacity: Double = 0.12
+    var glassHighlightOpacity: Double = 0.05
+    var borderOpacity: Double = 0.12
+    var topShadowOpacity: Double = 0.2
+    var bottomHighlightOpacity: Double = 0.08
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(Color.black.opacity(fillOpacity))
+                Capsule().fill(Color.white.opacity(glassHighlightOpacity))
+            }
+            .overlay(Capsule().stroke(Color.white.opacity(borderOpacity), lineWidth: 1))
+            .overlay(alignment: .top) {
+                Capsule()
+                    .stroke(Color.black.opacity(topShadowOpacity), lineWidth: 2)
+                    .blur(radius: 1)
+                    .mask(
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.black, .clear],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    )
+                    .padding(1)
+            }
+            .overlay(alignment: .bottom) {
+                Capsule()
+                    .stroke(Color.white.opacity(bottomHighlightOpacity), lineWidth: 1)
+                    .blur(radius: 0.5)
+                    .mask(
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.clear, .black],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    )
+                    .padding(1)
+            }
+    }
+}
+
+extension View {
+    func insetToolbarCapsuleSurface(
+        fillOpacity: Double = 0.12,
+        glassHighlightOpacity: Double = 0.05,
+        borderOpacity: Double = 0.12,
+        topShadowOpacity: Double = 0.2,
+        bottomHighlightOpacity: Double = 0.08
+    ) -> some View {
+        modifier(
+            InsetToolbarCapsuleSurface(
+                fillOpacity: fillOpacity,
+                glassHighlightOpacity: glassHighlightOpacity,
+                borderOpacity: borderOpacity,
+                topShadowOpacity: topShadowOpacity,
+                bottomHighlightOpacity: bottomHighlightOpacity
+            )
+        )
     }
 }
 

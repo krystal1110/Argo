@@ -1176,7 +1176,7 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
         case .hideFind:
             return StoredShortcut(key: "e", command: true, shift: false, option: false, control: false)
         case .toggleCommandPalette:
-            return StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)
+            return StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
         case .toggleSidebar:
             return StoredShortcut(key: "b", command: true, shift: false, option: false, control: false)
         case .toggleOverview:

@@ -93,7 +93,7 @@ Out of scope:
 2. Command group
    - 显示 command palette / quick command 入口。
    - 视觉上是居中的长玻璃胶囊。
-   - 文案可保持类似 `Open Command Palette (⌘P)`，具体本地化沿用现有 key。
+   - 文案可保持类似 `Open Command Palette (⇧⌘P)`，具体本地化沿用现有 key。
 
 3. Utility group
    - 放置全局或 focused-pane 工具图标，例如 command/search/preview/file tree/zoom 类入口。

@@ -228,18 +228,9 @@ struct MainWindowView: View {
                     }
                 }
 
-                GlassToolbarIconButton(
+                GlassToolbarMenuIconButton(
                     systemName: sleepPreventionIconName,
                     tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,
-                    accessibilityLabel: store.sleepPreventionPrimaryActionLabel,
-                    help: store.sleepPreventionPrimaryActionHelpText
-                ) {
-                    store.performPrimarySleepPreventionAction()
-                }
-
-                GlassToolbarMenuIconButton(
-                    systemName: "chevron.down",
-                    tint: ArgoTheme.secondaryText,
                     accessibilityLabel: store.sleepPreventionStatusText,
                     help: store.sleepPreventionStatusText
                 ) { anchorView in

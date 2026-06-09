@@ -132,7 +132,6 @@ export GITLAB_TOKEN=<token-with-api-scope>
 - 构建并签名通用版发布 DMG
 - 将 `Argo.app.dSYM` 归档到 `dist/dSYMs/Argo-<version>.app.dSYM`
 - 打包 `dist/dSYMs/Argo-<version>.app.dSYM.zip`
-- 使用默认目标 `xnu/argo` 将 `Argo.app.dSYM` 上传到 Sentry
 - 为 Sparkle 打包 `Argo-<version>.app.zip`
 - 除非设置 `SKIP_NOTARIZE=1`，否则执行公证
 - 更新仓库中的 `appcast.xml`
@@ -148,7 +147,6 @@ export GITLAB_TOKEN=<token-with-api-scope>
 - `SKIP_NOTARIZE=1 ./deploy.sh`
 - `SKIP_GITLAB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
-- `SKIP_SENTRY_DSYM_UPLOAD=1 ./deploy.sh`
 - `GITLAB_PROJECT_PATH=huying/Argo ./deploy.sh`
 - `GITLAB_PROJECT_ID=<numeric-id> ./deploy.sh`
 - `TAP_PROJECT_PATH=group/homebrew-tap ./deploy.sh`
@@ -157,15 +155,6 @@ export GITLAB_TOKEN=<token-with-api-scope>
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
 
 当 `origin` 是 `git@code.devops.xiaohongshu.com:huying/Argo.git` 时，脚本会自动推断 `GITLAB_PROJECT_PATH`。只有在你希望 API URL 使用数字项目 ID 时，才需要设置 `GITLAB_PROJECT_ID`。如果 GitLab 项目是私有项目，请确认 Sparkle feed 和 package 下载地址对已安装客户端可访问；Sparkle 检查更新时不会自动附加 GitLab 认证 header。
-
-默认情况下，Sentry 的 dSYM 上传使用 `sentry-cli` 认证；也可以使用 `SENTRY_AUTH_TOKEN`。
-
-可选的 Sentry 环境变量：
-
-- `SENTRY_ORG`：覆盖默认组织 `xnu`
-- `SENTRY_PROJECT`：覆盖默认项目 `argo`
-- `SENTRY_URL`：用于自托管 Sentry
-- `SENTRY_INCLUDE_SOURCES=1`：在上传 dSYM 的同时上传源码 bundle
 
 如果你仍在使用旧路径，`scripts/deploy.sh` 依然保留为兼容包装脚本。
 

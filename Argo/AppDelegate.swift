@@ -7,7 +7,6 @@
 
 import Cocoa
 import GhosttyKit
-import Sentry
 
 private func argoLocalizedAppString(_ key: String) -> String {
     LocalizationManager.shared.string(key)
@@ -37,32 +36,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return
         }
 
-        let releaseVersion = applicationReleaseVersion()
-
-        SentrySDK.start { options in
-            // sentry id
-            options.dsn = "https://d2856035f52ef60d4ae74f88e0194793@o4510180697636864.ingest.us.sentry.io/4511085450297344"
-            
-            // version marker
-            options.releaseName = "argo-\(releaseVersion)"
-            print("release name : \(options.releaseName ?? "<null>")")
-            
-            // no need to debug
-            // options.debug = true // Enabling debug when first installing is always helpful
-
-            // No Pii information
-            options.sendDefaultPii = false
-            
-            // just get session
-            options.enableAutoSessionTracking = true
-            
-            // disable hang detect now
-            options.enableAppHangTracking = false
-        }
-        
-        // record app launch only
-        SentrySDK.metrics.count(key: "app.launch", value: 1)
-        
         Task { @MainActor in
             let desktopApplication = ArgoDesktopApplication()
             self.desktopApplication = desktopApplication
@@ -696,22 +669,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         default:
             return argoLocalizedAppString("app.about.version.default")
         }
-    }
-
-    private func applicationReleaseVersion() -> String {
-        let shortVersion = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let shortVersion, !shortVersion.isEmpty {
-            return shortVersion
-        }
-
-        let buildVersion = (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let buildVersion, !buildVersion.isEmpty {
-            return buildVersion
-        }
-
-        return "0x00"
     }
 
     @MainActor

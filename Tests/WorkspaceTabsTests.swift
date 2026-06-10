@@ -45,6 +45,40 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(terminalPaneSource.contains(".shadow(color:"))
     }
 
+    func testTerminalBackgroundAppearanceIsScopedToTerminalSurface() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+        let desktopApplicationSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/App/ArgoDesktopApplication.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(mainWindowSource.contains("private var terminalIsTranslucent: Bool"))
+        XCTAssertTrue(mainWindowSource.contains(".background(windowContentBackground)"))
+        XCTAssertFalse(mainWindowSource.contains("""
+            .background(ArgoTheme.appBackground)
+
+            if store.isCommandPalettePresented {
+"""))
+
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98)"))
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalBackgroundBlurView()"))
+        XCTAssertTrue(workspaceDetailSource.contains("store.appSettings.terminalBackgroundBlur"))
+
+        XCTAssertFalse(desktopApplicationSource.contains("updateBackgroundBlur(enabled: transparent && settings.terminalBackgroundBlur)"))
+        XCTAssertTrue(desktopApplicationSource.contains("updateBackgroundBlur(enabled: false)"))
+    }
+
     func testTerminalChromeUsesCategoriesInsteadOfPaneChips() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

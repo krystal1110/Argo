@@ -104,7 +104,9 @@ public final class ArgoDesktopApplication: NSObject {
             // terminal region reveals whatever is behind the window; when
             // opaque we restore the solid chrome color.
             window.backgroundColor = transparent ? .clear : WindowContext.opaqueBackgroundColor
-            updateBackgroundBlur(enabled: transparent && settings.terminalBackgroundBlur)
+            // Blur is scoped to the terminal surface in SwiftUI; keeping the
+            // window-level effect disabled avoids blurring the whole app.
+            updateBackgroundBlur(enabled: false)
         }
 
         private func updateBackgroundBlur(enabled: Bool) {
@@ -181,6 +183,11 @@ public final class ArgoDesktopApplication: NSObject {
 
     public func toggleCommandPalette() {
         activeStore?.dispatch(.toggleCommandPalette)
+    }
+
+    public func toggleWorkspaceSidebar() {
+        guard let activeStore else { return }
+        NotificationCenter.default.post(name: .argoToggleWorkspaceSidebarRequested, object: activeStore)
     }
 
     public func toggleOverview() {

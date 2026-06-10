@@ -8,6 +8,10 @@
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    static let argoToggleWorkspaceSidebarRequested = Notification.Name("argo.toggleWorkspaceSidebarRequested")
+}
+
 enum ArgoFeatureFlags {
     static let showsRemoteSessionCreationUI = true
 }
@@ -54,6 +58,15 @@ struct MainWindowLayoutState {
         }
         workspaceColumnVisibility = mode == .workspace ? workspaceModeColumnVisibility : .detailOnly
         selectedMode = mode
+    }
+
+    mutating func toggleWorkspaceSidebar() {
+        guard selectedMode == .workspace else { return }
+        workspaceColumnVisibility = workspaceColumnVisibility == .detailOnly ? .all : .detailOnly
+    }
+
+    func isWorkspaceSidebarVisible(in mode: MainWindowMode) -> Bool {
+        mode == .workspace && workspaceColumnVisibility != .detailOnly
     }
 }
 

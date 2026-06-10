@@ -554,10 +554,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             desktopApplication?.toggleCommandPalette()
 
         case .toggleSidebar:
-            NSApp.keyWindow?.firstResponder?.tryToPerform(
-                #selector(NSSplitViewController.toggleSidebar(_:)),
-                with: nil
-            )
+            desktopApplication?.toggleWorkspaceSidebar()
 
         case .toggleOverview:
             desktopApplication?.toggleOverview()

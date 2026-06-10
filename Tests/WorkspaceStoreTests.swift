@@ -75,6 +75,20 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(store.appSettings.uiScale, 1.25)
     }
 
+    func testUpdateAppSettingsPreservesTerminalBackgroundAppearance() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        store.updateAppSettings(
+            AppSettings(
+                terminalBackgroundOpacity: 0.65,
+                terminalBackgroundBlur: true
+            )
+        )
+
+        XCTAssertEqual(store.appSettings.terminalBackgroundOpacity, 0.65, accuracy: 0.0001)
+        XCTAssertTrue(store.appSettings.terminalBackgroundBlur)
+    }
+
     func testUpdateAppSettingsPreservesSSHPresets() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
         let customPreset = SSHPreset(
@@ -234,6 +248,30 @@ final class WorkspaceStoreTests: XCTestCase {
         layoutState.selectMode(.workspace)
 
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .detailOnly)
+    }
+
+    func testMainWindowLayoutTogglesWorkspaceSidebarOnlyInWorkspaceMode() {
+        var layoutState = MainWindowLayoutState()
+
+        XCTAssertTrue(layoutState.isWorkspaceSidebarVisible(in: .workspace))
+
+        layoutState.toggleWorkspaceSidebar()
+        XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .workspace))
+
+        layoutState.selectMode(.overview)
+        XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .overview))
+
+        layoutState.toggleWorkspaceSidebar()
+        XCTAssertFalse(
+            layoutState.isWorkspaceSidebarVisible(in: .overview),
+            "Global modes should not reveal the workspace sidebar."
+        )
+
+        layoutState.selectMode(.workspace)
+        XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .workspace))
+
+        layoutState.toggleWorkspaceSidebar()
+        XCTAssertTrue(layoutState.isWorkspaceSidebarVisible(in: .workspace))
     }
 
     func testMainWindowModeTransitionsDoNotAnimateBetweenContentModes() {

@@ -415,18 +415,51 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"),
             encoding: .utf8
         )
-        let floatingSidebarPattern = #"FloatingWorkspaceSidebarSurface\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.navigationSplitViewColumnWidth\(min: 210, ideal: 260, max: 340\)"#
+        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
 
         XCTAssertNotNil(
             mainWindowSource.range(of: floatingSidebarPattern, options: .regularExpression),
-            "WorkspaceSidebarView should be wrapped by the floating surface at the NavigationSplitView boundary."
+            "WorkspaceSidebarView should render as a floating, resizable column outside NavigationSplitView's native sidebar shell."
         )
+        XCTAssertFalse(mainWindowSource.contains(".frame(width: 260)"))
+        XCTAssertTrue(mainWindowSource.contains("@State private var workspaceSidebarWidth = Self.workspaceSidebarDefaultWidth"))
+        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarMinWidth: CGFloat = 210"))
+        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarDefaultWidth: CGFloat = 260"))
+        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarMaxWidth: CGFloat = 340"))
+        XCTAssertTrue(mainWindowSource.contains("WorkspaceSidebarResizeHandle("))
+        XCTAssertTrue(mainWindowSource.contains("private struct WorkspaceSidebarResizeHandle: NSViewRepresentable"))
+        XCTAssertTrue(mainWindowSource.contains("""
+        override var mouseDownCanMoveWindow: Bool {
+            false
+        }
+"""))
+        XCTAssertTrue(mainWindowSource.contains("override func mouseDragged(with event: NSEvent)"))
+        XCTAssertTrue(mainWindowSource.contains("addCursorRect(bounds, cursor: .resizeLeftRight)"))
+        XCTAssertFalse(mainWindowSource.contains("DragGesture(minimumDistance: 0)"))
+        XCTAssertFalse(mainWindowSource.contains("NavigationSplitView(columnVisibility:"))
+        XCTAssertFalse(mainWindowSource.contains(".navigationSplitViewColumnWidth("))
+        XCTAssertFalse(mainWindowSource.contains(".navigationSplitViewStyle("))
         XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
         XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"))
         XCTAssertTrue(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
         XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))"))
         XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)"))
+        let floatingSurfaceSource = try XCTUnwrap(
+            mainWindowSource.range(
+                of: #"private struct FloatingWorkspaceSidebarSurface[\s\S]*?private struct TimeCommandPaletteButtonLabel"#,
+                options: .regularExpression
+            ).map { String(mainWindowSource[$0]) }
+        )
+        XCTAssertFalse(
+            floatingSurfaceSource.contains(".overlay(alignment: .top)"),
+            "FloatingWorkspaceSidebarSurface should draw one shell, not an inset highlight that reads as a second frame."
+        )
+        XCTAssertEqual(
+            floatingSurfaceSource.components(separatedBy: ".stroke(Color.white.opacity").count - 1,
+            1,
+            "FloatingWorkspaceSidebarSurface should have a single visible panel stroke."
+        )
         XCTAssertFalse(
             sidebarSource.contains("FloatingWorkspaceSidebarSurface"),
             "The existing sidebar contents should not own the floating shell."
@@ -443,6 +476,35 @@ final class QuickCommandSupportTests: XCTestCase {
 
         XCTAssertTrue(sidebarSource.contains("let outlineView = SidebarOutlineView()"))
         XCTAssertTrue(sidebarSource.contains("private final class SidebarOutlineContainerView: NSView"))
+    }
+
+    func testToggleSidebarShortcutUsesFloatingSidebarState() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let appDelegateSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/AppDelegate.swift"),
+            encoding: .utf8
+        )
+        let desktopApplicationSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/App/ArgoDesktopApplication.swift"),
+            encoding: .utf8
+        )
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(appDelegateSource.contains("NSSplitViewController.toggleSidebar"))
+        XCTAssertTrue(appDelegateSource.contains("desktopApplication?.toggleWorkspaceSidebar()"))
+        XCTAssertTrue(desktopApplicationSource.contains("public func toggleWorkspaceSidebar()"))
+        XCTAssertTrue(
+            desktopApplicationSource.contains("NotificationCenter.default.post(name: .argoToggleWorkspaceSidebarRequested, object: activeStore)")
+        )
+        XCTAssertTrue(
+            mainWindowSource.contains(".onReceive(NotificationCenter.default.publisher(for: .argoToggleWorkspaceSidebarRequested))")
+        )
+        XCTAssertTrue(mainWindowSource.contains("(notification.object as? WorkspaceStore) === store"))
     }
 
     func testSleepPreventionToolbarMainButtonOpensDurationMenu() throws {

@@ -49,17 +49,15 @@ struct WorkspaceSidebarView: View {
             .padding(.horizontal, 8 * uiScale)
             .padding(.top, 7 * uiScale)
             .padding(.bottom, 6 * uiScale)
-            .background(ArgoTheme.sidebarBackground)
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(ArgoTheme.border)
+                    .fill(ArgoTheme.border.opacity(0.55))
                     .frame(height: 1)
             }
 
             WorkspaceOutlineSidebar(query: query, onOpenRepository: store.addWorkspaceFromOpenPanel, onConnectSSH: { store.presentConnectSSH() })
                 .environmentObject(store)
         }
-        .background(ArgoTheme.sidebarBackground)
     }
 }
 

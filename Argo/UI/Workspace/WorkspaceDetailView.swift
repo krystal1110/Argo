@@ -270,11 +270,15 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
         store.appSettings.terminalBackgroundOpacity < 1
     }
 
-    private var surfaceFill: some ShapeStyle {
+    private var usesBackgroundBlur: Bool {
+        isTranslucent && store.appSettings.terminalBackgroundBlur
+    }
+
+    private var surfaceFill: LinearGradient {
         LinearGradient(
             colors: [
-                ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98),
-                ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)
+                ArgoTheme.panelRaised.opacity(0.98),
+                ArgoTheme.paneBackground.opacity(0.98)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -286,10 +290,36 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
 
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(surfaceFill)
+            .background {
+                if usesBackgroundBlur {
+                    TerminalBackgroundBlurView()
+                        .allowsHitTesting(false)
+                }
+                if !isTranslucent {
+                    surfaceFill
+                }
+            }
             .clipShape(shape)
             .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
             .shadow(color: Color.black.opacity(isTranslucent ? 0.16 : 0.10), radius: 12, y: 5)
+    }
+}
+
+private struct TerminalBackgroundBlurView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        configure(view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        configure(nsView)
+    }
+
+    private func configure(_ view: NSVisualEffectView) {
+        view.blendingMode = .behindWindow
+        view.material = .underWindowBackground
+        view.state = .active
     }
 }
 

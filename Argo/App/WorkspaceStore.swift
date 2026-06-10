@@ -937,6 +937,8 @@ final class WorkspaceStore: ObservableObject {
             terminalFontSize: settings.terminalFontSize,
             terminalTheme: settings.terminalTheme,
             terminalScrollbackLines: settings.terminalScrollbackLines,
+            terminalBackgroundOpacity: settings.terminalBackgroundOpacity,
+            terminalBackgroundBlur: settings.terminalBackgroundBlur,
             sidebarShowsSecondaryLabels: settings.sidebarShowsSecondaryLabels,
             sidebarShowsWorkspaceBadges: settings.sidebarShowsWorkspaceBadges,
             sidebarShowsWorktreeBadges: settings.sidebarShowsWorktreeBadges,

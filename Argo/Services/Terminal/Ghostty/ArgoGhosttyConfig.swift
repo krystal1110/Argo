@@ -80,6 +80,9 @@ enum ArgoGhosttyConfigManager {
         if settings.terminalBackgroundOpacity < 1 {
             let opacity = min(max(settings.terminalBackgroundOpacity, 0.5), 1)
             lines.append("background-opacity = \(String(format: "%.2f", opacity))")
+            if settings.terminalBackgroundBlur {
+                lines.append("background-blur = true")
+            }
         }
 
         return lines.joined(separator: "\n") + "\n"

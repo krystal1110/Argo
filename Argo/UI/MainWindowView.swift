@@ -11,10 +11,15 @@ import ObjectiveC
 import SwiftUI
 
 struct MainWindowView: View {
+    private static let workspaceSidebarMinWidth: CGFloat = 210
+    private static let workspaceSidebarDefaultWidth: CGFloat = 260
+    private static let workspaceSidebarMaxWidth: CGFloat = 340
+
     @EnvironmentObject private var store: WorkspaceStore
     @ObservedObject private var localization = LocalizationManager.shared
     @State private var layoutState = MainWindowLayoutState()
     @State private var commandPaletteClockDate = Date()
+    @State private var workspaceSidebarWidth = Self.workspaceSidebarDefaultWidth
 
     private func localized(_ key: String) -> String {
         localization.string(key)
@@ -30,6 +35,14 @@ struct MainWindowView: View {
 
     private var uiScale: CGFloat {
         CGFloat(store.appSettings.uiScale)
+    }
+
+    private var terminalIsTranslucent: Bool {
+        store.mainWindowMode == .workspace && store.appSettings.terminalBackgroundOpacity < 1
+    }
+
+    private var windowContentBackground: Color {
+        terminalIsTranslucent ? .clear : ArgoTheme.appBackground
     }
 
     private var hasSelectedSession: Bool {
@@ -143,9 +156,15 @@ struct MainWindowView: View {
     }
 
     private func toggleWorkspaceSidebar() {
-        NSApp.keyWindow?.firstResponder?.tryToPerform(
-            #selector(NSSplitViewController.toggleSidebar(_:)), with: nil
-        )
+        layoutState.toggleWorkspaceSidebar()
+    }
+
+    private func resizeWorkspaceSidebar(to width: CGFloat) {
+        workspaceSidebarWidth = Self.clampedWorkspaceSidebarWidth(width)
+    }
+
+    private static func clampedWorkspaceSidebarWidth(_ width: CGFloat) -> CGFloat {
+        min(max(width, workspaceSidebarMinWidth), workspaceSidebarMaxWidth)
     }
 
     private var topGlassChrome: some View {
@@ -338,38 +357,43 @@ struct MainWindowView: View {
                         }
                     )
 
-                    NavigationSplitView(columnVisibility: $layoutState.workspaceColumnVisibility) {
+                    if layoutState.isWorkspaceSidebarVisible(in: store.mainWindowMode) {
                         FloatingWorkspaceSidebarSurface {
                             WorkspaceSidebarView()
                         }
-                        .navigationSplitViewColumnWidth(min: 210, ideal: 260, max: 340)
-                    } detail: {
-                        Group {
-                            switch store.mainWindowMode {
-                            case .workspace:
-                                WorkspaceDetailView()
-
-                            case .canvas:
-                                GlobalCanvasView {
-                                    dismissGlobalMode()
-                                }
-                                .environmentObject(store)
-
-                            case .overview:
-                                OverviewView {
-                                    dismissGlobalMode(restoreFocus: false)
-                                }
-                                .environmentObject(store)
-                            }
+                        .frame(width: workspaceSidebarWidth)
+                        .overlay(alignment: .trailing) {
+                            WorkspaceSidebarResizeHandle(
+                                currentWidth: workspaceSidebarWidth,
+                                onResize: resizeWorkspaceSidebar(to:)
+                            )
+                            .frame(width: 8)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .navigationSplitViewStyle(.balanced)
+
+                    Group {
+                        switch store.mainWindowMode {
+                        case .workspace:
+                            WorkspaceDetailView()
+
+                        case .canvas:
+                            GlobalCanvasView {
+                                dismissGlobalMode()
+                            }
+                            .environmentObject(store)
+
+                        case .overview:
+                            OverviewView {
+                                dismissGlobalMode(restoreFocus: false)
+                            }
+                            .environmentObject(store)
+                        }
+                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(ArgoTheme.appBackground)
+            .background(windowContentBackground)
 
             if store.isCommandPalettePresented {
                 CommandPaletteView()
@@ -400,6 +424,10 @@ struct MainWindowView: View {
                 await store.refreshHAPIIntegrationStatus()
             }
             store.refreshAvailableExternalEditors()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .argoToggleWorkspaceSidebarRequested)) { notification in
+            guard (notification.object as? WorkspaceStore) === store else { return }
+            toggleWorkspaceSidebar()
         }
         .onChange(of: store.mainWindowMode) { _, newMode in
             layoutState.selectMode(newMode)
@@ -792,21 +820,121 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
                 panelShape
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
-            .overlay(alignment: .top) {
-                panelShape
-                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                    .mask(
-                        LinearGradient(
-                            colors: [.black, .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .padding(1)
-            }
             .shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)
             .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))
             .background(ArgoTheme.appBackground)
+    }
+}
+
+private struct WorkspaceSidebarResizeHandle: NSViewRepresentable {
+    let currentWidth: CGFloat
+    let onResize: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> EventView {
+        EventView(currentWidth: currentWidth, onResize: onResize)
+    }
+
+    func updateNSView(_ nsView: EventView, context: Context) {
+        nsView.currentWidth = currentWidth
+        nsView.onResize = onResize
+    }
+
+    final class EventView: NSView {
+        var currentWidth: CGFloat
+        var onResize: (CGFloat) -> Void
+
+        private var dragStartLocation: NSPoint?
+        private var dragStartWidth: CGFloat?
+        private var trackingArea: NSTrackingArea?
+        private var isHovering = false {
+            didSet {
+                updateBackground()
+            }
+        }
+        private var isDragging = false {
+            didSet {
+                updateBackground()
+            }
+        }
+
+        override var mouseDownCanMoveWindow: Bool {
+            false
+        }
+
+        init(currentWidth: CGFloat, onResize: @escaping (CGFloat) -> Void) {
+            self.currentWidth = currentWidth
+            self.onResize = onResize
+            super.init(frame: .zero)
+            wantsLayer = true
+            updateBackground()
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+            true
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            bounds.contains(point) ? self : nil
+        }
+
+        override func resetCursorRects() {
+            super.resetCursorRects()
+            addCursorRect(bounds, cursor: .resizeLeftRight)
+        }
+
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            if let trackingArea {
+                removeTrackingArea(trackingArea)
+            }
+            let area = NSTrackingArea(
+                rect: bounds,
+                options: [.activeInKeyWindow, .mouseEnteredAndExited, .inVisibleRect],
+                owner: self
+            )
+            trackingArea = area
+            addTrackingArea(area)
+        }
+
+        override func mouseEntered(with event: NSEvent) {
+            isHovering = true
+        }
+
+        override func mouseExited(with event: NSEvent) {
+            if !isDragging {
+                isHovering = false
+            }
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            dragStartLocation = event.locationInWindow
+            dragStartWidth = currentWidth
+            isDragging = true
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let dragStartLocation, let dragStartWidth else { return }
+            onResize(dragStartWidth + event.locationInWindow.x - dragStartLocation.x)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            if let dragStartLocation, let dragStartWidth {
+                onResize(dragStartWidth + event.locationInWindow.x - dragStartLocation.x)
+            }
+            dragStartLocation = nil
+            dragStartWidth = nil
+            isDragging = false
+            isHovering = bounds.contains(convert(event.locationInWindow, from: nil))
+        }
+
+        private func updateBackground() {
+            layer?.backgroundColor = NSColor.white.withAlphaComponent(isHovering || isDragging ? 0.12 : 0.001).cgColor
+        }
     }
 }
 

@@ -29,4 +29,16 @@ final class ArgoGhosttyConfigTests: XCTestCase {
             "# Managed by Argo. Manual edits will be overwritten.\n"
         )
     }
+
+    func testManagedConfigContentsIncludeBackgroundAppearanceOverrides() {
+        let contents = ArgoGhosttyConfigManager.managedConfigContents(
+            settings: AppSettings(
+                terminalBackgroundOpacity: 0.65,
+                terminalBackgroundBlur: true
+            )
+        )
+
+        XCTAssertTrue(contents.contains("background-opacity = 0.65"))
+        XCTAssertTrue(contents.contains("background-blur = true"))
+    }
 }

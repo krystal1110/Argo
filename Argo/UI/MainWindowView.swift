@@ -785,6 +785,7 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
 
     var body: some View {
         content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(ArgoTheme.sidebarBackground, in: panelShape)
             .clipShape(panelShape)
             .overlay {
@@ -804,7 +805,7 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
                     .padding(1)
             }
             .shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)
-            .padding(.init(top: 10, leading: 10, bottom: 10, trailing: 10))
+            .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))
             .background(ArgoTheme.appBackground)
     }
 }

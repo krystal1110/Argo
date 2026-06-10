@@ -785,6 +785,7 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
 
     var body: some View {
         content()
+            .background(ArgoTheme.sidebarBackground, in: panelShape)
             .clipShape(panelShape)
             .overlay {
                 panelShape

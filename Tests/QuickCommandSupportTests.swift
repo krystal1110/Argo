@@ -423,12 +423,23 @@ final class QuickCommandSupportTests: XCTestCase {
         )
         XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
         XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
+        XCTAssertTrue(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
         XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 10, leading: 10, bottom: 10, trailing: 10))"))
         XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)"))
         XCTAssertFalse(
             sidebarSource.contains("FloatingWorkspaceSidebarSurface"),
             "The existing sidebar contents should not own the floating shell."
         )
+
+        let fullSidebarBackgroundCount = sidebarSource
+            .components(separatedBy: ".background(ArgoTheme.sidebarBackground)")
+            .count - 1
+        XCTAssertEqual(
+            fullSidebarBackgroundCount,
+            0,
+            "WorkspaceSidebarView should let FloatingWorkspaceSidebarSurface own the full-panel background."
+        )
+
         XCTAssertTrue(sidebarSource.contains("let outlineView = SidebarOutlineView()"))
         XCTAssertTrue(sidebarSource.contains("private final class SidebarOutlineContainerView: NSView"))
     }

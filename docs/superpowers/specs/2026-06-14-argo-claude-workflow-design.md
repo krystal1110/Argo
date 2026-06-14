@@ -160,3 +160,27 @@
 - `scripts/argo-screenshot.sh`:实地跑通,能正确截到 Argo 窗口图。
 - `docs/design-system.md`:内容与现有 UI 代码一致,无臆造 token。
 - 端到端:用一个小需求跑通 `argo-batch → feature-runner → argo-review` 全闭环。
+
+## 9. 验证记录(2026-06-14 实施完成)
+
+全部 7 个产物已实现并通过两阶段审查(spec 合规 + 代码质量),共 11 个提交,全部无 Claude 署名。
+
+### 各项验证结果
+
+- **`docs/design-system.md`**:✅ 提炼出真实存在的集中式 token 文件 `Argo/Support/ArgoTheme.swift`(30 个 token),reviewer 逐行核对 RGB/α 值与源码一致,无臆造。修复了 `tertiaryText` 命名歧义等 3 处问题。
+- **`scripts/argo-screenshot.sh`**:✅ 实地跑通,成功截到清晰 Argo 窗口图(主会话亲自 Read 确认)。修正了两个真实坑:产物在 DerivedData 第 5 层(骁架误用 maxdepth 4)、System Events 取不到 window id(改用动态取 bounds + `screencapture -R` 区域截 + 全屏兜底)。
+- **`.claude/agents/` + `commands/` + `settings.json`**:✅ frontmatter/JSON 合法,内容与规格一致,deny 护栏(push/merge/pr create/rm -rf)就位。
+- **端到端闭环**:✅ 派后台 worktree subagent 完成「README 加项目简介」需求 → 写出 SUMMARY.md → 走验收 → 拣选真实改动 merge → 清理 worktree。全程 agent 未 merge/push/PR,护栏生效。
+
+### 实施中发现的关键问题(使用前必读)
+
+1. **新 agent 定义需重启 Claude Code 会话才生效**:`argo-feature-runner` 作为 `subagent_type` 在创建它的同一会话里**无法被识别**(报 `Agent type not found`),但 slash command 当场即可用。**首次使用这套工作流前,请重启一次 Claude Code 会话**让 agent 加载。本次端到端验证用 `general-purpose` 注入相同定义的方式替代验证了闭环逻辑。
+
+2. **worktree 基线差异导致 `git diff main --stat` 有假象**:后台 agent 的 worktree 基于 `main`,而本次开发的 spec/plan/配置在 feature 分支上。验收时 `diff main` 会显示"删除"这些文件,这是基线差异不是 agent 行为。**验收应看 agent 自己那个 commit 的 diff**(`git show <sha>`),而非 `diff main`。`/argo-review` 实际使用时若 main 已包含这套配置则无此问题。
+
+3. **`.claude/` 默认被 .gitignore 忽略**:已改 `.gitignore` 放行 `agents/`、`commands/`、`settings.json`,忽略 `settings.local.json` 等个人文件,新增配置自动入库。
+
+### 已知后续可优化项
+
+- agent 生效需重启会话这一点,可在 README/DEVELOP 里加一句使用说明。
+- 截图脚本目前按「front window」截,多窗口场景可能截错窗口,后续可加窗口标题匹配。

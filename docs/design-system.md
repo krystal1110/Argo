@@ -6,7 +6,7 @@
 
 ## 配色
 
-Argo 是**深色主题** app,配色集中定义在 `Argo/Support/ArgoTheme.swift` 的 `enum ArgoTheme` 中,UI 各处通过 `ArgoTheme.xxx` 引用(全仓引用 500+ 次)。新 UI 应优先复用这些 token,而非自行编写 `Color(red:...)`。
+Argo 是**深色主题** app,配色集中定义在 `Argo/Support/ArgoTheme.swift` 的 `enum ArgoTheme` 中,UI 各处通过 `ArgoTheme.xxx` 引用(全仓引用约 460 次)。新 UI 应优先复用这些 token,而非自行编写 `Color(red:...)`。
 
 ### 背景层级(由暗到亮,营造深度)
 
@@ -17,7 +17,7 @@ Argo 是**深色主题** app,配色集中定义在 `Argo/Support/ArgoTheme.swift
 | `ArgoTheme.chromeBackground` | (0.056, 0.062, 0.076, α0.96) | 工具栏/chrome 区域 |
 | `ArgoTheme.sidebarBackground` | (0.058, 0.064, 0.079) | 左侧边栏背景 |
 | `ArgoTheme.paneBackground` | (0.061, 0.068, 0.083) | 终端 pane 背景 |
-| `ArgoTheme.panelBackground` | (0.067, 0.073, 0.089) | 面板/卡片背景(高频) |
+| `ArgoTheme.panelBackground` | (0.067, 0.073, 0.089) | 面板/卡片背景 |
 | `ArgoTheme.paneHeaderBackground` | (0.072, 0.078, 0.094) | pane 头部条 |
 | `ArgoTheme.panelRaised` | (0.074, 0.081, 0.099) | 抬升的面板(悬浮感) |
 | `ArgoTheme.sidebarSearchBackground` | (0.078, 0.085, 0.102) | 侧边栏搜索框 |
@@ -39,10 +39,12 @@ Argo 是**深色主题** app,配色集中定义在 `Argo/Support/ArgoTheme.swift
 
 | Token | 真实值 | 使用场景 |
 | --- | --- | --- |
-| `ArgoTheme.tertiaryText` | white α0.9 | 接近主文字 |
-| `ArgoTheme.secondaryText` | white α0.74 | 次级文字(高频) |
-| `ArgoTheme.mutedText` | white α0.58 | 弱化/说明文字(最高频) |
+| `ArgoTheme.tertiaryText` | white α0.9 | 最强一档,接近主文字 |
+| `ArgoTheme.secondaryText` | white α0.74 | 次级文字 |
+| `ArgoTheme.mutedText` | white α0.58 | 最弱一档,弱化/说明文字 |
 
+> ⚠️ 注意:`tertiaryText` 命名易误解——它实际是**最强**的一档(α0.9,最接近主文字)。三档强弱顺序为 `tertiaryText`(α0.9) > `secondaryText`(α0.74) > `mutedText`(α0.58),按需求选对应档位时以透明度为准,不要凭命名直觉。
+>
 > 说明:除上述 token 外,SwiftUI 系统语义色也大量使用,主要是 `.foregroundStyle(.secondary)`(79 次,弱化文字)、`.foregroundStyle(.white)`、`.primary`、`.tertiary`,以及状态色 `.red/.green/.orange/.cyan/.yellow/.blue`。能用 `ArgoTheme` 的优先用 token;纯系统场景才用语义色。
 
 ### 边框与填充

@@ -1,6 +1,13 @@
 .DS_Store
-.claude/
+# .claude: 共享工作流配置入库,个人/敏感文件忽略
+.claude/*
+!.claude/agents
+!.claude/agents/**
+!.claude/commands
+!.claude/commands/**
+!.claude/settings.json
 .superpowers/
+.screenshots/
 .build/
 .swiftpm/
 .worktrees/

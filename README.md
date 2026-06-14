@@ -1,5 +1,7 @@
 # Argo
 
+A native macOS terminal workspace app built on AppKit + SwiftUI with a bundled Ghostty runtime. / 基于 AppKit + SwiftUI、内置 Ghostty 运行时的原生 macOS 终端工作区 app。
+
 [中文版本](./README.zh-CN.md)
 
 [![Website](https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square)](https://argo.dev)

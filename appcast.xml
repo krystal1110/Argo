@@ -6,6 +6,16 @@
         <description>Signed Sparkle updates for Argo.</description>
         <language>en</language>
         <item>
+            <title>1.0.1</title>
+            <pubDate>Fri, 19 Jun 2026 18:55:10 +0800</pubDate>
+            <link>https://code.devops.xiaohongshu.com/huying/Argo</link>
+            <sparkle:fullReleaseNotesLink>https://code.devops.xiaohongshu.com/huying/Argo/-/releases/v1.0.1</sparkle:fullReleaseNotesLink>
+            <sparkle:version>152</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://code.devops.xiaohongshu.com/huying/Argo/uploads/d2ef03d17b9eba6419a5766c30c08492/Argo-1.0.1.app.zip" length="26394607" type="application/octet-stream" sparkle:edSignature="36FVvCyWf+ii1XTfNYIfWm+O6g+DRLoK2LmFuns45tfKKMb4f2xueNAkdTCP8Sm8SZQE2zZAUyvfFFXmUI+TAw=="/>
+        </item>
+        <item>
             <title>1.0.0</title>
             <pubDate>Mon, 01 Jun 2026 16:52:44 +0800</pubDate>
             <link>https://code.devops.xiaohongshu.com/huying/Argo</link>

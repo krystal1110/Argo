@@ -154,6 +154,31 @@ final class ReleaseUpdateTests: XCTestCase {
         """))
     }
 
+    func testReleaseScriptsUseKeychainOnlyNotarizationCredentials() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        for relativePath in [
+            "scripts/sign_macos.sh",
+            "scripts/release_macos.sh",
+            "scripts/release_homebrew.sh"
+        ] {
+            let script = try String(contentsOf: rootURL.appendingPathComponent(relativePath), encoding: .utf8)
+
+            XCTAssertFalse(script.contains("APPLE_APP_SPECIFIC_PASSWORD"), "\(relativePath) should not support direct Apple password credentials")
+            XCTAssertFalse(script.contains("APPLE_PASSWORD"), "\(relativePath) should not support direct Apple password credentials")
+            XCTAssertFalse(script.contains("APP_SPECIFIC_PASSWORD"), "\(relativePath) should not support direct Apple password credentials")
+            XCTAssertFalse(script.contains("--apple-id"), "\(relativePath) should not pass Apple ID on the command line")
+            XCTAssertFalse(script.contains("--team-id"), "\(relativePath) should not pass team ID on the command line")
+            XCTAssertFalse(script.contains("--password"), "\(relativePath) should not pass passwords on the command line")
+        }
+
+        let signScript = try String(contentsOf: rootURL.appendingPathComponent("scripts/sign_macos.sh"), encoding: .utf8)
+        XCTAssertTrue(signScript.contains("xcrun notarytool store-credentials"))
+        XCTAssertTrue(signScript.contains("--keychain-profile \"$NOTARYTOOL_PROFILE\""))
+    }
+
     func testAppcastUsesGitHubReleaseAssets() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

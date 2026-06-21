@@ -1,74 +1,57 @@
-# Argo
+<p align="center">
+  <img src="./Argo/Assets.xcassets/AppIcon.appiconset/appicon_512x512.png" width="104" alt="Argo app icon">
+</p>
 
-A native macOS terminal workspace app built on AppKit + SwiftUI with a bundled Ghostty runtime. / 基于 AppKit + SwiftUI、内置 Ghostty 运行时的原生 macOS 终端工作区 app。
+<h1 align="center">Argo</h1>
 
-[中文版本](./README.zh-CN.md)
+<p align="center">
+  <strong>A native macOS terminal workspace for repositories, worktrees, split panes, and coding agents.</strong>
+</p>
 
-[![Website](https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square)](https://argo.dev)
-[![Releases](https://img.shields.io/badge/Download-GitHub%20Releases-181717?style=flat-square&logo=github)](https://github.com/krystal1110/Argo/releases)
-[![Platform](https://img.shields.io/badge/Platform-macOS-black?style=flat-square)](https://argo.dev)
-[![License](https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square)](./LICENSE)
+<p align="center">
+  <a href="https://argo.dev">Website</a>
+  ·
+  <a href="https://github.com/krystal1110/Argo/releases">Download</a>
+  ·
+  <a href="https://github.com/krystal1110/Argo/issues">Issues</a>
+</p>
 
-Argo is a native macOS terminal workspace app for developers who work across repositories, worktrees, branches, and split panes.
+<p align="center">
+  <a href="https://argo.dev"><img alt="Website" src="https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square"></a>
+  <a href="https://github.com/krystal1110/Argo/releases"><img alt="Releases" src="https://img.shields.io/badge/Download-GitHub%20Releases-181717?style=flat-square&logo=github"></a>
+  <a href="https://argo.dev"><img alt="Platform" src="https://img.shields.io/badge/Platform-macOS-black?style=flat-square"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square"></a>
+</p>
 
-It gives you one focused place to open codebases, switch worktrees, keep terminal layouts around, and move faster without juggling a pile of Terminal windows.
+Argo keeps your repositories, worktrees, terminal panes, SSH sessions, and AI
+agent runs in one focused macOS workspace.
 
-![Argo app screenshot](./images/screenshot.png)
+## Features
 
-## Why Use Argo
+- Multi-repository sidebar with worktree-aware navigation.
+- Ghostty-powered terminal panes with split layouts and per-worktree restoration.
+- Local shell, SSH, and agent-backed terminal sessions.
+- Right-side workbench for file browsing, Markdown/HTML preview, and local web pages.
+- Pane-aware notifications through OSC 9/777 and the `argo notify` CLI.
+- Git and GitHub context for repository status and workspace actions.
+- Native AppKit + SwiftUI interface tuned for keyboard-heavy development.
 
-- Keep multiple repositories and worktrees in one sidebar.
-- Reopen the same pane layout when you come back to a repo.
-- Mix local shell, SSH, and agent-backed terminal sessions.
-- Stay in a native macOS app built around keyboard-heavy workflows.
-
-## Install
-
-### Homebrew
-
-```bash
-brew update && brew install --cask argo
-```
-
-### Direct Download
+## Download
 
 Download the latest signed `.dmg` from GitHub Releases:
 
 <https://github.com/krystal1110/Argo/releases>
 
-## Quick Start
-
-1. Open Argo.
-2. Add one or more local repositories to the sidebar.
-3. Select a repository or worktree and open a terminal tab.
-4. Split panes as needed and switch worktrees without rebuilding your layout from scratch.
-
 ## Requirements
 
 - macOS 14.6 or later
-- Universal build: Apple Silicon and Intel Macs are both supported
+- Apple Silicon and Intel Macs are supported
 
-## Links
+## Inspired By
 
-- Website: <https://argo.dev>
-- Docs: <https://argo.dev/docs/intro>
-- Releases: <https://github.com/krystal1110/Argo/releases>
-- Issues: <https://github.com/krystal1110/Argo/issues>
-- Discord: <https://discord.com/invite/eGzEaP6TzR>
-
-Power features:
-
-- [Lifecycle hooks](https://argo.dev/docs/guides/lifecycle-hooks) — run a command when the app or a session starts/exits
-- [Agent notifications](./docs/guides/agent-notifications.md) — `argo notify` CLI and OSC 9/777 sequences route through the dynamic island, scoped to the pane that fired them
-
-## Branches
-
-- `main` — development branch, may be unstable.
-- `stable` — stable release branch. Use this if you need a reliable version of the source code.
-
-## For Developers
-
-Development setup, build commands, testing, repo layout, and release docs live in [`DEVELOP.md`](./DEVELOP.md).
+Argo borrows valuable workspace, worktree, and terminal-product ideas from
+[everettjf/liney](https://github.com/everettjf/liney). Thanks to that project
+for the inspiration and for publishing its work under Apache 2.0.
 
 ## License
 

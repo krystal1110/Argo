@@ -14,6 +14,7 @@
 dist/
 tmp/
 DerivedData/
+docs/
 *.xcarchive
 *.dSYM
 *.dSYM.zip

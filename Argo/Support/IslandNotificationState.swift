@@ -10,7 +10,7 @@ import Foundation
 
 enum IslandTab: String, CaseIterable {
     case workspaces
-    case notifications
+    case sessions
 }
 
 nonisolated final class IslandNotificationState: ObservableObject {

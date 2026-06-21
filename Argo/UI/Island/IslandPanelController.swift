@@ -145,7 +145,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     func navigateToItem(_ item: IslandNotificationItem) {
         WorkspaceNotificationCenter.shared.onNotificationTapped?(item.workspaceID, item.worktreePath, item.paneID)
         state.dismiss(id: item.id)
-        if state.items.isEmpty && state.selectedTab == .notifications {
+        if state.items.isEmpty && state.selectedTab == .sessions {
             hide()
         } else {
             repositionPanel()

@@ -148,6 +148,18 @@ final class LocalizationManagerTests: XCTestCase {
         XCTAssertEqual(L10nTable.string(for: "app.about.description", language: .simplifiedChinese), "原生 macOS 终端工作区。")
     }
 
+    func testDynamicIslandSessionStringsExistInEnglishAndChinese() {
+        LocalizationManager.shared.updateSelectedLanguage(.english)
+        XCTAssertEqual(LocalizationManager.shared.string("island.tab.sessions"), "Sessions")
+        XCTAssertEqual(LocalizationManager.shared.string("island.empty.sessions"), "No active sessions")
+        XCTAssertEqual(LocalizationManager.shared.string("island.action.clearCompleted"), "Clear completed")
+
+        LocalizationManager.shared.updateSelectedLanguage(.simplifiedChinese)
+        XCTAssertEqual(LocalizationManager.shared.string("island.tab.sessions"), "会话")
+        XCTAssertEqual(LocalizationManager.shared.string("island.empty.sessions"), "没有活跃会话")
+        XCTAssertEqual(LocalizationManager.shared.string("island.action.clearCompleted"), "清除已完成")
+    }
+
     func testUpdateSelectedLanguagePostsChangeNotification() {
         let expectation = expectation(forNotification: .argoLocalizationDidChange, object: nil)
 

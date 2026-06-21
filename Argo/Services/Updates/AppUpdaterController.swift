@@ -32,12 +32,13 @@ private final class SparkleUpdaterDelegate: NSObject, SPUUpdaterDelegate {
 final class AppUpdaterController {
     static let shared = AppUpdaterController()
 
-    nonisolated static let gitLabHost = "code.devops.xiaohongshu.com"
-    nonisolated static let repositoryPath = "huying/Argo"
-    nonisolated static let repositoryURL = URL(string: "https://\(gitLabHost)/\(repositoryPath)")!
-    nonisolated static let releasesURL = URL(string: "\(repositoryURL.absoluteString)/-/releases")!
+    nonisolated static let repositoryOwner = "krystal1110"
+    nonisolated static let repositoryName = "Argo"
+    nonisolated static let repositoryPath = "\(repositoryOwner)/\(repositoryName)"
+    nonisolated static let repositoryURL = URL(string: "https://github.com/\(repositoryPath)")!
+    nonisolated static let releasesURL = URL(string: "\(repositoryURL.absoluteString)/releases")!
     nonisolated static let feedURLInfoPlistKey = "SUFeedURL"
-    nonisolated static let defaultFeedURLString = "\(repositoryURL.absoluteString)/-/raw/stable/appcast.xml"
+    nonisolated static let defaultFeedURLString = "https://raw.githubusercontent.com/\(repositoryPath)/stable/appcast.xml"
     static let sparkleKeyAccount = "argo"
     static let defaultPrivateKeyPath: String = {
         let releaseHome = ProcessInfo.processInfo.environment["ARGO_RELEASE_HOME"] ?? "\(NSHomeDirectory())/.argo_release"

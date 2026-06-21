@@ -43,7 +43,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/krystal1110/Argo/stable/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>jhy8XjzIVqlkvRWDWXjeU2Sa6KM1J1klpaoVi3r6I7A=</string>
 </dict>

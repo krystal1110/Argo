@@ -18,7 +18,7 @@ private func argoLocalizedAppFormat(_ key: String, _ arguments: CVarArg...) -> S
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let websiteURL = URL(string: "https://argo.dev")!
-    private let repositoryURL = URL(string: "https://code.devops.xiaohongshu.com/huying/Argo")!
+    private let repositoryURL = URL(string: "https://github.com/krystal1110/Argo")!
     private let quitConfirmationSuppressionInterval: TimeInterval = 0.5
 
     @MainActor private var desktopApplication: ArgoDesktopApplication?

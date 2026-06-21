@@ -105,6 +105,27 @@ final class IslandSessionCenterTests: XCTestCase {
         XCTAssertEqual(state.items.map(\.title), ["build", "test"])
     }
 
+    func testWorkspacePostAgentNotificationPreservesPaneIdentity() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let paneID = UUID()
+
+        IslandNotificationState.shared.clearAll()
+        defer { IslandNotificationState.shared.clearAll() }
+        workspace.postAgentNotification(
+            title: "Pane waiting",
+            body: "needs approval",
+            paneID: paneID,
+            agentName: "Codex"
+        )
+
+        let item = try XCTUnwrap(IslandNotificationState.shared.items.first)
+        XCTAssertEqual(item.paneID, paneID)
+        XCTAssertEqual(item.sourceID, "pane:\(paneID.uuidString.lowercased())")
+        XCTAssertEqual(item.terminalTag, String(paneID.uuidString.prefix(8)).lowercased())
+    }
+
     private func makeTemporaryDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("argo-island-tests-\(UUID().uuidString)", isDirectory: true)

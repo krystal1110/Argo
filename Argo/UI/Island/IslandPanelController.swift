@@ -158,6 +158,24 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         repositionPanel()
     }
 
+    private func responseDispatcher() -> IslandResponseDispatcher {
+        IslandResponseDispatcher(state: state) { [weak self] paneID, text in
+            guard let store = self?.workspaceStore else { return false }
+            for workspace in store.workspaces {
+                if let session = workspace.sessionController.session(for: paneID) {
+                    session.insertText(text)
+                    return true
+                }
+            }
+            return false
+        }
+    }
+
+    func respondToItem(_ item: IslandNotificationItem, text: String) {
+        responseDispatcher().respond(to: item.id, with: text)
+        repositionPanel()
+    }
+
     private func createPanel() {
         let contentView = IslandContentView(state: state, controller: self)
             .preferredColorScheme(.dark)
@@ -335,8 +353,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
             if let keyNumber, let option = prompt.options.first(where: { $0.id == keyNumber }) {
                 if let item = self.state.items.first(where: { $0.prompt != nil }) {
                     Task { @MainActor in
-                        _ = option.responseText
-                        self.navigateToItem(item)
+                        self.respondToItem(item, text: option.responseText)
                     }
                 }
                 return nil

@@ -79,7 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             WorkspaceNotificationCenter.shared.onNotificationTappedFromSystem = {
                 let island = IslandPanelController.shared
                 let state = island.state
-                state.selectedTab = .notifications
+                state.selectedTab = .sessions
                 state.isExpanded = true
                 island.show()
                 island.repositionPanel()

@@ -22,8 +22,8 @@ struct IslandExpandedView: View {
                 switch state.selectedTab {
                 case .workspaces:
                     workspacesTabContent
-                case .notifications:
-                    notificationsTabContent
+                case .sessions:
+                    sessionsTabContent
                 }
             }
             .frame(maxHeight: .infinity)
@@ -52,7 +52,7 @@ struct IslandExpandedView: View {
                             .font(.system(size: 11))
                         Text(tabTitle(for: tab))
                             .font(.system(size: 12, weight: .medium))
-                        if tab == .notifications && state.badgeCount > 0 {
+                        if tab == .sessions && state.badgeCount > 0 {
                             Text("\(state.badgeCount)")
                                 .font(.system(size: 9, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
@@ -71,19 +71,19 @@ struct IslandExpandedView: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            if state.selectedTab == .notifications && !state.items.isEmpty {
+            if state.selectedTab == .sessions && !state.items.isEmpty {
                 Button {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
-                        state.clearAll()
+                        state.clearCompleted()
                     }
                     controller.repositionPanel()
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: "checkmark.circle")
                         .font(.system(size: 14))
                         .foregroundStyle(.white.opacity(0.35))
                 }
                 .buttonStyle(.plain)
-                .help("Clear all notifications")
+                .help(LocalizationManager.shared.string("island.action.clearCompleted"))
             }
             if controller.screenCount > 1 {
                 Button {
@@ -114,14 +114,14 @@ struct IslandExpandedView: View {
     private func tabIcon(for tab: IslandTab) -> String {
         switch tab {
         case .workspaces: return "square.grid.2x2"
-        case .notifications: return "bell"
+        case .sessions: return "bolt.horizontal.circle"
         }
     }
 
     private func tabTitle(for tab: IslandTab) -> String {
         switch tab {
-        case .workspaces: return "Workspaces"
-        case .notifications: return "Notifications"
+        case .workspaces: return LocalizationManager.shared.string("island.tab.workspaces")
+        case .sessions: return LocalizationManager.shared.string("island.tab.sessions")
         }
     }
 
@@ -203,16 +203,16 @@ struct IslandExpandedView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Notifications Tab
+    // MARK: - Sessions Tab
 
     @ViewBuilder
-    private var notificationsTabContent: some View {
+    private var sessionsTabContent: some View {
         if state.items.isEmpty {
             VStack(spacing: 8) {
-                Image(systemName: "bell.slash")
+                Image(systemName: "bolt.slash")
                     .font(.system(size: 24))
                     .foregroundStyle(.white.opacity(0.2))
-                Text("No notifications")
+                Text(LocalizationManager.shared.string("island.empty.sessions"))
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(0.4))
             }
@@ -220,7 +220,7 @@ struct IslandExpandedView: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: 2) {
-                    ForEach(state.items) { item in
+                    ForEach(state.priorityItems) { item in
                         if let prompt = item.prompt {
                             IslandPromptRow(item: item, prompt: prompt, controller: controller)
                         } else {
@@ -400,10 +400,23 @@ private struct IslandNotificationRow: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    if item.status == .done {
-                        Text("Done — click to jump")
+                    if let lastError = item.lastError {
+                        Text(lastError)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.red.opacity(0.85))
+                            .lineLimit(1)
+                    } else if item.status == .completed {
+                        Text(LocalizationManager.shared.string("island.status.completed"))
                             .font(.system(size: 11))
                             .foregroundStyle(.green)
+                    } else if item.status == .failed {
+                        Text(LocalizationManager.shared.string("island.status.failed"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.red)
+                    } else if item.status == .stale {
+                        Text(LocalizationManager.shared.string("island.status.stale"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.45))
                     } else if let body = item.body {
                         Text(body)
                             .font(.system(size: 11))
@@ -430,7 +443,7 @@ private struct IslandNotificationRow: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 5)
-                    .fill(item.status == .done ? .green.opacity(0.08) : .clear)
+                    .fill(item.status == .completed ? .green.opacity(0.08) : item.status.requiresAttention ? .orange.opacity(0.08) : .clear)
             )
             .contentShape(Rectangle())
         }
@@ -459,6 +472,13 @@ private struct IslandPromptRow: View {
             Text(prompt.question)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.white)
+
+            if let lastError = item.lastError {
+                Text(lastError)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red.opacity(0.85))
+                    .lineLimit(2)
+            }
 
             ForEach(prompt.options) { option in
                 Button {

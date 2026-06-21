@@ -1,5 +1,5 @@
 {
-  "originHash" : "c22840ed6c1a514d36960dc875a6dd083dfe60cdf0a58ff55a9409165ddf6f67",
+  "originHash" : "e721da7f9826abdffcb6185e886155efa2514bd6234475f1afa893e29eb258d6",
   "pins" : [
     {
       "identity" : "sparkle",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "06beff60e3b609a485290e4d5d2d1e2eedb1e55d",
         "version" : "2.7.3"
-      }
-    },
-    {
-      "identity" : "yitong",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/onevcat/YiTong.git",
-      "state" : {
-        "revision" : "9fe06046fc894440c664406ec1585995c6f08906",
-        "version" : "0.2.0"
       }
     }
   ],

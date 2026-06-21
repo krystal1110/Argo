@@ -620,86 +620,77 @@ struct SettingsSheet: View {
     }
 
     private var generalSettingsView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            GroupBox(localized("settings.general.language.group")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker(localized("settings.general.language.title"), selection: $appSettings.appLanguage) {
-                        ForEach(AppLanguage.allCases) { language in
-                            Text(language.displayName)
-                                .tag(language)
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(GeneralSettingsPanelContent.visibleSections) { section in
+                GroupBox(localized(section.titleKey)) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(section.settings) { setting in
+                            generalSettingControl(setting)
                         }
                     }
+                    .padding(.top, 8)
+                }
+            }
+        }
+    }
 
+    @ViewBuilder
+    private func generalSettingControl(_ setting: GeneralSettingsPanelSetting) -> some View {
+        switch setting {
+        case .appLanguage:
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(localized("settings.general.language.title"))
                     Text(localized("settings.general.language.appliesImmediately"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
-
-                    Text(localized("settings.general.language.fallback"))
-                        .font(.system(size: 11, weight: .medium))
+                }
+                Spacer()
+                Picker("", selection: $appSettings.appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName)
+                            .tag(language)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 180)
+            }
+        case .uiScale:
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(localized("settings.general.behavior.uiScale"))
+                    Spacer()
+                    Text(localizedFormat("settings.general.behavior.uiScalePercentFormat", Int((appSettings.uiScale * 100).rounded())))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 8)
+
+                Slider(value: $appSettings.uiScale, in: 0.85...1.5, step: 0.05)
+
+                Text(localized("settings.general.behavior.uiScaleHint"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
-
-            GroupBox(localized("settings.general.behavior.group")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle(localized("settings.general.behavior.autoRefresh"), isOn: $appSettings.autoRefreshEnabled)
-                    Toggle(localized("settings.general.behavior.autoClosePaneOnExit"), isOn: $appSettings.autoClosePaneOnProcessExit)
-                    Toggle(localized("settings.general.behavior.confirmQuitRunningCommands"), isOn: $appSettings.confirmQuitWhenCommandsRunning)
-                    Toggle(localized("settings.general.behavior.enableFileWatchers"), isOn: $appSettings.fileWatcherEnabled)
-                    Toggle(localized("settings.general.behavior.allowSystemNotifications"), isOn: $appSettings.systemNotificationsEnabled)
-                    Toggle(localized("settings.general.behavior.showArchivedWorkspaces"), isOn: $appSettings.showArchivedWorkspaces)
-                    Toggle(localized("settings.general.behavior.showHAPIToolbarButton"), isOn: $appSettings.showHAPIToolbarButton)
-                    Toggle(localized("settings.general.behavior.directoryTreeEnabled"), isOn: $appSettings.directoryTreeEnabled)
-
-                    Divider()
-
-                    HStack {
-                        Text(localized("settings.general.behavior.uiScale"))
-                        Spacer()
-                        Text(localizedFormat("settings.general.behavior.uiScalePercentFormat", Int((appSettings.uiScale * 100).rounded())))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Slider(value: $appSettings.uiScale, in: 0.85...1.5, step: 0.05)
-
-                    Text(localized("settings.general.behavior.uiScaleHint"))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-
-                    HStack {
-                        Text(localized("settings.general.behavior.refreshInterval"))
-                        Spacer()
-                        TextField("30", value: $appSettings.autoRefreshIntervalSeconds, format: .number)
-                            .frame(width: 72)
-                            .textFieldStyle(.roundedBorder)
-                        Text(localized("settings.general.behavior.seconds"))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text(localized("settings.general.behavior.refreshIntervalHint"))
-                        .font(.system(size: 11, weight: .medium))
+        case .autoRefreshEnabled:
+            Toggle(localized("settings.general.behavior.autoRefresh"), isOn: $appSettings.autoRefreshEnabled)
+        case .autoRefreshIntervalSeconds:
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(localized("settings.general.behavior.refreshInterval"))
+                    Spacer()
+                    TextField("30", value: $appSettings.autoRefreshIntervalSeconds, format: .number)
+                        .frame(width: 72)
+                        .textFieldStyle(.roundedBorder)
+                    Text(localized("settings.general.behavior.seconds"))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 8)
+                .disabled(!appSettings.autoRefreshEnabled)
+
+                Text(localized("settings.general.behavior.refreshIntervalHint"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
-
-            GroupBox(localized("settings.general.diagnostics.group")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker(localized("settings.general.diagnostics.logLevel"), selection: $appSettings.logLevel) {
-                        ForEach(AppLogLevel.allCases, id: \.self) { level in
-                            Text(level.localizedName)
-                                .tag(level)
-                        }
-                    }
-
-                    Text(localized("settings.general.diagnostics.logLevelHint"))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 8)
-            }
-
+        case .confirmQuitWhenCommandsRunning:
+            Toggle(localized("settings.general.behavior.confirmQuitRunningCommands"), isOn: $appSettings.confirmQuitWhenCommandsRunning)
         }
     }
 
@@ -1092,55 +1083,29 @@ struct SettingsSheet: View {
     }
 
     private var sidebarSettingsView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            GroupBox(localized("settings.sidebar.visibility.group")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle(localized("settings.sidebar.visibility.showSecondaryLabels"), isOn: $appSettings.sidebarShowsSecondaryLabels)
-                    Toggle(localized("settings.sidebar.visibility.showWorkspaceBadges"), isOn: $appSettings.sidebarShowsWorkspaceBadges)
-                    Toggle(localized("settings.sidebar.visibility.showWorktreeBadges"), isOn: $appSettings.sidebarShowsWorktreeBadges)
-                }
-                .padding(.top, 8)
-            }
-
-            GroupBox(localized("settings.sidebar.activity.group")) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Picker(localized("settings.sidebar.activity.color"), selection: $appSettings.sidebarActivityIndicatorPalette) {
-                        ForEach(SidebarIconPalette.allCases) { palette in
-                            Text(palette.title).tag(palette)
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(SidebarSettingsPanelContent.visibleSections) { section in
+                GroupBox(localized(section.titleKey)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(section.settings) { setting in
+                            sidebarSettingControl(setting)
                         }
                     }
-
-                    Text(localized("settings.sidebar.activity.hint"))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
+                    .padding(.top, 8)
                 }
-                .padding(.top, 8)
             }
+        }
+    }
 
-            GroupBox(localized("settings.sidebar.defaultIcons.group")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    SidebarIconEditorCard(
-                        title: localized("settings.sidebar.defaultIcons.repository.title"),
-                        subtitle: localized("settings.sidebar.defaultIcons.repository.subtitle"),
-                        icon: $appSettings.defaultRepositoryIcon,
-                        randomizer: SidebarItemIcon.randomRepository
-                    )
-
-                    SidebarIconEditorCard(
-                        title: localized("settings.sidebar.defaultIcons.terminal.title"),
-                        subtitle: localized("settings.sidebar.defaultIcons.terminal.subtitle"),
-                        icon: $appSettings.defaultLocalTerminalIcon
-                    )
-
-                    SidebarIconEditorCard(
-                        title: localized("settings.sidebar.defaultIcons.worktree.title"),
-                        subtitle: localized("settings.sidebar.defaultIcons.worktree.subtitle"),
-                        icon: $appSettings.defaultWorktreeIcon,
-                        randomizer: SidebarItemIcon.randomRepository
-                    )
-                }
-                .padding(.top, 8)
-            }
+    @ViewBuilder
+    private func sidebarSettingControl(_ setting: SidebarSettingsPanelSetting) -> some View {
+        switch setting {
+        case .showSecondaryLabels:
+            Toggle(localized("settings.sidebar.visibility.showSecondaryLabels"), isOn: $appSettings.sidebarShowsSecondaryLabels)
+        case .showWorkspaceBadges:
+            Toggle(localized("settings.sidebar.visibility.showWorkspaceBadges"), isOn: $appSettings.sidebarShowsWorkspaceBadges)
+        case .showWorktreeBadges:
+            Toggle(localized("settings.sidebar.visibility.showWorktreeBadges"), isOn: $appSettings.sidebarShowsWorktreeBadges)
         }
     }
 
@@ -2107,6 +2072,18 @@ private struct SidebarIconEditorCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            ForEach(SidebarIconEditorContent.visibleControls) { control in
+                sidebarIconEditorControl(control)
+            }
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func sidebarIconEditorControl(_ control: SidebarIconEditorControl) -> some View {
+        switch control {
+        case .randomize:
             HStack(alignment: .center, spacing: 12) {
                 SidebarItemIconView(icon: icon, size: 26)
 
@@ -2126,51 +2103,13 @@ private struct SidebarIconEditorCard: View {
                     icon = randomizer()
                 }
             }
-
+        case .symbol:
             Picker(localized("settings.sidebarIconEditor.symbol"), selection: $icon.symbolName) {
                 ForEach(SidebarIconCatalog.symbols, id: \.systemName) { symbol in
                     Label(symbol.title, systemImage: symbol.systemName).tag(symbol.systemName)
                 }
             }
-
-            Picker(localized("settings.sidebarIconEditor.style"), selection: $icon.fillStyle) {
-                ForEach(SidebarIconFillStyle.allCases) { style in
-                    Text(style.title).tag(style)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(localized("settings.sidebarIconEditor.palette"))
-                    .font(.system(size: 11, weight: .semibold))
-
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 34), spacing: 8)], spacing: 8) {
-                    ForEach(SidebarIconPalette.allCases) { palette in
-                        Button {
-                            icon.palette = palette
-                        } label: {
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [palette.descriptor.gradientStart, palette.descriptor.gradientEnd],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                        .stroke(icon.palette == palette ? Color.white.opacity(0.9) : palette.descriptor.border, lineWidth: icon.palette == palette ? 2 : 1)
-                                )
-                                .frame(width: 34, height: 24)
-                        }
-                        .buttonStyle(.plain)
-                        .help(palette.title)
-                    }
-                }
-            }
         }
-        .padding(12)
-        .background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
     }
 }
 

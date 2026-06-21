@@ -237,18 +237,21 @@ public final class ArgoDesktopApplication: NSObject {
         return (info?["CFBundleShortVersionString"] as? String) ?? "0.0.0"
     }
 
-    public func navigateToWorkspace(id workspaceID: UUID, worktreePath: String? = nil) {
-        for context in windowContexts {
-            guard let workspace = context.store.workspaces.first(where: { $0.id == workspaceID }) else {
-                continue
+    @discardableResult
+    func navigateToWorkspace(
+        id workspaceID: UUID,
+        worktreePath: String? = nil,
+        paneID: UUID? = nil
+    ) -> IslandNavigationResult {
+        let navigator = IslandWorkspaceNavigator(
+            stores: { self.windowContexts.map(\.store) },
+            present: { [weak self] store in
+                guard let self,
+                      let context = self.windowContexts.first(where: { $0.store === store }) else { return }
+                context.present(ignoringOtherApps: true)
             }
-            context.present(ignoringOtherApps: true)
-            context.store.selectWorkspace(workspace)
-            if let worktreePath, workspace.activeWorktreePath != worktreePath {
-                workspace.switchToWorktree(path: worktreePath, restartRunning: false)
-            }
-            return
-        }
+        )
+        return navigator.navigate(workspaceID: workspaceID, worktreePath: worktreePath, paneID: paneID)
     }
 
     /// Routes a notification delivered through the `argo notify` CLI to the

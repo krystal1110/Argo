@@ -73,8 +73,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     self.refreshMainMenu()
                 }
             }
-            WorkspaceNotificationCenter.shared.onNotificationTapped = { [weak desktopApplication] workspaceID, worktreePath in
-                desktopApplication?.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath)
+            WorkspaceNotificationCenter.shared.onNotificationTapped = { [weak desktopApplication] workspaceID, worktreePath, paneID in
+                desktopApplication?.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath, paneID: paneID)
             }
             WorkspaceNotificationCenter.shared.onNotificationTappedFromSystem = {
                 let island = IslandPanelController.shared

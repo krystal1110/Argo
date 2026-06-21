@@ -12,7 +12,7 @@ import UserNotifications
 final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = WorkspaceNotificationCenter()
 
-    var onNotificationTapped: ((UUID, String?) -> Void)?
+    var onNotificationTapped: ((UUID, String?, UUID?) -> Void)?
     var onNotificationTappedFromSystem: (() -> Void)?
 
     private var hasRequestedAuthorization = false
@@ -21,7 +21,13 @@ final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDeleg
         super.init()
     }
 
-    func deliver(title: String, body: String?, workspaceID: UUID? = nil, worktreePath: String? = nil) {
+    func deliver(
+        title: String,
+        body: String?,
+        workspaceID: UUID? = nil,
+        worktreePath: String? = nil,
+        paneID: UUID? = nil
+    ) {
         let center = UNUserNotificationCenter.current()
         if !hasRequestedAuthorization {
             hasRequestedAuthorization = true
@@ -43,6 +49,9 @@ final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDeleg
         if let worktreePath {
             userInfo["worktreePath"] = worktreePath
         }
+        if let paneID {
+            userInfo["paneID"] = paneID.uuidString
+        }
         if !userInfo.isEmpty {
             content.userInfo = userInfo
         }
@@ -63,10 +72,11 @@ final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDeleg
         let userInfo = response.notification.request.content.userInfo
         let workspaceIDString = userInfo["workspaceID"] as? String
         let worktreePath = userInfo["worktreePath"] as? String
+        let paneID = (userInfo["paneID"] as? String).flatMap(UUID.init(uuidString:))
 
         if let workspaceIDString, let workspaceID = UUID(uuidString: workspaceIDString) {
             Task { @MainActor in
-                self.onNotificationTapped?(workspaceID, worktreePath)
+                self.onNotificationTapped?(workspaceID, worktreePath, paneID)
                 self.onNotificationTappedFromSystem?()
             }
         }

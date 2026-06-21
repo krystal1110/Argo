@@ -22,6 +22,9 @@ final class AgentNotifyProtocolTests: XCTestCase {
 
         let decoded = try AgentNotifyProtocol.decode(frame)
         XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.paneID, "abc-pane")
+        XCTAssertEqual(decoded.workspaceID, "ws-1")
+        XCTAssertEqual(decoded.agentName, "Claude")
     }
 
     func testEncodeRejectsEmptyTitleAndBody() {

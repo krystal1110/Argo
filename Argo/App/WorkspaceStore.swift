@@ -2822,17 +2822,23 @@ final class WorkspaceStore: ObservableObject {
             statusMessageTask?.cancel()
             if deliverSystemNotification && appSettings.dynamicIslandEnabled {
                 // Dynamic Island takes priority — skip toast and system notification
+                let resolvedWorkspaceID = workspaceID ?? selectedWorkspace?.id ?? UUID()
                 let item = IslandNotificationItem(
                     id: UUID(),
-                    workspaceID: workspaceID ?? selectedWorkspace?.id ?? UUID(),
+                    workspaceID: resolvedWorkspaceID,
                     worktreePath: worktreePath,
+                    paneID: nil,
+                    sourceID: "status:\(resolvedWorkspaceID.uuidString.lowercased()):\(text)",
                     title: text,
                     agentName: nil,
                     terminalTag: nil,
-                    status: tone == .success ? .done : .running,
+                    status: tone == .success ? .completed : .running,
                     startedAt: Date(),
+                    updatedAt: Date(),
                     body: nil,
-                    prompt: nil
+                    prompt: nil,
+                    action: nil,
+                    lastError: nil
                 )
                 IslandNotificationState.shared.post(item: item)
                 IslandPanelController.shared.show()

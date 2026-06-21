@@ -13,7 +13,7 @@ func l10nFormat(_ format: String, locale: Locale = .current, arguments: [CVarArg
     }
 }
 
-enum L10nTable {
+nonisolated enum L10nTable {
     static let english: [String: String] = [
         "test.fallback.onlyEnglish": "Only English",
         "language.automatic": "Automatic",
@@ -786,6 +786,13 @@ enum L10nTable {
         "settings.dynamicIsland.height.compact": "Compact (32)",
         "settings.dynamicIsland.height.notch": "Notch (37)",
         "settings.dynamicIsland.height.tall": "Tall (44)",
+        "island.tab.workspaces": "Workspaces",
+        "island.tab.sessions": "Sessions",
+        "island.empty.sessions": "No active sessions",
+        "island.action.clearCompleted": "Clear completed",
+        "island.status.completed": "Done - click to jump",
+        "island.status.failed": "Needs attention",
+        "island.status.stale": "Pane is gone",
         "settings.section.shortcuts.title": "Shortcuts",
         "settings.section.shortcuts.subtitle": "Customize Argo app shortcuts",
         "settings.section.updates.title": "Updates",
@@ -1976,6 +1983,13 @@ enum L10nTable {
         "settings.dynamicIsland.height.compact": "紧凑 (32)",
         "settings.dynamicIsland.height.notch": "刘海 (37)",
         "settings.dynamicIsland.height.tall": "高 (44)",
+        "island.tab.workspaces": "工作区",
+        "island.tab.sessions": "会话",
+        "island.empty.sessions": "没有活跃会话",
+        "island.action.clearCompleted": "清除已完成",
+        "island.status.completed": "已完成，点击跳转",
+        "island.status.failed": "需要处理",
+        "island.status.stale": "面板已失效",
         "settings.section.shortcuts.title": "快捷键",
         "settings.section.shortcuts.subtitle": "自定义 Argo 应用快捷键",
         "settings.section.updates.title": "更新",

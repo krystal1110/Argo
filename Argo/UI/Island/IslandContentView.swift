@@ -30,7 +30,7 @@ struct IslandContentView: View {
         .onTapGesture {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 if !state.isExpanded && !state.items.isEmpty {
-                    state.selectedTab = .notifications
+                    state.selectedTab = .sessions
                 }
                 state.isExpanded.toggle()
             }

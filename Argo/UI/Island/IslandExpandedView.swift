@@ -462,7 +462,7 @@ private struct IslandPromptRow: View {
 
             ForEach(prompt.options) { option in
                 Button {
-                    controller.navigateToItem(item)
+                    controller.respondToItem(item, text: option.responseText)
                 } label: {
                     HStack(spacing: 8) {
                         Text("\u{2318}\(option.id)")

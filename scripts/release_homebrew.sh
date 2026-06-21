@@ -389,7 +389,7 @@ if [[ "$RESUMING" != "1" ]]; then
 
   git add -- "$PROJECT_FILE" "$APPCAST_FILE"
   if ! git diff --cached --quiet; then
-    git commit -m "chore: release $VERSION"
+    git commit -m "fix(release): bump $VERSION"
     git push origin "$(git branch --show-current)"
     git push origin "HEAD:$STABLE_BRANCH"
   fi

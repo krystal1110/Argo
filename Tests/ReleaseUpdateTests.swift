@@ -108,6 +108,16 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertTrue(githubHelpers.contains("gh release upload"))
     }
 
+    func testReleaseScriptUsesTeamCommitConventionForReleaseCommit() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
+
+        XCTAssertTrue(homebrewRelease.contains("git commit -m \"fix(release): bump $VERSION\""))
+        XCTAssertFalse(homebrewRelease.contains("git commit -m \"chore: release $VERSION\""))
+    }
+
     func testGeneratedReleaseNotesDoNotIncludeCommitHistory() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

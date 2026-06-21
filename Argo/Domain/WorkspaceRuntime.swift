@@ -1251,21 +1251,30 @@ final class WorkspaceModel: ObservableObject, Identifiable {
             resolvedTitle = trimmedTitle.isEmpty ? "Argo" : trimmedTitle
             resolvedBody = (trimmedBody?.isEmpty == false) ? trimmedBody : nil
         }
-        let terminalTag = paneID?.uuidString.lowercased()
+        let terminalTag = paneID.map { Self.shortPaneTag(for: $0) }
         let item = IslandNotificationItem(
             id: UUID(),
             workspaceID: id,
             worktreePath: activeWorktreePath,
+            paneID: paneID,
+            sourceID: paneID.map { "pane:\($0.uuidString.lowercased())" },
             title: resolvedTitle,
             agentName: agentName,
             terminalTag: terminalTag,
             status: .running,
             startedAt: Date(),
+            updatedAt: Date(),
             body: resolvedBody,
-            prompt: nil
+            prompt: nil,
+            action: nil,
+            lastError: nil
         )
         IslandNotificationState.shared.post(item: item)
         IslandPanelController.shared.show()
+    }
+
+    private static func shortPaneTag(for paneID: UUID) -> String {
+        String(paneID.uuidString.prefix(8)).lowercased()
     }
 
     // MARK: - Listening port discovery

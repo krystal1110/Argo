@@ -143,9 +143,13 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     func navigateToItem(_ item: IslandNotificationItem) {
-        WorkspaceNotificationCenter.shared.onNotificationTapped?(item.workspaceID, item.worktreePath)
-        state.dismiss(id: item.id)
-        if state.items.isEmpty && state.selectedTab == .notifications {
+        let result = WorkspaceNotificationCenter.shared.onNotificationTapped?(
+            item.workspaceID,
+            item.worktreePath,
+            item.paneID
+        ) ?? .workspaceMissing
+        state.resolveNavigation(id: item.id, result: result)
+        if state.items.isEmpty && state.selectedTab == .sessions {
             hide()
         } else {
             repositionPanel()
@@ -153,8 +157,26 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     func navigateToWorkspace(_ workspace: WorkspaceModel) {
-        WorkspaceNotificationCenter.shared.onNotificationTapped?(workspace.id, nil)
+        _ = WorkspaceNotificationCenter.shared.onNotificationTapped?(workspace.id, nil, nil)
         state.isExpanded = false
+        repositionPanel()
+    }
+
+    private func responseDispatcher() -> IslandResponseDispatcher {
+        IslandResponseDispatcher(state: state) { [weak self] paneID, text in
+            guard let store = self?.workspaceStore else { return false }
+            for workspace in store.workspaces {
+                if let session = workspace.sessionController.session(for: paneID) {
+                    session.insertText(text)
+                    return true
+                }
+            }
+            return false
+        }
+    }
+
+    func respondToItem(_ item: IslandNotificationItem, text: String) {
+        responseDispatcher().respond(to: item.id, with: text)
         repositionPanel()
     }
 
@@ -335,8 +357,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
             if let keyNumber, let option = prompt.options.first(where: { $0.id == keyNumber }) {
                 if let item = self.state.items.first(where: { $0.prompt != nil }) {
                     Task { @MainActor in
-                        _ = option.responseText
-                        self.navigateToItem(item)
+                        self.respondToItem(item, text: option.responseText)
                     }
                 }
                 return nil

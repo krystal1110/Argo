@@ -163,14 +163,20 @@ func islandStatusIcon(for item: IslandNotificationItem) -> some View {
         Circle()
             .fill(.green)
             .frame(width: 8, height: 8)
-    case .done:
+    case .completed:
         Image(systemName: "checkmark.circle.fill")
             .foregroundStyle(.green)
-    case .error:
+    case .failed:
         Image(systemName: "exclamationmark.circle.fill")
             .foregroundStyle(.red)
-    case .waitingForInput:
+    case .waitingForApproval:
+        Image(systemName: "hand.raised.circle.fill")
+            .foregroundStyle(.orange)
+    case .waitingForAnswer:
         Image(systemName: "questionmark.circle.fill")
             .foregroundStyle(.cyan)
+    case .stale:
+        Image(systemName: "link.badge.plus")
+            .foregroundStyle(.gray)
     }
 }

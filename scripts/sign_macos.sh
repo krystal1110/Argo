@@ -17,9 +17,6 @@ FORCE_REBUILD="${FORCE_REBUILD:-0}"
 NOTARIZE="${NOTARIZE:-0}"
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-}"
 DEFAULT_NOTARYTOOL_PROFILE="${DEFAULT_NOTARYTOOL_PROFILE:-argo-notarytool}"
-APPLE_ID="${APPLE_ID:-}"
-APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"
-APPLE_APP_SPECIFIC_PASSWORD="${APPLE_APP_SPECIFIC_PASSWORD:-${APPLE_PASSWORD:-${APP_SPECIFIC_PASSWORD:-}}}"
 STAGING_DIR="$OUTPUT_DIR/.signed-dmg-staging"
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
@@ -52,6 +49,8 @@ Options:
   --force-rebuild        Rebuild the unsigned app before signing.
   --notarize             Submit the DMG for notarization and staple results.
                         Auto-uses DEFAULT_NOTARYTOOL_PROFILE when available.
+                        Create a profile with:
+                        xcrun notarytool store-credentials <profile>
   --help                 Show this help.
 EOF
 }
@@ -203,26 +202,19 @@ ln -s /Applications "$STAGING_DIR/Applications"
   "$DMG_PATH" >/dev/null
 
 if [[ "$NOTARIZE" == "1" ]]; then
-  if [[ -z "$NOTARYTOOL_PROFILE" && ( -z "$APPLE_ID" || -z "$APPLE_TEAM_ID" || -z "$APPLE_APP_SPECIFIC_PASSWORD" ) ]]; then
+  if [[ -z "$NOTARYTOOL_PROFILE" ]]; then
     cat >&2 <<EOF
-Notarization credentials missing.
-Set one of:
+Notarization keychain profile missing.
+Set:
   NOTARYTOOL_PROFILE=<keychain-profile>
-  APPLE_ID + APPLE_TEAM_ID + APPLE_APP_SPECIFIC_PASSWORD
+Create it with:
+  xcrun notarytool store-credentials "$DEFAULT_NOTARYTOOL_PROFILE"
 EOF
     exit 1
   fi
 
-  if [[ -n "$NOTARYTOOL_PROFILE" ]]; then
-    echo "Using notarytool profile: $NOTARYTOOL_PROFILE"
-    NOTARY_AUTH_ARGS=(--keychain-profile "$NOTARYTOOL_PROFILE")
-  else
-    NOTARY_AUTH_ARGS=(
-      --apple-id "$APPLE_ID"
-      --team-id "$APPLE_TEAM_ID"
-      --password "$APPLE_APP_SPECIFIC_PASSWORD"
-    )
-  fi
+  echo "Using notarytool profile: $NOTARYTOOL_PROFILE"
+  NOTARY_AUTH_ARGS=(--keychain-profile "$NOTARYTOOL_PROFILE")
 
   echo "Submitting $DMG_PATH for notarization..."
   NOTARY_SUBMIT_LOG="$OUTPUT_DIR/notarytool-submit.log"

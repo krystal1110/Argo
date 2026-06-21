@@ -24,9 +24,6 @@ STABLE_BRANCH="${STABLE_BRANCH:-stable}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-}"
 DEFAULT_NOTARYTOOL_PROFILE="${DEFAULT_NOTARYTOOL_PROFILE:-argo-notarytool}"
-APPLE_ID="${APPLE_ID:-}"
-APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"
-APPLE_APP_SPECIFIC_PASSWORD="${APPLE_APP_SPECIFIC_PASSWORD:-${APPLE_PASSWORD:-${APP_SPECIFIC_PASSWORD:-}}}"
 ARGO_RELEASE_HOME="${ARGO_RELEASE_HOME:-$HOME/.argo_release}"
 SPARKLE_PRIVATE_KEY_FILE="${SPARKLE_PRIVATE_KEY_FILE:-$ARGO_RELEASE_HOME/sparkle_private_key}"
 SPARKLE_MAX_VERSIONS="${SPARKLE_MAX_VERSIONS:-10}"
@@ -65,6 +62,7 @@ Environment:
   TAP_REMOTE_URL=git@host:owner/homebrew-tap.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
+  NOTARYTOOL_PROFILE=name  Keychain profile used for Apple notarization.
   SPARKLE_PRIVATE_KEY_FILE=path  Private key used for Sparkle appcast signing.
 EOF
 }
@@ -332,9 +330,6 @@ fi
 
 if [[ "$RESUMING" != "1" ]]; then
   NOTARYTOOL_PROFILE="$NOTARYTOOL_PROFILE" \
-  APPLE_ID="$APPLE_ID" \
-  APPLE_TEAM_ID="$APPLE_TEAM_ID" \
-  APPLE_APP_SPECIFIC_PASSWORD="$APPLE_APP_SPECIFIC_PASSWORD" \
   PROJECT_PATH="$PROJECT_PATH" \
   SCHEME="$SCHEME" \
   "$SIGN_SCRIPT" "${SIGN_ARGS[@]}"

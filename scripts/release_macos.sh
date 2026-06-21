@@ -21,9 +21,7 @@ APPCAST_SOURCE_FILE="${APPCAST_SOURCE_FILE:-$ROOT_DIR/appcast.xml}"
 
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-}"
-APPLE_ID="${APPLE_ID:-}"
-APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"
-APPLE_APP_SPECIFIC_PASSWORD="${APPLE_APP_SPECIFIC_PASSWORD:-${APPLE_PASSWORD:-${APP_SPECIFIC_PASSWORD:-}}}"
+DEFAULT_NOTARYTOOL_PROFILE="${DEFAULT_NOTARYTOOL_PROFILE:-argo-notarytool}"
 ARGO_RELEASE_HOME="${ARGO_RELEASE_HOME:-$HOME/.argo_release}"
 SPARKLE_PRIVATE_KEY_FILE="${SPARKLE_PRIVATE_KEY_FILE:-$ARGO_RELEASE_HOME/sparkle_private_key}"
 SPARKLE_MAX_VERSIONS="${SPARKLE_MAX_VERSIONS:-10}"
@@ -41,6 +39,12 @@ require_cmd() {
     echo "Missing required command: $1" >&2
     exit 1
   fi
+}
+
+detect_notarytool_profile() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || return 1
+  xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1
 }
 
 cleanup() {
@@ -136,6 +140,10 @@ else
   github_require_config
 fi
 
+if [[ -z "$NOTARYTOOL_PROFILE" ]] && detect_notarytool_profile "$DEFAULT_NOTARYTOOL_PROFILE"; then
+  NOTARYTOOL_PROFILE="$DEFAULT_NOTARYTOOL_PROFILE"
+fi
+
 if [[ -n "$(git status --short)" ]]; then
   echo "Working tree is not clean. Commit or stash changes before release." >&2
   exit 1
@@ -164,18 +172,13 @@ fi
 if [[ "$SKIP_NOTARIZE" != "1" ]]; then
   if [[ -n "$NOTARYTOOL_PROFILE" ]]; then
     xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARYTOOL_PROFILE" --wait
-  elif [[ -n "$APPLE_ID" && -n "$APPLE_TEAM_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" ]]; then
-    xcrun notarytool submit "$DMG_PATH" \
-      --apple-id "$APPLE_ID" \
-      --team-id "$APPLE_TEAM_ID" \
-      --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-      --wait
   else
     cat >&2 <<EOF
-Notarization credentials missing.
-Set one of:
+Notarization keychain profile missing.
+Set:
   NOTARYTOOL_PROFILE=<keychain-profile>
-  APPLE_ID + APPLE_TEAM_ID + APPLE_APP_SPECIFIC_PASSWORD
+Create it with:
+  xcrun notarytool store-credentials "$DEFAULT_NOTARYTOOL_PROFILE"
 Or set:
   SKIP_NOTARIZE=1
 EOF

@@ -5,7 +5,7 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
-source "$ROOT_DIR/scripts/gitlab_release_tools.sh"
+source "$ROOT_DIR/scripts/github_release_tools.sh"
 
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 PROJECT_PATH="${PROJECT_PATH:-$ROOT_DIR/Argo.xcodeproj}"
@@ -31,7 +31,7 @@ SPARKLE_CHANNEL="${SPARKLE_CHANNEL:-}"
 
 SKIP_PUSH="${SKIP_PUSH:-0}"
 SKIP_TAG="${SKIP_TAG:-0}"
-SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
+SKIP_GITHUB_RELEASE="${SKIP_GITHUB_RELEASE:-0}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
@@ -130,10 +130,10 @@ if [[ ! -f "$SPARKLE_PRIVATE_KEY_FILE" ]]; then
   exit 1
 fi
 
-if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-  gitlab_require_token
+if [[ "$SKIP_GITHUB_RELEASE" != "1" ]]; then
+  github_require_auth
 else
-  gitlab_require_config
+  github_require_config
 fi
 
 if [[ -n "$(git status --short)" ]]; then
@@ -211,7 +211,7 @@ RELEASE_NOTES_FILE="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
 cat > "$RELEASE_NOTES_FILE" <<EOF
 ## Argo $VERSION
 
-- GitLab release: $(gitlab_release_url "$TAG")
+- GitHub release: $(github_release_url "$TAG")
 EOF
 
 APPCAST_STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/argo-appcast.XXXXXX")"
@@ -227,9 +227,9 @@ fi
 sparkle_generate_appcast \
   "$APPCAST_STAGING_DIR" \
   "$SPARKLE_PRIVATE_KEY_FILE" \
-  "$(gitlab_package_version_url "$VERSION")/" \
-  "$(gitlab_release_url "$TAG")" \
-  "$(gitlab_project_url)" \
+  "$(github_release_download_url_prefix "$TAG")" \
+  "$(github_release_url "$TAG")" \
+  "$(github_repository_url)" \
   "$SPARKLE_MAX_VERSIONS" \
   "$SPARKLE_CHANNEL" \
   "$ROOT_DIR" \
@@ -240,10 +240,9 @@ cp "$APPCAST_STAGING_DIR/appcast.xml" "$APPCAST_OUTPUT_PATH"
 rm -rf "$APPCAST_STAGING_DIR"
 APPCAST_STAGING_DIR=""
 
-if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-  gitlab_publish_release_assets \
+if [[ "$SKIP_GITHUB_RELEASE" != "1" ]]; then
+  github_publish_release_assets \
     "$TAG" \
-    "$VERSION" \
     "$APP_NAME $VERSION" \
     "$RELEASE_NOTES_FILE" \
     "$DMG_PATH" \

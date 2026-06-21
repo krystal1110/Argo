@@ -5,7 +5,7 @@ A native macOS terminal workspace app built on AppKit + SwiftUI with a bundled G
 [中文版本](./README.zh-CN.md)
 
 [![Website](https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square)](https://argo.dev)
-[![Releases](https://img.shields.io/badge/Download-GitLab%20Releases-fc6d26?style=flat-square&logo=gitlab)](https://code.devops.xiaohongshu.com/huying/Argo/-/releases)
+[![Releases](https://img.shields.io/badge/Download-GitHub%20Releases-181717?style=flat-square&logo=github)](https://github.com/krystal1110/Argo/releases)
 [![Platform](https://img.shields.io/badge/Platform-macOS-black?style=flat-square)](https://argo.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square)](./LICENSE)
 
@@ -32,9 +32,9 @@ brew update && brew install --cask argo
 
 ### Direct Download
 
-Download the latest signed `.dmg` from GitLab Releases:
+Download the latest signed `.dmg` from GitHub Releases:
 
-<https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
+<https://github.com/krystal1110/Argo/releases>
 
 ## Quick Start
 
@@ -52,8 +52,8 @@ Download the latest signed `.dmg` from GitLab Releases:
 
 - Website: <https://argo.dev>
 - Docs: <https://argo.dev/docs/intro>
-- Releases: <https://code.devops.xiaohongshu.com/huying/Argo/-/releases>
-- Issues: <https://code.devops.xiaohongshu.com/huying/Argo/-/issues>
+- Releases: <https://github.com/krystal1110/Argo/releases>
+- Issues: <https://github.com/krystal1110/Argo/issues>
 - Discord: <https://discord.com/invite/eGzEaP6TzR>
 
 Power features:

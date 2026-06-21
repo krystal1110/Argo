@@ -6,8 +6,8 @@ This guide is for contributors and maintainers working on the Argo codebase.
 
 - macOS 14+
 - Xcode 16+ with command line tools
-- `gh` is optional and only needed for in-app GitHub workflow features
-- `curl`, `python3`, and `GITLAB_TOKEN` are required for GitLab release publishing
+- `gh` is required for GitHub release publishing; authenticate it with `gh auth login`, or supply `GH_TOKEN` / `GITHUB_TOKEN`
+- `curl` and `python3` are required for release publishing
 
 Release builds also require the Metal toolchain component used by Ghostty:
 
@@ -100,13 +100,13 @@ The build script emits:
 
 Argo uses Sparkle for signed app updates.
 
-The stable feed is hosted from the GitLab `stable` branch:
+The stable feed is hosted from the GitHub `stable` branch:
 
 ```text
-https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml
+https://raw.githubusercontent.com/krystal1110/Argo/stable/appcast.xml
 ```
 
-Release archives referenced by the feed are uploaded to the GitLab Generic Package Registry under `argo/<version>`.
+Release archives referenced by the feed are uploaded as GitHub Release assets.
 
 To prepare the signing key on a release machine:
 
@@ -146,13 +146,13 @@ By default it:
 - bumps the patch version
 - increments the build number by 1
 - signs and notarizes universal release artifacts
-- uploads release artifacts to GitLab Generic Package Registry
-- creates or updates the GitLab release and its asset links
+- uploads release artifacts to GitHub Releases
+- creates or updates the GitHub release and its asset links
 - updates Sparkle appcast metadata and the optional Homebrew tap
 
-Set `GITLAB_TOKEN` before publishing. `GITLAB_PROJECT_PATH` is inferred from `origin`, and can be overridden with `GITLAB_PROJECT_PATH=huying/Argo` or `GITLAB_PROJECT_ID=<numeric-id>`.
+Authenticate `gh` before publishing, or set `GH_TOKEN` / `GITHUB_TOKEN`. `GITHUB_REPOSITORY` is inferred from `origin`, and can be overridden with `GITHUB_REPOSITORY=krystal1110/Argo`.
 
-`scripts/deploy.sh` still exists as a compatibility wrapper.
+`deploy.sh` remains available as a compatibility wrapper around `scripts/release_homebrew.sh`.
 
 ## Current Limitations
 

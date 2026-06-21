@@ -10,8 +10,8 @@ import AppKit
 @MainActor
 final class ApplicationMenuController: NSObject {
     private let websiteURL = URL(string: "https://argo.dev")!
-    private let feedbackURL = URL(string: "https://code.devops.xiaohongshu.com/huying/Argo/-/issues/new")!
-    private let repositoryURL = URL(string: "https://code.devops.xiaohongshu.com/huying/Argo")!
+    private let feedbackURL = URL(string: "https://github.com/krystal1110/Argo/issues/new")!
+    private let repositoryURL = URL(string: "https://github.com/krystal1110/Argo")!
 
     var activeWorkspaceStoreProvider: (() -> WorkspaceStore?)?
 

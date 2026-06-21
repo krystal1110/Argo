@@ -6,7 +6,7 @@
 
 - Clean git worktree
 - `curl` and `python3` available
-- `GITLAB_TOKEN` set to a GitLab token with `api` scope
+- GitHub CLI available and authenticated with `gh auth login`, or run with `GH_TOKEN` / `GITHUB_TOKEN` set with release access
 - Developer ID signing identity available if signing/notarizing
 - Sparkle private key exported locally, usually at `~/.argo_release/sparkle_private_key`
 - Metal toolchain installed for Ghostty release builds:
@@ -87,17 +87,19 @@ Provide notarization credentials with either:
 
 ## Publish
 
-Argo releases are published to GitLab:
+Argo releases are published to GitHub:
 
-- project: `https://code.devops.xiaohongshu.com/huying/Argo`
-- releases: `https://code.devops.xiaohongshu.com/huying/Argo/-/releases`
-- Sparkle feed: `https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml`
-- release binaries: GitLab Project Uploads linked from the release
+- project: `https://github.com/krystal1110/Argo`
+- releases: `https://github.com/krystal1110/Argo/releases`
+- Sparkle feed: `https://raw.githubusercontent.com/krystal1110/Argo/stable/appcast.xml`
+- release binaries: GitHub Release assets
 
-Set the GitLab token before publishing:
+Authenticate before publishing:
 
 ```bash
-export GITLAB_TOKEN=<token-with-api-scope>
+gh auth login
+# or
+export GH_TOKEN=<token-with-release-access>
 ```
 
 Use the root one-command release script for normal releases:
@@ -136,8 +138,8 @@ Default behavior:
 - notarizes unless `SKIP_NOTARIZE=1`
 - updates the repository `appcast.xml`
 - pushes the Sparkle feed branch, `stable` by default
-- uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitLab
-- creates or updates the GitLab release and attaches release asset links for those files
+- uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitHub Releases
+- creates or updates the GitHub release and attaches release assets for those files
 - updates the Homebrew tap unless `SKIP_CASK_UPDATE=1`
 
 Useful overrides:
@@ -146,20 +148,17 @@ Useful overrides:
 - `BUMP_PART=set BUMP_VERSION=1.2.0 ./deploy.sh`
 - `SKIP_BUMP=1 ./deploy.sh`
 - `SKIP_NOTARIZE=1 ./deploy.sh`
-- `SKIP_GITLAB_RELEASE=1 ./deploy.sh`
+- `SKIP_GITHUB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
-- `GITLAB_ASSET_BACKEND=project_uploads ./deploy.sh`
-- `GITLAB_ASSET_BACKEND=generic_packages ./deploy.sh`
-- `GITLAB_PROJECT_PATH=huying/Argo ./deploy.sh`
-- `GITLAB_PROJECT_ID=<numeric-id> ./deploy.sh`
+- `GITHUB_REPOSITORY=krystal1110/Argo ./deploy.sh`
 - `STABLE_BRANCH=stable ./deploy.sh`
-- `TAP_PROJECT_PATH=group/homebrew-tap ./deploy.sh`
-- `TAP_REMOTE_URL=git@code.devops.xiaohongshu.com:group/homebrew-tap.git ./deploy.sh`
+- `TAP_PROJECT_PATH=owner/homebrew-tap ./deploy.sh`
+- `TAP_REMOTE_URL=git@github.com:owner/homebrew-tap.git ./deploy.sh`
 - `ARGO_RELEASE_HOME=/secure/release-home ./deploy.sh`
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
 
-`GITLAB_PROJECT_PATH` is inferred from `origin` when the remote is `git@code.devops.xiaohongshu.com:huying/Argo.git`. Set `GITLAB_PROJECT_ID` only if you prefer numeric GitLab API URLs. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitLab authentication headers during update checks.
+`GITHUB_REPOSITORY` is inferred from `origin` when the remote is `git@github.com:owner/repo.git` or `https://github.com/owner/repo.git`. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitHub authentication headers during update checks.
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 
-Generated GitLab release notes are intentionally concise: they include the DMG name, Homebrew install command, and previous release tag, but do not include commit history. Add any human-written changelog details directly in GitLab after the release if needed.
+Generated GitHub release notes are intentionally concise: they include the DMG name, Homebrew install command, and previous release tag, but do not include commit history. Add any human-written changelog details directly in GitHub after the release if needed.

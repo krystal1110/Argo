@@ -38,39 +38,39 @@ final class ReleaseUpdateTests: XCTestCase {
     func testAppUpdaterDefaultsToStableAppcastFeed() {
         XCTAssertEqual(
             AppUpdaterController.defaultFeedURLString,
-            "https://code.devops.xiaohongshu.com/huying/Argo/-/raw/stable/appcast.xml"
+            "https://raw.githubusercontent.com/krystal1110/Argo/stable/appcast.xml"
         )
     }
 
-    func testAppUpdaterReleasesURLUsesGitLabProject() {
+    func testAppUpdaterReleasesURLUsesGitHubProject() {
         XCTAssertEqual(
             AppUpdaterController.releasesURL.absoluteString,
-            "https://code.devops.xiaohongshu.com/huying/Argo/-/releases"
+            "https://github.com/krystal1110/Argo/releases"
         )
     }
 
-    func testReleaseScriptsUseGitLabPublishing() throws {
+    func testReleaseScriptsUseGitHubPublishing() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
 
         for relativePath in ["scripts/release_homebrew.sh", "scripts/release_macos.sh"] {
             let script = try String(contentsOf: rootURL.appendingPathComponent(relativePath), encoding: .utf8)
-            XCTAssertTrue(script.contains("scripts/gitlab_release_tools.sh"), "\(relativePath) should use GitLab release helpers")
-            XCTAssertTrue(script.contains("SKIP_GITLAB_RELEASE"), "\(relativePath) should expose GitLab release skipping")
-            XCTAssertFalse(script.contains("gh release"), "\(relativePath) should not shell out to GitHub release commands")
-            XCTAssertFalse(script.contains("SKIP_GH_RELEASE"), "\(relativePath) should not expose the old GitHub release flag")
+            XCTAssertTrue(script.contains("scripts/github_release_tools.sh"), "\(relativePath) should use GitHub release helpers")
+            XCTAssertTrue(script.contains("SKIP_GITHUB_RELEASE"), "\(relativePath) should expose GitHub release skipping")
+            XCTAssertFalse(script.contains("scripts/gitlab_release_tools.sh"), "\(relativePath) should not use GitLab release helpers")
+            XCTAssertFalse(script.contains("SKIP_GITLAB_RELEASE"), "\(relativePath) should not expose the old GitLab release flag")
         }
     }
 
-    func testReleaseShortcutScriptPublishesOneCommandGitLabRelease() throws {
+    func testReleaseShortcutScriptPublishesOneCommandGitHubRelease() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let shortcut = try String(contentsOf: rootURL.appendingPathComponent("release.sh"), encoding: .utf8)
         let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
 
-        XCTAssertTrue(shortcut.contains("GITLAB_PROJECT_PATH:=huying/Argo"))
+        XCTAssertTrue(shortcut.contains("GITHUB_REPOSITORY:=krystal1110/Argo"))
         XCTAssertTrue(shortcut.contains("BUMP_PART=set"))
         XCTAssertTrue(shortcut.contains("BUMP_VERSION"))
         XCTAssertTrue(shortcut.contains("exec \"$ROOT_DIR/deploy.sh\""))
@@ -78,19 +78,34 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertTrue(homebrewRelease.contains("\"$ROOT_DIR/scripts/bump_version.sh\" set \"$BUMP_VERSION\""))
     }
 
-    func testReleaseScriptSupportsGitLabProjectUploadsAndStableFeedBranch() throws {
+    func testReleaseShortcutRequiresGitHubCLIWhenTokenIsSet() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let shortcut = try String(contentsOf: rootURL.appendingPathComponent("release.sh"), encoding: .utf8)
+
+        let githubCLICheck = try XCTUnwrap(shortcut.range(of: "command -v gh"))
+        let tokenBypass = try XCTUnwrap(shortcut.range(of: "GH_TOKEN:-${GITHUB_TOKEN:-}"))
+
+        XCTAssertLessThan(
+            shortcut.distance(from: shortcut.startIndex, to: githubCLICheck.lowerBound),
+            shortcut.distance(from: shortcut.startIndex, to: tokenBypass.lowerBound),
+            "release.sh should fail fast when gh is missing even if GH_TOKEN / GITHUB_TOKEN is set."
+        )
+    }
+
+    func testReleaseScriptSupportsGitHubReleaseAssetsAndStableFeedBranch() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
-        let gitlabHelpers = try String(contentsOf: rootURL.appendingPathComponent("scripts/gitlab_release_tools.sh"), encoding: .utf8)
+        let githubHelpers = try String(contentsOf: rootURL.appendingPathComponent("scripts/github_release_tools.sh"), encoding: .utf8)
 
-        XCTAssertTrue(homebrewRelease.contains("GITLAB_ASSET_BACKEND"))
-        XCTAssertTrue(homebrewRelease.contains("project_uploads"))
-        XCTAssertTrue(homebrewRelease.contains("gitlab_project_upload_file \"$DIST_ZIP_PATH\""))
+        XCTAssertTrue(homebrewRelease.contains("github_release_download_url_prefix \"$TAG\""))
         XCTAssertTrue(homebrewRelease.contains("git push origin \"HEAD:$STABLE_BRANCH\""))
-        XCTAssertTrue(gitlabHelpers.contains("gitlab_project_upload_file()"))
-        XCTAssertTrue(gitlabHelpers.contains("/uploads"))
+        XCTAssertTrue(githubHelpers.contains("github_create_or_update_release()"))
+        XCTAssertTrue(githubHelpers.contains("github_upload_release_assets()"))
+        XCTAssertTrue(githubHelpers.contains("gh release upload"))
     }
 
     func testGeneratedReleaseNotesDoNotIncludeCommitHistory() throws {
@@ -129,15 +144,15 @@ final class ReleaseUpdateTests: XCTestCase {
         """))
     }
 
-    func testAppcastUsesGitLabReleaseAssets() throws {
+    func testAppcastUsesGitHubReleaseAssets() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let appcast = try String(contentsOf: rootURL.appendingPathComponent("appcast.xml"), encoding: .utf8)
 
-        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/-/releases"))
-        XCTAssertTrue(appcast.contains("https://code.devops.xiaohongshu.com/huying/Argo/uploads/"))
-        XCTAssertFalse(appcast.contains("https://github.com/krystal/argo/releases"))
+        XCTAssertTrue(appcast.contains("https://github.com/krystal1110/Argo/releases"))
+        XCTAssertTrue(appcast.contains("https://github.com/krystal1110/Argo/releases/download/"))
+        XCTAssertFalse(appcast.contains("https://code.devops.xiaohongshu.com"))
     }
 
     func testAppUpdaterFallsBackToStableFeedWhenInfoPlistValueMissing() {

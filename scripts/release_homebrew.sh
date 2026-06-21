@@ -19,7 +19,7 @@ TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-tap"
 TAP_DIR="${TAP_DIR:-$TAP_DIR_DEFAULT}"
 CASK_PATH="${CASK_PATH:-Casks/${APP_SLUG}.rb}"
 APP_HOMEPAGE="${APP_HOMEPAGE:-}"
-GITLAB_ASSET_BACKEND="${GITLAB_ASSET_BACKEND:-project_uploads}"
+GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-}"
 STABLE_BRANCH="${STABLE_BRANCH:-stable}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-}"
@@ -34,7 +34,7 @@ SPARKLE_CHANNEL="${SPARKLE_CHANNEL:-}"
 SKIP_BUMP="${SKIP_BUMP:-0}"
 BUMP_PART="${BUMP_PART:-patch}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
-SKIP_GITLAB_RELEASE="${SKIP_GITLAB_RELEASE:-0}"
+SKIP_GITHUB_RELEASE="${SKIP_GITHUB_RELEASE:-0}"
 SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
 BUMP_VERSION="${BUMP_VERSION:-}"
@@ -43,7 +43,7 @@ APPCAST_STAGING_DIR=""
 CLONED_DEFAULT_TAP_DIR=0
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
-source "$ROOT_DIR/scripts/gitlab_release_tools.sh"
+source "$ROOT_DIR/scripts/github_release_tools.sh"
 
 usage() {
   cat <<EOF
@@ -56,16 +56,13 @@ Environment:
   BUMP_PART=set BUMP_VERSION=1.2.0
                          Set MARKETING_VERSION explicitly before publishing.
   SKIP_NOTARIZE=1        Skip notarization in sign_macos.sh.
-  SKIP_GITLAB_RELEASE=1  Skip GitLab package upload and release asset links.
+  SKIP_GITHUB_RELEASE=1  Skip GitHub release upload and release asset links.
   SKIP_CASK_UPDATE=1     Skip updating the Homebrew tap repository.
-  GITLAB_HOST=code.devops.xiaohongshu.com  GitLab host for releases and packages.
-  GITLAB_PROJECT_PATH=huying/Argo  GitLab project path. Inferred from origin when omitted.
-  GITLAB_PROJECT_ID=12345  Optional numeric project id. Overrides path encoding for API calls.
-  GITLAB_TOKEN=token      Token with api scope for packages, releases, and asset links.
-  GITLAB_ASSET_BACKEND=project_uploads  Asset storage backend: project_uploads or generic_packages.
+  GITHUB_REPOSITORY=krystal1110/Argo  GitHub repository. Inferred from origin when omitted.
+  GH_TOKEN=token          GitHub token with release access. GITHUB_TOKEN is also supported.
   STABLE_BRANCH=stable    Branch pushed after appcast updates so SUFeedURL can read the feed.
-  TAP_PROJECT_PATH=group/homebrew-tap  Optional GitLab tap project used when updating the cask.
-  TAP_REMOTE_URL=git@host:group/homebrew-tap.git  Optional explicit tap remote URL.
+  TAP_PROJECT_PATH=owner/homebrew-tap  Optional GitHub tap repository used when updating the cask.
+  TAP_REMOTE_URL=git@host:owner/homebrew-tap.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
   SPARKLE_PRIVATE_KEY_FILE=path  Private key used for Sparkle appcast signing.
@@ -139,7 +136,7 @@ brew_install_target() {
   echo "$APP_SLUG"
 }
 
-# A previous run is considered "fully published" when the GitLab release for
+# A previous run is considered "fully published" when the GitHub release for
 # the tag already carries every core artifact (DMG, app zip, dSYM zip). The
 # appcast.xml alone does not count — a release with only the appcast is the
 # signature of a publish that died midway through asset upload.
@@ -150,7 +147,7 @@ release_assets_complete() {
     "$(basename "$DIST_ZIP_PATH")"
     "$(basename "$DIST_DSYM_ZIP_PATH")"
   )
-  gitlab_release_assets_complete "$tag" "${required[@]}"
+  github_release_assets_complete "$tag" "${required[@]}"
 }
 
 tap_remote_url() {
@@ -159,7 +156,7 @@ tap_remote_url() {
     return
   fi
   if [[ -n "$TAP_PROJECT_PATH" ]]; then
-    echo "git@$GITLAB_HOST:$TAP_PROJECT_PATH.git"
+    echo "git@github.com:$TAP_PROJECT_PATH.git"
   fi
 }
 
@@ -192,24 +189,14 @@ if [[ ! -x "$ARCHIVE_DSYM_SCRIPT" ]]; then
 fi
 
 cd "$ROOT_DIR"
-if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-  gitlab_require_token
+if [[ "$SKIP_GITHUB_RELEASE" != "1" ]]; then
+  github_require_auth
 else
-  gitlab_require_config
+  github_require_config
 fi
 
-case "$GITLAB_ASSET_BACKEND" in
-  generic_packages|project_uploads)
-    ;;
-  *)
-    echo "Unsupported GITLAB_ASSET_BACKEND: $GITLAB_ASSET_BACKEND" >&2
-    echo "Expected: project_uploads or generic_packages" >&2
-    exit 1
-    ;;
-esac
-
 if [[ -z "$APP_HOMEPAGE" ]]; then
-  APP_HOMEPAGE="$(gitlab_project_url)"
+  APP_HOMEPAGE="$(github_repository_url)"
 fi
 
 ensure_clean_worktree
@@ -235,7 +222,6 @@ DIST_DMG_PATH="$OUTPUT_DIR/$APP_NAME-$VERSION.dmg"
 DIST_ZIP_PATH="$OUTPUT_DIR/$APP_NAME-$VERSION.app.zip"
 DIST_DSYM_PATH="$OUTPUT_DIR/dSYMs/$APP_NAME-$VERSION.app.dSYM"
 DIST_DSYM_ZIP_PATH="$DIST_DSYM_PATH.zip"
-DIST_ZIP_URL=""
 RELEASE_DONE=0
 DID_BUMP=0
 FAILED_LINE=""
@@ -276,7 +262,7 @@ trap cleanup EXIT
 # Resume vs. new-release detection. A tag matching the current
 # MARKETING_VERSION already existing locally means a previous run got at least
 # as far as tagging. Two cases to tell apart:
-#   1. The previous run fully published — the GitLab release already carries
+#   1. The previous run fully published — the GitHub release already carries
 #      every core asset. The version simply was never bumped afterwards, so
 #      this invocation is a brand new release: fall through and bump normally.
 #   2. The publish step died partway (tag pushed, but some/all assets missing,
@@ -284,8 +270,8 @@ trap cleanup EXIT
 #      everything already done and only redo the upload.
 RESUMING=0
 if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
-  if [[ "$SKIP_GITLAB_RELEASE" == "1" ]]; then
-    echo "Tag v$VERSION already exists and SKIP_GITLAB_RELEASE=1 prevents checking whether it is fully published." >&2
+  if [[ "$SKIP_GITHUB_RELEASE" == "1" ]]; then
+    echo "Tag v$VERSION already exists and SKIP_GITHUB_RELEASE=1 prevents checking whether it is fully published." >&2
     exit 1
   fi
   if release_assets_complete "v$VERSION"; then
@@ -376,11 +362,7 @@ RELEASE_NOTES_FILE="$(generate_release_notes "$VERSION" "$TAG" "$PREVIOUS_TAG" "
 if [[ "$RESUMING" != "1" ]]; then
   sparkle_create_app_zip "$OUTPUT_DIR/$APP_NAME.app" "$DIST_ZIP_PATH"
 
-  APPCAST_DOWNLOAD_URL_PREFIX="$(gitlab_package_version_url "$VERSION")/"
-  if [[ "$GITLAB_ASSET_BACKEND" == "project_uploads" && "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-    DIST_ZIP_URL="$(gitlab_project_upload_file "$DIST_ZIP_PATH")"
-    APPCAST_DOWNLOAD_URL_PREFIX="${DIST_ZIP_URL%/*}/"
-  fi
+  APPCAST_DOWNLOAD_URL_PREFIX="$(github_release_download_url_prefix "$TAG")"
 
   APPCAST_STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/argo-appcast.XXXXXX")"
   ZIP_BASENAME="$(basename "$DIST_ZIP_PATH" .zip)"
@@ -394,7 +376,7 @@ if [[ "$RESUMING" != "1" ]]; then
     "$APPCAST_STAGING_DIR" \
     "$SPARKLE_PRIVATE_KEY_FILE" \
     "$APPCAST_DOWNLOAD_URL_PREFIX" \
-    "$(gitlab_release_url "$TAG")" \
+    "$(github_release_url "$TAG")" \
     "$APP_HOMEPAGE" \
     "$SPARKLE_MAX_VERSIONS" \
     "$SPARKLE_CHANNEL" \
@@ -421,37 +403,15 @@ if [[ ! -f "$DIST_ZIP_PATH" ]]; then
   exit 1
 fi
 
-if [[ "$SKIP_GITLAB_RELEASE" != "1" ]]; then
-  if [[ "$GITLAB_ASSET_BACKEND" == "generic_packages" ]]; then
-    gitlab_publish_release_assets \
-      "$TAG" \
-      "$VERSION" \
-      "$APP_NAME $VERSION" \
-      "$RELEASE_NOTES_FILE" \
-      "$DIST_DMG_PATH" \
-      "$DIST_ZIP_PATH" \
-      "$DIST_DSYM_ZIP_PATH" \
-      "$APPCAST_FILE"
-  else
-    gitlab_retry "GitLab release upsert" \
-      gitlab_create_or_update_release "$TAG" "$APP_NAME $VERSION" "$RELEASE_NOTES_FILE"
-
-    if [[ -z "$DIST_ZIP_URL" ]]; then
-      DIST_ZIP_URL="$(gitlab_project_upload_file "$DIST_ZIP_PATH")"
-    fi
-    DIST_DMG_URL="$(gitlab_project_upload_file "$DIST_DMG_PATH")"
-    DIST_DSYM_ZIP_URL="$(gitlab_project_upload_file "$DIST_DSYM_ZIP_PATH")"
-    APPCAST_URL="$(gitlab_project_upload_file "$APPCAST_FILE")"
-
-    gitlab_retry "GitLab release asset link $(basename "$DIST_DMG_PATH")" \
-      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_DMG_PATH")" "$DIST_DMG_URL" "/downloads/$TAG/$(basename "$DIST_DMG_PATH")"
-    gitlab_retry "GitLab release asset link $(basename "$DIST_ZIP_PATH")" \
-      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_ZIP_PATH")" "$DIST_ZIP_URL" "/downloads/$TAG/$(basename "$DIST_ZIP_PATH")"
-    gitlab_retry "GitLab release asset link $(basename "$DIST_DSYM_ZIP_PATH")" \
-      gitlab_release_link_upsert "$TAG" "$(basename "$DIST_DSYM_ZIP_PATH")" "$DIST_DSYM_ZIP_URL" "/downloads/$TAG/$(basename "$DIST_DSYM_ZIP_PATH")"
-    gitlab_retry "GitLab release asset link $(basename "$APPCAST_FILE")" \
-      gitlab_release_link_upsert "$TAG" "$(basename "$APPCAST_FILE")" "$APPCAST_URL" "/downloads/$TAG/$(basename "$APPCAST_FILE")"
-  fi
+if [[ "$SKIP_GITHUB_RELEASE" != "1" ]]; then
+  github_publish_release_assets \
+    "$TAG" \
+    "$APP_NAME $VERSION" \
+    "$RELEASE_NOTES_FILE" \
+    "$DIST_DMG_PATH" \
+    "$DIST_ZIP_PATH" \
+    "$DIST_DSYM_ZIP_PATH" \
+    "$APPCAST_FILE"
 fi
 
 if [[ "$SKIP_CASK_UPDATE" != "1" ]]; then
@@ -461,7 +421,7 @@ if [[ "$SKIP_CASK_UPDATE" != "1" ]]; then
     echo "Set TAP_PROJECT_PATH or TAP_REMOTE_URL, or set SKIP_CASK_UPDATE=1." >&2
     exit 1
   fi
-  CASK_DMG_URL_TEMPLATE="$(gitlab_package_file_url '#{version}' "$APP_NAME-#{version}.dmg")"
+  CASK_DMG_URL_TEMPLATE="$(github_release_download_url 'v#{version}' "$APP_NAME-#{version}.dmg")"
 
   if [[ "$TAP_DIR" == "$TAP_DIR_DEFAULT" ]]; then
     rm -rf "$TAP_DIR"

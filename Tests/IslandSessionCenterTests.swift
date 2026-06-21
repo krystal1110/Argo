@@ -126,6 +126,33 @@ final class IslandSessionCenterTests: XCTestCase {
         XCTAssertEqual(item.terminalTag, String(paneID.uuidString.prefix(8)).lowercased())
     }
 
+    func testNavigateToItemMarksItemStaleWhenPaneIsMissing() {
+        let state = IslandNotificationState.shared
+        let item = makeItem(status: .waitingForAnswer)
+        let previousTapHandler = WorkspaceNotificationCenter.shared.onNotificationTapped
+
+        state.clearAll()
+        defer {
+            state.clearAll()
+            WorkspaceNotificationCenter.shared.onNotificationTapped = previousTapHandler
+        }
+
+        state.post(item: item)
+        WorkspaceNotificationCenter.shared.onNotificationTapped = { workspaceID, worktreePath, paneID in
+            XCTAssertEqual(workspaceID, item.workspaceID)
+            XCTAssertEqual(worktreePath, item.worktreePath)
+            XCTAssertEqual(paneID, item.paneID)
+            return .paneMissing
+        }
+
+        IslandPanelController.shared.navigateToItem(item)
+
+        XCTAssertEqual(state.items.count, 1)
+        XCTAssertEqual(state.items[0].id, item.id)
+        XCTAssertEqual(state.items[0].status, .stale)
+        XCTAssertEqual(state.items[0].lastError, "Pane is no longer available.")
+    }
+
     private func makeTemporaryDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("argo-island-tests-\(UUID().uuidString)", isDirectory: true)

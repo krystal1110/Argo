@@ -12,7 +12,7 @@ import UserNotifications
 final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = WorkspaceNotificationCenter()
 
-    var onNotificationTapped: ((UUID, String?, UUID?) -> Void)?
+    var onNotificationTapped: ((UUID, String?, UUID?) -> IslandNavigationResult)?
     var onNotificationTappedFromSystem: (() -> Void)?
 
     private var hasRequestedAuthorization = false
@@ -76,7 +76,7 @@ final class WorkspaceNotificationCenter: NSObject, UNUserNotificationCenterDeleg
 
         if let workspaceIDString, let workspaceID = UUID(uuidString: workspaceIDString) {
             Task { @MainActor in
-                self.onNotificationTapped?(workspaceID, worktreePath, paneID)
+                _ = self.onNotificationTapped?(workspaceID, worktreePath, paneID)
                 self.onNotificationTappedFromSystem?()
             }
         }

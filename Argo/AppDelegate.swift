@@ -74,7 +74,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 }
             }
             WorkspaceNotificationCenter.shared.onNotificationTapped = { [weak desktopApplication] workspaceID, worktreePath, paneID in
-                desktopApplication?.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath, paneID: paneID)
+                guard let desktopApplication else { return .workspaceMissing }
+                return desktopApplication.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath, paneID: paneID)
             }
             WorkspaceNotificationCenter.shared.onNotificationTappedFromSystem = {
                 let island = IslandPanelController.shared

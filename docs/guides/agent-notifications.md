@@ -1,8 +1,11 @@
 # Agent Notifications
 
-Argo surfaces notifications from anything running inside a pane — shells,
-build tools, AI coding agents — through the dynamic island and the system
-notification center. There are two delivery paths.
+Argo surfaces notifications from anything running inside a pane - shells,
+build tools, AI coding agents - through the dynamic island and the system
+notification center. When Dynamic Island is enabled, pane-scoped events become
+session rows: multiple panes can report independently, attention items sort to
+the top, and clicking a row jumps back to the originating workspace, worktree,
+and pane.
 
 ## OSC escape sequences (works automatically)
 
@@ -71,9 +74,11 @@ When a request arrives, Argo resolves the target workspace in this order:
    `--pane <uuid>` (or `$ARGO_PANE_ID`) the request was tagged with.
 3. The currently-selected workspace.
 
-The notification is then posted to the dynamic island for that workspace
-with the pane recorded as `terminalTag` so click-through can navigate
-back to the originating pane.
+The notification is then posted to the dynamic island for that workspace.
+When a pane is known, Argo stores it as the item identity so notifications
+from different panes do not overwrite one another. Clicking a row navigates
+back to the workspace, worktree, and pane when that pane still exists; if the
+pane is gone, Argo falls back to the workspace/worktree and marks the row stale.
 
 ## Environment variables Argo injects
 

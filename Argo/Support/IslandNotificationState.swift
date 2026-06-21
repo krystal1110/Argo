@@ -101,6 +101,17 @@ nonisolated final class IslandNotificationState: ObservableObject {
         update(id: id, status: .completed)
     }
 
+    func resolveNavigation(id: UUID, result: IslandNavigationResult) {
+        switch result {
+        case .focusedPane, .focusedWorkspace:
+            dismiss(id: id)
+        case .paneMissing:
+            update(id: id, status: .stale, lastError: "Pane is no longer available.")
+        case .workspaceMissing:
+            update(id: id, status: .stale, lastError: "Workspace is no longer available.")
+        }
+    }
+
     func dismiss(id: UUID) {
         items.removeAll { $0.id == id }
         if items.isEmpty {

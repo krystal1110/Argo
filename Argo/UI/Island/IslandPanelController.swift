@@ -143,8 +143,12 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     func navigateToItem(_ item: IslandNotificationItem) {
-        WorkspaceNotificationCenter.shared.onNotificationTapped?(item.workspaceID, item.worktreePath, item.paneID)
-        state.dismiss(id: item.id)
+        let result = WorkspaceNotificationCenter.shared.onNotificationTapped?(
+            item.workspaceID,
+            item.worktreePath,
+            item.paneID
+        ) ?? .workspaceMissing
+        state.resolveNavigation(id: item.id, result: result)
         if state.items.isEmpty && state.selectedTab == .sessions {
             hide()
         } else {
@@ -153,7 +157,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     func navigateToWorkspace(_ workspace: WorkspaceModel) {
-        WorkspaceNotificationCenter.shared.onNotificationTapped?(workspace.id, nil, nil)
+        _ = WorkspaceNotificationCenter.shared.onNotificationTapped?(workspace.id, nil, nil)
         state.isExpanded = false
         repositionPanel()
     }

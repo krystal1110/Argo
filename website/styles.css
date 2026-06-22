@@ -247,115 +247,25 @@ main {
 .hero-visual {
   position: relative;
   min-width: 0;
-  padding: 22px 0 54px;
-}
-
-.orbit-line {
-  position: absolute;
-  inset: 9% -8% auto auto;
-  width: 72%;
-  height: 72%;
-  border: 1px solid rgba(95, 215, 202, 0.2);
-  border-radius: 999px;
-  transform: rotate(-17deg);
-  opacity: 0.7;
+  padding: 22px 0;
 }
 
 .app-window {
   position: relative;
-  z-index: 2;
   margin: 0;
   overflow: hidden;
   border: 1px solid rgba(235, 252, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg-deep);
   box-shadow: var(--shadow), 0 0 0 1px rgba(95, 215, 202, 0.035);
 }
 
-.window-chrome {
-  height: 38px;
-  padding: 0 13px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background: linear-gradient(180deg, rgba(16, 34, 50, 0.94), rgba(9, 22, 35, 0.94));
-}
-
-.dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.dot.red {
-  background: #ff6157;
-}
-
-.dot.yellow {
-  background: #ffc04d;
-}
-
-.dot.green {
-  background: #48d778;
-}
-
-.window-title {
-  margin-left: 8px;
-  color: rgba(213, 229, 246, 0.56);
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 560;
-  letter-spacing: 0;
-}
-
 .app-window img {
   width: 100%;
-  aspect-ratio: 16 / 9.6;
+  aspect-ratio: 2880 / 1778;
   object-fit: cover;
   object-position: 50% 0;
   background: var(--bg-mid);
-}
-
-.status-card {
-  position: absolute;
-  z-index: 3;
-  right: 22px;
-  bottom: 4px;
-  width: min(290px, 48%);
-  padding: 14px 15px;
-  display: grid;
-  gap: 5px;
-  border: 1px solid rgba(95, 215, 202, 0.18);
-  border-radius: 8px;
-  background: rgba(6, 18, 21, 0.78);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(18px);
-}
-
-.status-card strong {
-  color: var(--text-primary);
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 650;
-}
-
-.status-card span {
-  color: var(--text-secondary);
-  font-size: 12.2px;
-  line-height: 18px;
-}
-
-.floating-icon {
-  position: absolute;
-  z-index: 4;
-  left: -24px;
-  bottom: 28px;
-  width: 118px;
-  height: 118px;
-  border-radius: 26px;
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.32);
 }
 
 .feature-strip {
@@ -548,45 +458,7 @@ main {
 
   .hero-visual {
     margin-top: 34px;
-    padding: 0 0 84px;
-  }
-
-  .orbit-line {
-    width: 88%;
-    height: 64%;
-    inset: 8% -20% auto auto;
-  }
-
-  .window-chrome {
-    height: 34px;
-  }
-
-  .window-title {
-    display: none;
-  }
-
-  .floating-icon {
-    left: 13px;
-    bottom: 19px;
-    width: 72px;
-    height: 72px;
-    border-radius: 18px;
-  }
-
-  .status-card {
-    right: 12px;
-    bottom: 15px;
-    width: min(232px, calc(100% - 96px));
-    padding: 11px 12px;
-  }
-
-  .status-card strong {
-    font-size: 12px;
-  }
-
-  .status-card span {
-    font-size: 11.5px;
-    line-height: 16px;
+    padding: 0;
   }
 
   .feature-strip,

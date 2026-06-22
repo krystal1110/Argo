@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 html="website/index.html"
+readme="README.md"
 
 grep -q '<nav class="site-nav"' "$html"
 grep -q 'href="#features"' "$html"
@@ -20,10 +21,17 @@ grep -q 'brew install --cask krystal1110/argo/argo' "$html"
 grep -q 'src="./assets/hero-workspace.png"' "$html"
 grep -q 'src="./assets/app-icon.png"' "$html"
 grep -q '<figure class="app-window">' "$html"
+grep -q 'href="https://krystal1110.github.io/Argo/"' "$readme"
+grep -q 'Website-krystal1110.github.io%2FArgo' "$readme"
 
 for id in workspaces panes agents workbench native download; do
   grep -q "id=\"$id\"" "$html"
 done
+
+if grep -q 'https://argo.dev' "$readme"; then
+  echo "README website link should use GitHub Pages" >&2
+  exit 1
+fi
 
 if grep -q 'class="button secondary" href="https://github.com/krystal1110/Argo"' "$html"; then
   echo "GitHub should not be a secondary CTA button" >&2

@@ -18,19 +18,20 @@ import Foundation
 /// stored under `ArgoURLScheme` (Settings → URL Scheme). This piggybacks on
 /// the existing trust boundary the user already configured for the
 /// `argo://` URL handler — no second password to manage.
-enum ArgoControlCommand: String, Codable {
+nonisolated enum ArgoControlCommand: String, Codable {
     case notify
     case ping
     case open
     case split
     case sendKeys = "send-keys"
     case sessionList = "session-list"
+    case claudeHook = "claude-hook"
 }
 
 /// Light envelope that decodes only the discriminator + auth fields. The
 /// dispatcher decodes the same JSON a second time into the typed payload
 /// once `cmd` is known.
-struct ArgoControlEnvelope: Decodable {
+nonisolated struct ArgoControlEnvelope: Decodable {
     var version: Int?
     var cmd: ArgoControlCommand?
     var token: String?

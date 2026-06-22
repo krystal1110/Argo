@@ -333,4 +333,50 @@ enum AgentNotifyCLI {
             return .ioError
         }
     }
+
+    /// Claude hook entry point. Hooks must fail open: if Argo is not running
+    /// or the payload is not one we surface, Claude should continue normally.
+    static func runClaudeHook(
+        input: Data = FileHandle.standardInput.readDataToEndOfFile(),
+        send: (Data, URL, TimeInterval) throws -> Data? = {
+            try ArgoControlClient.sendRaw(frame: $0, socketURL: $1, timeout: $2)
+        },
+        stdoutWriter: (Data) -> Void = { FileHandle.standardOutput.write($0) },
+        stderrWriter: (String) -> Void = { FileHandle.standardError.write(Data(($0 + "\n").utf8)) },
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        executablePath: String = ClaudeHookAutoInstaller.currentExecutablePath()
+    ) -> ExitCode {
+        do {
+            guard let frame = try ClaudeHookNotifyBridge.controlFrame(from: input, environment: environment) else {
+                return .ok
+            }
+            let socketURLs = [
+                AgentNotifySocketPath.resolveExecutableSocketURL(executablePath: executablePath),
+                AgentNotifySocketPath.resolveSocketURL()
+            ].reduce(into: [URL]()) { urls, url in
+                if !urls.contains(url) {
+                    urls.append(url)
+                }
+            }
+
+            var lastError: Error?
+            for socketURL in socketURLs {
+                do {
+                    let response = try send(frame, socketURL, ClaudeHookNotifyBridge.interactiveTimeout)
+                    if let stdout = try ClaudeHookNotifyBridge.cliStdout(from: response) {
+                        stdoutWriter(stdout)
+                    }
+                    return .ok
+                } catch {
+                    lastError = error
+                }
+            }
+            if let lastError {
+                stderrWriter("argo claude-hook: \(lastError)")
+            }
+        } catch {
+            stderrWriter("argo claude-hook: \(error)")
+        }
+        return .ok
+    }
 }

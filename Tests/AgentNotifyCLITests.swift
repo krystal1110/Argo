@@ -204,4 +204,72 @@ final class AgentNotifyCLITests: XCTestCase {
         XCTAssertEqual(exit, .ok)
         XCTAssertTrue(stdoutOutput.contains("argo notify"))
     }
+
+    func testRunClaudeHookSendsControlFrameAndWritesReturnedStdout() throws {
+        let input = Data(#"{"cwd":"/tmp/demo","hook_event_name":"PermissionRequest","session_id":"s1"}"#.utf8)
+        var capturedFrame: Data?
+        var capturedSocketURL: URL?
+        var capturedTimeout: TimeInterval?
+        var stdout = Data()
+        let response = ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: "hook-output\n"))
+
+        let exit = AgentNotifyCLI.runClaudeHook(
+            input: input,
+            send: { frame, socketURL, timeout in
+                capturedFrame = frame
+                capturedSocketURL = socketURL
+                capturedTimeout = timeout
+                return response
+            },
+            stdoutWriter: { stdout.append($0) },
+            stderrWriter: { _ in },
+            environment: ["ARGO_PANE_ID": "pane-123"],
+            executablePath: "/tmp/Debug/Argo.app/Contents/MacOS/Argo"
+        )
+
+        XCTAssertEqual(exit, .ok)
+        XCTAssertEqual(stdout, Data("hook-output\n".utf8))
+        XCTAssertEqual(capturedTimeout, ClaudeHookNotifyBridge.interactiveTimeout)
+        XCTAssertEqual(
+            capturedSocketURL,
+            AgentNotifySocketPath.resolveExecutableSocketURL(
+                executablePath: "/tmp/Debug/Argo.app/Contents/MacOS/Argo"
+            )
+        )
+        let frame = try XCTUnwrap(capturedFrame)
+        let request = try ClaudeHookNotifyBridge.decodeControlRequest(from: frame)
+        XCTAssertEqual(request.paneID, "pane-123")
+        XCTAssertEqual(request.payload.sessionID, "s1")
+    }
+
+    func testRunClaudeHookFallsBackToSharedSocketWhenScopedSocketIsUnavailable() throws {
+        let input = Data(#"{"cwd":"/tmp/demo","hook_event_name":"PermissionRequest","session_id":"s1"}"#.utf8)
+        let response = ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: "hook-output\n"))
+        var attemptedSocketURLs: [URL] = []
+        var stdout = Data()
+
+        let exit = AgentNotifyCLI.runClaudeHook(
+            input: input,
+            send: { _, socketURL, _ in
+                attemptedSocketURLs.append(socketURL)
+                if attemptedSocketURLs.count == 1 {
+                    throw AgentNotifyError.socketUnavailable
+                }
+                return response
+            },
+            stdoutWriter: { stdout.append($0) },
+            stderrWriter: { _ in },
+            environment: [:],
+            executablePath: "/tmp/Debug/Argo.app/Contents/MacOS/Argo"
+        )
+
+        XCTAssertEqual(exit, .ok)
+        XCTAssertEqual(stdout, Data("hook-output\n".utf8))
+        XCTAssertEqual(attemptedSocketURLs, [
+            AgentNotifySocketPath.resolveExecutableSocketURL(
+                executablePath: "/tmp/Debug/Argo.app/Contents/MacOS/Argo"
+            ),
+            AgentNotifySocketPath.resolveSocketURL(),
+        ])
+    }
 }

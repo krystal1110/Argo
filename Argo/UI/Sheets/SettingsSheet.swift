@@ -1025,15 +1025,7 @@ struct SettingsSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Toggle(localized("settings.dynamicIsland.enable.toggle"), isOn: $appSettings.dynamicIslandEnabled)
-                        Text("Beta")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(RoundedRectangle(cornerRadius: 2).fill(.orange))
-                    }
+                    Toggle(localized("settings.dynamicIsland.enable.toggle"), isOn: $appSettings.dynamicIslandEnabled)
                     Text(localized("settings.dynamicIsland.enable.description"))
                         .font(.callout)
                         .foregroundStyle(.secondary)

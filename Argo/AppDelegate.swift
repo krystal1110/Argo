@@ -242,8 +242,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         do {
             try server.start()
             agentNotifyServer = server
+            installClaudeHooksIfNeeded()
         } catch {
             NSLog("[Argo] agent-notify server failed to start: %@", String(describing: error))
+        }
+    }
+
+    private func installClaudeHooksIfNeeded() {
+        Task.detached(priority: .utility) {
+            do {
+                let result = try ClaudeHookAutoInstaller.installCurrentAppIfMissing()
+                if result == .installed {
+                    NSLog("[Argo] installed Claude hooks for Dynamic Island")
+                }
+            } catch {
+                NSLog("[Argo] Claude hook auto-install failed: %@", String(describing: error))
+            }
         }
     }
 

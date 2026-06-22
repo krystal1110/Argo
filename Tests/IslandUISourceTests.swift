@@ -71,6 +71,13 @@ final class IslandUISourceTests: XCTestCase {
         XCTAssertFalse(source.contains("state.latestItem!"))
     }
 
+    func testDynamicIslandSettingsDoesNotShowBetaBadge() throws {
+        let source = try sourceFile("Argo/UI/Sheets/SettingsSheet.swift")
+
+        XCTAssertTrue(source.contains("settings.dynamicIsland.enable.toggle"))
+        XCTAssertFalse(source.contains("Text(\"Beta\")"))
+    }
+
     private func sourceFile(_ relativePath: String) throws -> String {
         let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         let repositoryRoot = testsDirectory.deletingLastPathComponent()

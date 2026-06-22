@@ -11,6 +11,14 @@ import Foundation
 /// Synchronous Unix-domain socket client for the multi-command control
 /// protocol. Reads back a single newline-terminated JSON response.
 enum ArgoControlClient {
+    static func sendRaw(
+        frame: Data,
+        socketURL: URL = AgentNotifySocketPath.resolveSocketURL(),
+        timeout: TimeInterval = 5.0
+    ) throws -> Data? {
+        try sendFrame(frame: frame, socketURL: socketURL, timeout: timeout)
+    }
+
     /// Sends a control frame and reads the JSON response. Returns nil
     /// for fire-and-forget commands (the server simply closes the
     /// connection without writing a response).
@@ -19,6 +27,21 @@ enum ArgoControlClient {
         socketURL: URL = AgentNotifySocketPath.resolveSocketURL(),
         timeout: TimeInterval = 5.0
     ) throws -> ArgoControlResponse? {
+        guard let collected = try sendFrame(frame: frame, socketURL: socketURL, timeout: timeout) else {
+            return nil
+        }
+        let trimmed = collected.last == 0x0A ? collected.dropLast() : collected
+        if let lineEnd = trimmed.firstIndex(of: 0x0A) {
+            return try? JSONDecoder().decode(ArgoControlResponse.self, from: trimmed.prefix(upTo: lineEnd))
+        }
+        return try? JSONDecoder().decode(ArgoControlResponse.self, from: trimmed)
+    }
+
+    private static func sendFrame(
+        frame: Data,
+        socketURL: URL,
+        timeout: TimeInterval
+    ) throws -> Data? {
         let socketPath = socketURL.path
         guard !socketPath.isEmpty else {
             throw AgentNotifyError.socketUnavailable
@@ -99,11 +122,6 @@ enum ArgoControlClient {
         }
 
         if collected.isEmpty { return nil }
-
-        let trimmed = collected.last == 0x0A ? collected.dropLast() : collected
-        if let lineEnd = trimmed.firstIndex(of: 0x0A) {
-            return try? JSONDecoder().decode(ArgoControlResponse.self, from: trimmed.prefix(upTo: lineEnd))
-        }
-        return try? JSONDecoder().decode(ArgoControlResponse.self, from: trimmed)
+        return collected
     }
 }

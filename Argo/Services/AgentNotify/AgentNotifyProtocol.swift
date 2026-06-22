@@ -10,7 +10,7 @@ import Foundation
 /// Environment variables Argo injects into PTY sessions so out-of-band agent
 /// notifications (delivered via the `argo notify` CLI) can be routed back to
 /// the originating pane.
-enum ArgoAgentNotifyEnvironment {
+nonisolated enum ArgoAgentNotifyEnvironment {
     static let paneIDKey = "ARGO_PANE_ID"
 }
 
@@ -268,11 +268,34 @@ nonisolated enum AgentNotifySocketPath {
             .appendingPathComponent(socketFileName, isDirectory: false)
     }
 
+    static func resolveExecutableSocketURL(
+        executablePath: String,
+        fileManager: FileManager = .default,
+        homeDirectory: String = NSHomeDirectory()
+    ) -> URL {
+        let standardizedPath = URL(fileURLWithPath: executablePath)
+            .standardizedFileURL
+            .path
+        let hash = stableSocketHash(for: standardizedPath)
+        return resolveDirectory(fileManager: fileManager, homeDirectory: homeDirectory)
+            .appendingPathComponent("a-\(hash)", isDirectory: false)
+    }
+
     static func ensureDirectory(
         fileManager: FileManager = .default,
         homeDirectory: String = NSHomeDirectory()
     ) throws {
         let directory = resolveDirectory(fileManager: fileManager, homeDirectory: homeDirectory)
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
+    private static func stableSocketHash(for value: String) -> String {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in value.utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        let hex = String(hash, radix: 16, uppercase: false)
+        return String(repeating: "0", count: max(0, 16 - hex.count)) + hex
     }
 }

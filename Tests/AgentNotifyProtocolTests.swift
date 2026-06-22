@@ -105,4 +105,23 @@ final class AgentNotifyProtocolTests: XCTestCase {
         XCTAssertEqual(url.deletingLastPathComponent().path, dir.path)
         XCTAssertEqual(url.lastPathComponent, AgentNotifySocketPath.socketFileName)
     }
+
+    func testExecutableScopedSocketPathIsStableAndDistinctFromSharedSocket() {
+        let executablePath = "/Users/eve/Library/Developer/Xcode/DerivedData/Argo/Build/Products/Debug/Argo.app/Contents/MacOS/Argo"
+        let first = AgentNotifySocketPath.resolveExecutableSocketURL(
+            executablePath: executablePath,
+            homeDirectory: "/Users/eve"
+        )
+        let second = AgentNotifySocketPath.resolveExecutableSocketURL(
+            executablePath: executablePath,
+            homeDirectory: "/Users/eve"
+        )
+        let shared = AgentNotifySocketPath.resolveSocketURL(homeDirectory: "/Users/eve")
+
+        XCTAssertEqual(first, second)
+        XCTAssertEqual(first.deletingLastPathComponent(), shared.deletingLastPathComponent())
+        XCTAssertNotEqual(first.lastPathComponent, shared.lastPathComponent)
+        XCTAssertTrue(first.lastPathComponent.hasPrefix("a-"))
+        XCTAssertLessThanOrEqual(first.path.utf8.count, 103, "socket path must fit sockaddr_un.sun_path on Darwin")
+    }
 }

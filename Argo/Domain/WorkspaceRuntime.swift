@@ -1273,6 +1273,53 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         IslandPanelController.shared.show()
     }
 
+    func postAgentNotification(request: AgentNotifyRequest, paneID: UUID?) {
+        let trimmedTitle = request.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = request.body?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle: String
+        let resolvedBody: String?
+        if trimmedTitle.isEmpty, let trimmedBody, !trimmedBody.isEmpty {
+            resolvedTitle = trimmedBody
+            resolvedBody = nil
+        } else {
+            resolvedTitle = trimmedTitle.isEmpty ? "Argo" : trimmedTitle
+            resolvedBody = (trimmedBody?.isEmpty == false) ? trimmedBody : nil
+        }
+
+        let identity = IslandSessionIdentity(
+            workspaceID: id,
+            worktreePath: activeWorktreePath,
+            paneID: paneID,
+            sourceID: request.sourceID ?? request.sessionID ?? paneID?.uuidString.lowercased()
+        )
+        let sessionID = request.sessionID
+            ?? identity.sourceID
+            ?? paneID?.uuidString.lowercased()
+            ?? "\(id.uuidString.lowercased()):\(activeWorktreePath)"
+        let timestamp = Date()
+        var events: [IslandSessionEvent] = [
+            .sessionStarted(IslandSessionStarted(
+                sessionID: sessionID,
+                identity: identity,
+                title: resolvedTitle,
+                tool: IslandAgentTool.from(agentName: request.toolName ?? request.agentName),
+                initialPhase: request.kind?.initialPhase ?? .running,
+                summary: resolvedBody ?? resolvedTitle,
+                timestamp: timestamp,
+                currentTool: request.currentTool,
+                commandPreview: request.commandPreview,
+                initialPrompt: request.initialPrompt,
+                latestPrompt: request.latestPrompt,
+                lastAssistantMessage: request.assistantMessage,
+                terminalTag: paneID.map(Self.shortPaneTag(for:))
+            ))
+        ]
+        if let followup = request.followupEvent(sessionID: sessionID, summary: resolvedBody ?? resolvedTitle, timestamp: timestamp) {
+            events.append(followup)
+        }
+        IslandPanelController.shared.present(events: events)
+    }
+
     private static func shortPaneTag(for paneID: UUID) -> String {
         String(paneID.uuidString.prefix(8)).lowercased()
     }

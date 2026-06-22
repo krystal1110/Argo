@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Argo - Native macOS Terminal Workspace</title>
+    <meta name="description" content="A native macOS terminal workspace for repositories, worktrees, split panes, previews, SSH sessions, and coding agents.">
+    <link rel="icon" href="./assets/app-icon.png">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Argo home">
+          <img src="./assets/app-icon.png" alt="" width="31" height="31">
+          <span>Argo</span>
+        </a>
+        <div class="nav-links">
+          <a href="#top">Home</a>
+          <a href="#features">Features</a>
+          <a href="#download">Download</a>
+          <a href="https://github.com/krystal1110/Argo">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <h1 id="hero-title">Argo</h1>
+          <p class="tagline">Command every repo.<br>Keep every agent in view.</p>
+          <p class="hero-body">A native macOS terminal workspace for repositories, worktrees, split panes, previews, SSH sessions, and coding agents.</p>
+          <div class="cta-row" aria-label="Primary actions">
+            <a class="button primary" href="https://github.com/krystal1110/Argo/releases">Download</a>
+            <a class="button secondary" href="https://github.com/krystal1110/Argo">GitHub</a>
+          </div>
+          <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/tap/argo</code></p>
+          <p class="opensource-copy">Free & Open Source. Built for fast local work across many repositories.</p>
+        </div>
+
+        <div class="hero-visual" aria-label="Argo workspace preview">
+          <div class="orbit-line" aria-hidden="true"></div>
+          <figure class="app-window">
+            <div class="window-chrome" aria-hidden="true">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="window-title">Argo workspace</span>
+            </div>
+            <img src="./assets/hero-workspace.png" alt="Argo workspace with sidebar, split terminal panes, and file workbench">
+          </figure>
+          <aside class="status-card" aria-label="Agent completion status">
+            <strong>liney / main</strong>
+            <span>✓ 23 tests passed · agent complete</span>
+            <span>pane layout restored</span>
+          </aside>
+          <img class="floating-icon" src="./assets/app-icon.png" alt="" width="118" height="118">
+        </div>
+      </section>
+
+      <section class="feature-strip" aria-label="Feature summary">
+        <a class="feature-chip" href="#workspaces"><strong>Workspaces</strong><span>Multi-repository sidebar with worktree-aware navigation.</span></a>
+        <a class="feature-chip" href="#panes"><strong>Panes</strong><span>Ghostty-powered split layouts restored per worktree.</span></a>
+        <a class="feature-chip" href="#agents"><strong>Agents</strong><span>Local shell, SSH, and agent-backed sessions stay visible.</span></a>
+        <a class="feature-chip" href="#workbench"><strong>Workbench</strong><span>File tree, Markdown/HTML preview, and localhost pages.</span></a>
+        <a class="feature-chip" href="#native"><strong>Native</strong><span>AppKit + SwiftUI with a vendored Ghostty runtime.</span></a>
+      </section>
+
+      <section id="features" class="feature-sections" aria-label="Argo features">
+        <article id="workspaces" class="feature-section">
+          <p class="section-number">01</p>
+          <h2>Every repo gets a place.</h2>
+          <p>Keep many repositories visible without turning your terminal into a tab hunt. Argo keeps workspace navigation, branches, and worktrees in one steady sidebar.</p>
+        </article>
+        <article id="panes" class="feature-section">
+          <p class="section-number">02</p>
+          <h2>Pane layouts come back.</h2>
+          <p>Ghostty-powered terminal panes restore per worktree, so builds, tests, shells, and long-running sessions return where you left them.</p>
+        </article>
+        <article id="agents" class="feature-section">
+          <p class="section-number">03</p>
+          <h2>Keep agents in view.</h2>
+          <p>Local shells, SSH sessions, and agent-backed tabs stay visible. Pane-aware notifications and <code>argo notify</code> help completions surface at the right moment.</p>
+        </article>
+        <article id="workbench" class="feature-section">
+          <p class="section-number">04</p>
+          <h2>Preview beside the terminal.</h2>
+          <p>Open a file tree, Markdown or HTML preview, and localhost web pages beside the terminal that produced them.</p>
+        </article>
+        <article id="native" class="feature-section">
+          <p class="section-number">05</p>
+          <h2>Native macOS, no detour.</h2>
+          <p>Argo is built with AppKit, SwiftUI, and a vendored Ghostty runtime for macOS 14.6 or later on Apple Silicon and Intel Macs.</p>
+        </article>
+      </section>
+
+      <section id="download" class="final-cta" aria-labelledby="download-title">
+        <p class="section-number">Start</p>
+        <h2 id="download-title">Put every workspace in reach.</h2>
+        <div class="cta-row">
+          <a class="button primary" href="https://github.com/krystal1110/Argo/releases">Download Argo</a>
+          <a class="button secondary" href="https://github.com/krystal1110/Argo">View on GitHub</a>
+        </div>
+        <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/tap/argo</code></p>
+      </section>
+    </main>
+  </body>
+</html>

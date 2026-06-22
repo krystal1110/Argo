@@ -8,6 +8,7 @@
 import Foundation
 
 /// Argument parsing + IPC wiring for non-notify CLI subcommands:
+///   argo ping
 ///   argo open <repo> [--worktree <path>] [--token <t>]
 ///   argo split [--axis vertical|horizontal] [--placement after|before]
 ///                [--pane <uuid>] [--token <t>]
@@ -55,12 +56,64 @@ enum ArgoControlCLI {
       argo send-keys --pane <uuid> --text "<text>" [--token <t>]
     """
 
+    static let usagePing = """
+    argo ping — print the executable path of the Argo app that owns the control socket.
+
+    USAGE:
+      argo ping
+    """
+
     static let usageSessionList = """
     argo session list — list every running pane across all workspaces.
 
     USAGE:
       argo session list [--token <t>] [--json]
     """
+
+    // MARK: - Ping
+
+    static func runPing(
+        arguments: [String],
+        send: (Data) throws -> ArgoControlResponse? = { try ArgoControlClient.send(frame: $0) },
+        stdoutWriter: (String) -> Void = { print($0) },
+        stderrWriter: (String) -> Void = { FileHandle.standardError.write(Data(($0 + "\n").utf8)) }
+    ) -> ExitCode {
+        if arguments.contains("-h") || arguments.contains("--help") {
+            stdoutWriter(usagePing)
+            return .ok
+        }
+        if let unexpected = arguments.first {
+            stderrWriter("argo ping: unexpected argument '\(unexpected)'")
+            return .usage
+        }
+
+        let frame = encodeFrame(cmd: "ping", token: nil, payload: [:])
+        do {
+            let response = try send(frame)
+            guard let response else {
+                stderrWriter("argo ping: server returned no response")
+                return .ioError
+            }
+            if !response.ok {
+                stderrWriter("argo ping: \(response.error ?? "unknown error")")
+                return response.error == "token-mismatch" || response.error == "control-disabled"
+                    ? .authRequired
+                    : .ioError
+            }
+            guard let executablePath = response.executablePath, !executablePath.isEmpty else {
+                stderrWriter("argo ping: server returned no executable path")
+                return .ioError
+            }
+            stdoutWriter(executablePath)
+            return .ok
+        } catch AgentNotifyError.socketUnavailable {
+            stderrWriter("argo: Argo is not running")
+            return .unavailable
+        } catch {
+            stderrWriter("argo ping: \(error)")
+            return .ioError
+        }
+    }
 
     // MARK: - Open
 

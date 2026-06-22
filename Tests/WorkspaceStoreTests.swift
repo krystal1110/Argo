@@ -195,6 +195,46 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(store.mainWindowMode, .workspace)
     }
 
+    func testDynamicIslandStatusMessagePostsSessionEvent() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.workspaces = [workspace]
+        store.selectedWorkspaceID = workspace.id
+        store.updateAppSettings(AppSettings(dynamicIslandEnabled: true))
+
+        IslandNotificationState.shared.clearAll()
+        defer { IslandNotificationState.shared.clearAll() }
+
+        store.receive(.statusMessage(
+            "Setup complete",
+            .success,
+            deliverSystemNotification: true,
+            workspaceID: workspace.id,
+            worktreePath: workspace.activeWorktreePath
+        ))
+
+        XCTAssertTrue(IslandNotificationState.shared.items.isEmpty)
+        let successSession = try XCTUnwrap(IslandNotificationState.shared.sessions.first)
+        XCTAssertEqual(successSession.title, "Setup complete")
+        XCTAssertEqual(successSession.phase, .completed)
+
+        store.receive(.statusMessage(
+            "Setup failed",
+            .warning,
+            deliverSystemNotification: true,
+            workspaceID: workspace.id,
+            worktreePath: workspace.activeWorktreePath
+        ))
+
+        let warningSession = try XCTUnwrap(IslandNotificationState.shared.sessionState.session(
+            id: "status:\(workspace.id.uuidString.lowercased()):Setup failed"
+        ))
+        XCTAssertEqual(warningSession.phase, .failed)
+        XCTAssertEqual(warningSession.lastError, "Setup failed")
+    }
+
     func testMainWindowLayoutRestoresWorkspaceSidebarWhenReturningFromGlobalMode() {
         var layoutState = MainWindowLayoutState()
         layoutState.workspaceColumnVisibility = .all

@@ -17,6 +17,27 @@ struct IslandCollapsedView: View {
 
     private var hasNotch: Bool { notchWidth > 0 }
 
+    private var spotlightTitle: String? {
+        state.spotlightSession?.spotlightHeadlineText
+    }
+
+    private var rightSlot: IslandRightSlotContent? {
+        let sessions = state.prioritySessions
+        guard !sessions.isEmpty else { return nil }
+        if sessions.count <= 1 { return .count(sessions.count) }
+
+        let cells = sessions.prefix(8).map { session in
+            IslandGridCell.session(
+                hexColor: session.tool.brandColorHex,
+                state: IslandGridCellState(phase: session.phase)
+            )
+        }
+        if sessions.count > 8 {
+            return .agents(Array(cells.prefix(7)) + [.overflow(sessions.count - 7)])
+        }
+        return .agents(Array(cells))
+    }
+
     var body: some View {
         if hasNotch {
             notchedLayout
@@ -30,29 +51,7 @@ struct IslandCollapsedView: View {
     private var notchedLayout: some View {
         HStack(spacing: 0) {
             // Left side — status icon + title
-            HStack(spacing: 8) {
-                if let item = state.latestItem {
-                    islandStatusIcon(for: item)
-                        .font(.system(size: 14))
-
-                    Text(item.title)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                } else {
-                    Image(systemName: "macwindow.on.rectangle")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.6))
-
-                    Text("ARGO")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .tracking(2)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .lineLimit(1)
-                        .fixedSize()
-                }
-            }
+            leadingContent
             .padding(.leading, 16)
             .padding(.trailing, notchEdgePadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -62,26 +61,7 @@ struct IslandCollapsedView: View {
                 .frame(width: notchWidth)
 
             // Right side — badge / animation
-            HStack(spacing: 8) {
-                if state.latestItem != nil {
-                    if state.badgeCount > 1 {
-                        Text("\(state.badgeCount)")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .frame(width: 22, height: 22)
-                            .background(
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(.white.opacity(0.15))
-                            )
-                    }
-                } else {
-                    if pixelAnimationStyle != .none {
-                        IslandPixelAnimationView(style: pixelAnimationStyle)
-                            .frame(width: 20, height: 14)
-                            .fixedSize()
-                    }
-                }
-            }
+            rightSlotContent
             .padding(.leading, notchEdgePadding)
             .padding(.trailing, 16)
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -100,48 +80,9 @@ struct IslandCollapsedView: View {
     /// Standard layout for screens without a notch.
     private var standardLayout: some View {
         HStack(spacing: 10) {
-            if let item = state.latestItem {
-                islandStatusIcon(for: item)
-                    .font(.system(size: 14))
-
-                Text(item.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                Spacer(minLength: 4)
-
-                if state.badgeCount > 1 {
-                    Text("\(state.badgeCount)")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .frame(width: 22, height: 22)
-                        .background(
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(.white.opacity(0.15))
-                        )
-                }
-            } else {
-                Image(systemName: "macwindow.on.rectangle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.6))
-
-                Text("ARGO")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .tracking(2)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .fixedSize()
-
-                Spacer()
-
-                if pixelAnimationStyle != .none {
-                    IslandPixelAnimationView(style: pixelAnimationStyle)
-                        .frame(width: 20, height: 14)
-                        .fixedSize()
-                }
-            }
+            leadingContent
+            Spacer(minLength: 4)
+            rightSlotContent
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -153,6 +94,43 @@ struct IslandCollapsedView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(.white.opacity(0.08), lineWidth: 0.5)
         )
+    }
+
+    private var leadingContent: some View {
+        HStack(spacing: 8) {
+            if let session = state.spotlightSession {
+                islandSessionStatusIcon(session.phase)
+                    .font(.system(size: 14))
+
+                Text(spotlightTitle ?? session.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            } else {
+                Image(systemName: "macwindow.on.rectangle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                Text("ARGO")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var rightSlotContent: some View {
+        if let rightSlot {
+            IslandRightSlotView(content: rightSlot)
+        } else if pixelAnimationStyle != .none {
+            IslandPixelAnimationView(style: pixelAnimationStyle)
+                .frame(width: 20, height: 14)
+                .fixedSize()
+        }
     }
 }
 

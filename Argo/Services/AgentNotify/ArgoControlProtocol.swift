@@ -20,6 +20,7 @@ import Foundation
 /// `argo://` URL handler — no second password to manage.
 enum ArgoControlCommand: String, Codable {
     case notify
+    case ping
     case open
     case split
     case sendKeys = "send-keys"
@@ -91,6 +92,7 @@ struct ArgoControlResponse: Codable, Equatable {
     var ok: Bool
     var error: String?
     var sessions: [ArgoControlSession]?
+    var executablePath: String?
 
     static let success = ArgoControlResponse(ok: true)
 

@@ -330,6 +330,12 @@ final class ShellSession: ObservableObject, Identifiable {
         surfaceController.sendText(text)
     }
 
+    @discardableResult
+    func insertProgrammaticText(_ text: String) -> Bool {
+        focus()
+        return surfaceController.sendProgrammaticText(text)
+    }
+
     func sendShellCommand(_ command: String) {
         surfaceController.sendText(command)
         surfaceController.sendReturn()

@@ -131,6 +131,16 @@ final class WorkspaceSessionController: ObservableObject {
         session.focus()
     }
 
+    @discardableResult
+    func sendProgrammaticText(_ text: String, to paneID: UUID) -> Bool {
+        guard let session = sessions[paneID] else { return false }
+        if focusedPaneID != paneID {
+            previousFocusedPaneID = focusedPaneID
+        }
+        focusedPaneID = paneID
+        return session.insertProgrammaticText(text)
+    }
+
     func focusNext(using order: [UUID]) {
         guard let focusedPaneID, !order.isEmpty else {
             if let first = order.first {

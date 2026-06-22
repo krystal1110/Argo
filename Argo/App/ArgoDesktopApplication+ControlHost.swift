@@ -73,8 +73,7 @@ extension ArgoDesktopApplication: ArgoControlHost {
         }
         for store in allWorkspaceStores {
             for workspace in store.workspaces {
-                if let session = workspace.sessionController.session(for: resolvedPane) {
-                    session.insertText(request.text)
+                if workspace.sessionController.sendProgrammaticText(request.text, to: resolvedPane) {
                     return .success
                 }
             }

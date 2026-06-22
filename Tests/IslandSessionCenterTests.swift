@@ -71,6 +71,34 @@ final class IslandSessionCenterTests: XCTestCase {
         XCTAssertEqual(state.items.map(\.id), [keep.id])
     }
 
+    func testDismissLegacyItemKeepsExpandedWhenSessionOnlyRecordRemains() {
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 10) })
+        let legacyItem = makeItem(title: "legacy")
+        let sessionOnlyID = "session-only"
+
+        state.post(item: legacyItem)
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: sessionOnlyID,
+            identity: IslandSessionIdentity(
+                workspaceID: UUID(),
+                worktreePath: "/tmp/repo",
+                paneID: nil,
+                sourceID: sessionOnlyID
+            ),
+            title: "Session only",
+            tool: .codex,
+            initialPhase: .running,
+            summary: "Running",
+            timestamp: Date(timeIntervalSince1970: 11)
+        )))
+        state.isExpanded = true
+
+        state.dismiss(id: legacyItem.id)
+
+        XCTAssertTrue(state.isExpanded)
+        XCTAssertEqual(state.sessionState.session(id: sessionOnlyID)?.phase, .running)
+    }
+
     func testClearCompletedPreservesWaitingAndRunningItems() {
         let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 10) })
 
@@ -105,6 +133,69 @@ final class IslandSessionCenterTests: XCTestCase {
         XCTAssertEqual(state.items.map(\.title), ["build", "test"])
     }
 
+    func testLegacyItemPostMirrorsSessionState() {
+        let workspaceID = UUID()
+        let paneID = UUID()
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 10) })
+
+        state.post(item: makeItem(
+            workspaceID: workspaceID,
+            paneID: paneID,
+            sourceID: "approval",
+            title: "Approve",
+            status: .waitingForApproval
+        ))
+
+        XCTAssertEqual(state.sessions.map(\.id), ["approval"])
+        XCTAssertEqual(state.spotlightSession?.title, "Approve")
+        XCTAssertEqual(state.attentionCount, 1)
+    }
+
+    func testClearAllClearsSessionState() {
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 10) })
+
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: "s",
+            identity: IslandSessionIdentity(workspaceID: UUID(), worktreePath: "/tmp/repo", paneID: nil, sourceID: "s"),
+            title: "Running",
+            tool: .codex,
+            initialPhase: .running,
+            summary: "Running",
+            timestamp: Date(timeIntervalSince1970: 10)
+        )))
+        state.clearAll()
+
+        XCTAssertTrue(state.sessions.isEmpty)
+    }
+
+    func testClearCompletedDismissesSessionOnlyCompletedItems() {
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 10) })
+        let identity = IslandSessionIdentity(workspaceID: UUID(), worktreePath: "/tmp/repo", paneID: nil, sourceID: "done")
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: "done",
+            identity: identity,
+            title: "Done",
+            tool: .codex,
+            initialPhase: .completed,
+            summary: "Done",
+            timestamp: Date(timeIntervalSince1970: 10)
+        )))
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: "running",
+            identity: IslandSessionIdentity(workspaceID: UUID(), worktreePath: "/tmp/repo", paneID: nil, sourceID: "running"),
+            title: "Running",
+            tool: .codex,
+            initialPhase: .running,
+            summary: "Running",
+            timestamp: Date(timeIntervalSince1970: 11)
+        )))
+
+        state.clearCompleted()
+
+        XCTAssertTrue(state.sessionState.session(id: "done")?.isDismissed == true)
+        XCTAssertFalse(state.sessionState.session(id: "running")?.isDismissed == true)
+    }
+
     func testWorkspacePostAgentNotificationPreservesPaneIdentity() throws {
         let directoryURL = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directoryURL) }
@@ -124,6 +215,62 @@ final class IslandSessionCenterTests: XCTestCase {
         XCTAssertEqual(item.paneID, paneID)
         XCTAssertEqual(item.sourceID, "pane:\(paneID.uuidString.lowercased())")
         XCTAssertEqual(item.terminalTag, String(paneID.uuidString.prefix(8)).lowercased())
+    }
+
+    func testWorkspaceRichNotifyCreatesApprovalSession() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let paneID = UUID()
+        let request = AgentNotifyRequest(
+            title: "Approve command",
+            body: "Run tests?",
+            paneID: paneID.uuidString,
+            agentName: "Codex",
+            kind: .approval,
+            sessionID: "session-1",
+            sourceID: "approval-1",
+            currentTool: "exec_command",
+            commandPreview: "xcodebuild test",
+            options: [
+                AgentNotifyOption(label: "Allow", responseText: "1\n"),
+                AgentNotifyOption(label: "Deny", responseText: "2\n")
+            ]
+        )
+
+        IslandNotificationState.shared.clearAll()
+        defer { IslandNotificationState.shared.clearAll() }
+        workspace.postAgentNotification(request: request, paneID: paneID)
+
+        let session = try XCTUnwrap(IslandNotificationState.shared.sessionState.session(id: "session-1"))
+        XCTAssertEqual(session.identity.paneID, paneID)
+        XCTAssertEqual(session.identity.sourceID, "approval-1")
+        XCTAssertEqual(session.tool, .codex)
+        XCTAssertEqual(session.phase, .waitingForApproval)
+        XCTAssertEqual(session.permissionRequest?.summary, "Run tests?")
+        XCTAssertEqual(session.permissionRequest?.allowResponseText, "1\n")
+        XCTAssertEqual(session.permissionRequest?.denyResponseText, "2\n")
+        XCTAssertEqual(session.currentTool, "exec_command")
+        XCTAssertEqual(session.commandPreview, "xcodebuild test")
+    }
+
+    func testWorkspaceRichNotifyUsesToolFieldWhenAgentIsMissing() throws {
+        let directoryURL = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let request = AgentNotifyRequest(
+            title: "Running",
+            toolName: "Codex",
+            kind: .activity,
+            sessionID: "session-tool"
+        )
+
+        IslandNotificationState.shared.clearAll()
+        defer { IslandNotificationState.shared.clearAll() }
+        workspace.postAgentNotification(request: request, paneID: nil)
+
+        let session = try XCTUnwrap(IslandNotificationState.shared.sessionState.session(id: "session-tool"))
+        XCTAssertEqual(session.tool, .codex)
     }
 
     func testNavigateToItemMarksItemStaleWhenPaneIsMissing() {

@@ -260,6 +260,44 @@ final class ArgoControlCLITests: XCTestCase {
         XCTAssertEqual(parsed?.first?["pane"] as? String, "p-1")
     }
 
+    // MARK: - ping
+
+    func testPingEncodesFrameWithoutToken() throws {
+        let captured = FrameCollector(response: ArgoControlResponse(
+            ok: true,
+            error: nil,
+            sessions: nil,
+            executablePath: "/debug/Argo.app/Contents/MacOS/Argo"
+        ))
+        let exit = ArgoControlCLI.runPing(
+            arguments: [],
+            send: captured.capture,
+            stdoutWriter: { _ in },
+            stderrWriter: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        let json = try captured.decodedJSON()
+        XCTAssertEqual(json["cmd"] as? String, "ping")
+        XCTAssertNil(json["token"])
+    }
+
+    func testPingPrintsExecutablePath() {
+        let stdout = StreamCollector()
+        let exit = ArgoControlCLI.runPing(
+            arguments: [],
+            send: { _ in ArgoControlResponse(
+                ok: true,
+                error: nil,
+                sessions: nil,
+                executablePath: "/debug/Argo.app/Contents/MacOS/Argo"
+            ) },
+            stdoutWriter: stdout.write,
+            stderrWriter: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        XCTAssertEqual(stdout.text, "/debug/Argo.app/Contents/MacOS/Argo\n")
+    }
+
     // MARK: - encodeFrame helper
 
     func testEncodeFrameOmitsNilPayloadEntries() throws {
@@ -296,10 +334,15 @@ nonisolated private final class StreamCollector {
 
 nonisolated private final class FrameCollector {
     private(set) var frame: Data?
+    private let response: ArgoControlResponse?
+
+    init(response: ArgoControlResponse? = .success) {
+        self.response = response
+    }
 
     func capture(_ data: Data) throws -> ArgoControlResponse? {
         frame = data
-        return .success
+        return response
     }
 
     func decodedJSON() throws -> [String: Any] {

@@ -19,6 +19,18 @@ enum AgentNotifyCLI {
         var paneID: String?
         var workspaceID: String?
         var agentName: String?
+        var toolName: String?
+        var kind: AgentNotifyKind?
+        var sessionID: String?
+        var sourceID: String?
+        var currentTool: String?
+        var commandPreview: String?
+        var affectedPath: String?
+        var initialPrompt: String?
+        var latestPrompt: String?
+        var assistantMessage: String?
+        var responseText: String?
+        var options: [AgentNotifyOption] = []
         var showHelp: Bool = false
         var showVersion: Bool = false
     }
@@ -55,7 +67,7 @@ enum AgentNotifyCLI {
                 }
                 options.title = arguments[index + 1]
                 index += 1
-            case "-b", "--body", "-m", "--message":
+            case "-b", "--body", "-m", "--message", "--prompt", "--summary":
                 guard index + 1 < arguments.count else {
                     throw ParseError.missingValue(flag: argument)
                 }
@@ -79,6 +91,82 @@ enum AgentNotifyCLI {
                 }
                 options.agentName = arguments[index + 1]
                 index += 1
+            case "--tool":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.toolName = arguments[index + 1]
+                index += 1
+            case "--activity":
+                options.kind = .activity
+            case "--approval":
+                options.kind = .approval
+            case "--question":
+                options.kind = .question
+            case "--completed":
+                options.kind = .completed
+            case "--failed":
+                options.kind = .failed
+            case "--session":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.sessionID = arguments[index + 1]
+                index += 1
+            case "--source":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.sourceID = arguments[index + 1]
+                index += 1
+            case "--current-tool":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.currentTool = arguments[index + 1]
+                index += 1
+            case "--command-preview":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.commandPreview = arguments[index + 1]
+                index += 1
+            case "--affected-path":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.affectedPath = arguments[index + 1]
+                index += 1
+            case "--initial-prompt":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.initialPrompt = arguments[index + 1]
+                index += 1
+            case "--latest-prompt":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.latestPrompt = arguments[index + 1]
+                index += 1
+            case "--assistant-message":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.assistantMessage = arguments[index + 1]
+                index += 1
+            case "--response-text":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.responseText = arguments[index + 1].replacingOccurrences(of: "\\n", with: "\n")
+                index += 1
+            case "--option":
+                guard index + 1 < arguments.count else {
+                    throw ParseError.missingValue(flag: argument)
+                }
+                options.options.append(Self.parseOption(arguments[index + 1]))
+                index += 1
             default:
                 if argument.hasPrefix("-") {
                     throw ParseError.unknownFlag(argument)
@@ -97,6 +185,13 @@ enum AgentNotifyCLI {
             index += 1
         }
         return options
+    }
+
+    private static func parseOption(_ raw: String) -> AgentNotifyOption {
+        let parts = raw.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let label = parts.first ?? raw
+        let response = parts.count == 2 ? parts[1].replacingOccurrences(of: "\\n", with: "\n") : "\(label)\n"
+        return AgentNotifyOption(label: label, responseText: response)
     }
 
     /// Build a request from CLI options + the surrounding shell environment.
@@ -118,7 +213,19 @@ enum AgentNotifyCLI {
             body: title.isEmpty ? nil : body,
             paneID: paneID.flatMap { $0.isEmpty ? nil : $0 },
             workspaceID: options.workspaceID.flatMap { $0.isEmpty ? nil : $0 },
-            agentName: options.agentName.flatMap { $0.isEmpty ? nil : $0 }
+            agentName: options.agentName.flatMap { $0.isEmpty ? nil : $0 },
+            toolName: options.toolName.flatMap { $0.isEmpty ? nil : $0 },
+            kind: options.kind,
+            sessionID: options.sessionID.flatMap { $0.isEmpty ? nil : $0 },
+            sourceID: options.sourceID.flatMap { $0.isEmpty ? nil : $0 },
+            currentTool: options.currentTool.flatMap { $0.isEmpty ? nil : $0 },
+            commandPreview: options.commandPreview.flatMap { $0.isEmpty ? nil : $0 },
+            affectedPath: options.affectedPath.flatMap { $0.isEmpty ? nil : $0 },
+            initialPrompt: options.initialPrompt.flatMap { $0.isEmpty ? nil : $0 },
+            latestPrompt: options.latestPrompt.flatMap { $0.isEmpty ? nil : $0 },
+            assistantMessage: options.assistantMessage.flatMap { $0.isEmpty ? nil : $0 },
+            options: options.options.isEmpty ? nil : options.options,
+            responseText: options.responseText.flatMap { $0.isEmpty ? nil : $0 }
         )
     }
 
@@ -129,13 +236,32 @@ enum AgentNotifyCLI {
       argo notify [TITLE] [BODY]
       argo notify --title <text> [--body <text>] [--pane <uuid>]
                    [--workspace <uuid>] [--agent <name>]
+      argo notify --approval --title <text> --body <text>
+                   [--command-preview <text>] [--affected-path <path>]
+                   --option "Allow=1\\n" --option "Deny=2\\n"
+      argo notify --question --prompt <text> --option Production
+      argo notify --completed --summary <text> --tool Codex
 
     OPTIONS:
       -t, --title <text>     Notification title (required if no positional)
       -b, --body  <text>     Notification body (alias: -m, --message)
+      --prompt <text>        Question prompt alias for --body
+      --summary <text>       Completion/failure summary alias for --body
       -p, --pane  <uuid>     Originating pane (defaults to $ARGO_PANE_ID)
       -w, --workspace <uuid> Originating workspace
       -a, --agent <name>     Agent display name (e.g. Claude, Codex)
+      --tool <name>          Agent tool name (rich notify alias)
+      --activity             Mark as agent activity
+      --approval             Mark as approval request
+      --question             Mark as question request
+      --completed            Mark as completed
+      --failed               Mark as failed
+      --session <id>         Stable agent session id
+      --source <id>          Stable event source id
+      --current-tool <name>  Current tool name
+      --command-preview <s>  Command or action preview
+      --affected-path <path> Approval path context shown in Dynamic Island
+      --option <label=text>  Action/question option response
       -V, --version          Print Argo version and exit
       -h, --help             Show this help and exit
 

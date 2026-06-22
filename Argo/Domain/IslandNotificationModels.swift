@@ -44,7 +44,7 @@ extension IslandSessionStatus {
     static let waitingForInput: IslandSessionStatus = .waitingForAnswer
 }
 
-nonisolated struct IslandSessionIdentity: Hashable {
+nonisolated struct IslandSessionIdentity: Hashable, Codable, Sendable {
     let workspaceID: UUID
     let worktreePath: String?
     let paneID: UUID?
@@ -125,6 +125,64 @@ nonisolated struct IslandNotificationItem: Identifiable, Equatable {
         self.prompt = prompt
         self.action = action
         self.lastError = lastError
+    }
+}
+
+nonisolated extension IslandNotificationItem {
+    var sessionID: String {
+        sourceID ?? paneID?.uuidString.lowercased() ?? "\(workspaceID.uuidString.lowercased()):\(worktreePath ?? "workspace")"
+    }
+
+    var sessionStartedEvent: IslandSessionEvent {
+        .sessionStarted(IslandSessionStarted(
+            sessionID: sessionID,
+            identity: identity,
+            title: title,
+            tool: IslandAgentTool.from(agentName: agentName),
+            initialPhase: IslandSessionPhase(status),
+            summary: body ?? title,
+            timestamp: updatedAt,
+            terminalTag: terminalTag,
+            lastError: lastError
+        ))
+    }
+}
+
+nonisolated extension IslandAgentTool {
+    static func from(agentName: String?) -> IslandAgentTool {
+        switch agentName?.lowercased() {
+        case "claude", "claude code":
+            .claudeCode
+        case "gemini", "gemini cli":
+            .geminiCLI
+        case "opencode", "open code":
+            .openCode
+        case "cursor":
+            .cursor
+        case "codex":
+            .codex
+        default:
+            .argo
+        }
+    }
+}
+
+nonisolated extension IslandSessionPhase {
+    init(_ status: IslandSessionStatus) {
+        switch status {
+        case .running:
+            self = .running
+        case .waitingForApproval:
+            self = .waitingForApproval
+        case .waitingForAnswer:
+            self = .waitingForAnswer
+        case .completed:
+            self = .completed
+        case .failed:
+            self = .failed
+        case .stale:
+            self = .stale
+        }
     }
 }
 

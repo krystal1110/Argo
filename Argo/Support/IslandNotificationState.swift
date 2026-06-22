@@ -22,6 +22,10 @@ nonisolated final class IslandNotificationState: ObservableObject {
         willSet { objectWillChange.send() }
     }
 
+    private(set) var sessionState = IslandSessionState() {
+        willSet { objectWillChange.send() }
+    }
+
     var isExpanded: Bool = false {
         willSet { objectWillChange.send() }
     }
@@ -53,15 +57,47 @@ nonisolated final class IslandNotificationState: ObservableObject {
         priorityItems.first
     }
 
+    var sessions: [IslandAgentSession] {
+        sessionState.sessions
+    }
+
+    var prioritySessions: [IslandAgentSession] {
+        sessionState.prioritySessions
+    }
+
+    var spotlightSession: IslandAgentSession? {
+        sessionState.spotlightSession
+    }
+
     var badgeCount: Int {
-        items.count
+        max(items.count, sessionState.liveSessionCount)
     }
 
     var attentionCount: Int {
-        items.filter { $0.status.requiresAttention }.count
+        max(items.filter { $0.status.requiresAttention }.count, sessionState.attentionCount)
     }
 
     func post(item: IslandNotificationItem) {
+        upsertLegacyItem(item)
+        post(event: item.sessionStartedEvent)
+    }
+
+    func post(event: IslandSessionEvent) {
+        sessionState.apply(event)
+    }
+
+    func markSessionStale(id: String, error: String) {
+        sessionState.markSessionStale(id: id, error: error)
+    }
+
+    func updateSessionError(id: String, error: String) {
+        guard var session = sessionState.session(id: id) else { return }
+        session.lastError = error
+        session.updatedAt = now()
+        sessionState.replace(session)
+    }
+
+    private func upsertLegacyItem(_ item: IslandNotificationItem) {
         var next = item
         if next.updatedAt < next.startedAt {
             next.updatedAt = now()
@@ -95,6 +131,7 @@ nonisolated final class IslandNotificationState: ObservableObject {
         items[index].status = status
         items[index].lastError = lastError
         items[index].updatedAt = now()
+        post(event: items[index].sessionStartedEvent)
     }
 
     func markDone(id: UUID) {
@@ -113,23 +150,36 @@ nonisolated final class IslandNotificationState: ObservableObject {
     }
 
     func dismiss(id: UUID) {
+        if let item = items.first(where: { $0.id == id }) {
+            sessionState.dismissSession(id: item.sessionID)
+        }
         items.removeAll { $0.id == id }
-        if items.isEmpty {
+        if items.isEmpty && sessionState.liveSessionCount == 0 {
             isExpanded = false
         }
     }
 
     func clearCompleted() {
+        let removed = items.filter { item in
+            item.status == .completed || item.status == .failed || item.status == .stale
+        }
+        for item in removed {
+            sessionState.dismissSession(id: item.sessionID)
+        }
+        for session in sessionState.sessions where session.phase == .completed || session.phase == .failed || session.phase == .stale {
+            sessionState.dismissSession(id: session.id)
+        }
         items.removeAll { item in
             item.status == .completed || item.status == .failed || item.status == .stale
         }
-        if items.isEmpty {
+        if items.isEmpty && sessionState.liveSessionCount == 0 {
             isExpanded = false
         }
     }
 
     func clearAll() {
         items.removeAll()
+        sessionState = IslandSessionState()
         isExpanded = false
     }
 }

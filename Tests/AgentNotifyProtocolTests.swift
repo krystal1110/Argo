@@ -63,6 +63,18 @@ final class AgentNotifyProtocolTests: XCTestCase {
         XCTAssertEqual(decoded.body, "World")
     }
 
+    func testToolFieldRoundTripsAsRichNotifyTool() throws {
+        let original = AgentNotifyRequest(
+            title: "Running",
+            toolName: "Codex",
+            kind: .activity
+        )
+
+        let decoded = try AgentNotifyProtocol.decode(try AgentNotifyProtocol.encode(original))
+
+        XCTAssertEqual(decoded.toolName, "Codex")
+    }
+
     func testDecodeAcceptsTrailingNewline() throws {
         let json = #"{"v":1,"title":"Hello"}"# + "\n"
         let data = Data(json.utf8)

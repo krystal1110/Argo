@@ -26,4 +26,23 @@ struct IslandResponseDispatcher {
 
         state.update(id: itemID, status: .running, lastError: nil)
     }
+
+    func respond(toSessionID sessionID: String, with text: String) {
+        guard let session = state.sessionState.session(id: sessionID) else { return }
+        guard let paneID = session.identity.paneID else {
+            state.markSessionStale(id: sessionID, error: "Pane is no longer available.")
+            return
+        }
+
+        guard sendText(paneID, text) else {
+            state.updateSessionError(id: sessionID, error: "Could not send response to the pane.")
+            return
+        }
+
+        state.post(event: .actionableStateResolved(IslandActionableStateResolved(
+            sessionID: sessionID,
+            summary: "Response sent.",
+            timestamp: Date()
+        )))
+    }
 }

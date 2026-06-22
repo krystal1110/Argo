@@ -2823,25 +2823,37 @@ final class WorkspaceStore: ObservableObject {
             if deliverSystemNotification && appSettings.dynamicIslandEnabled {
                 // Dynamic Island takes priority — skip toast and system notification
                 let resolvedWorkspaceID = workspaceID ?? selectedWorkspace?.id ?? UUID()
-                let item = IslandNotificationItem(
-                    id: UUID(),
-                    workspaceID: resolvedWorkspaceID,
-                    worktreePath: worktreePath,
-                    paneID: nil,
-                    sourceID: "status:\(resolvedWorkspaceID.uuidString.lowercased()):\(text)",
+                let timestamp = Date()
+                let sessionID = "status:\(resolvedWorkspaceID.uuidString.lowercased()):\(text)"
+                let phase: IslandSessionPhase
+                let lastError: String?
+                switch tone {
+                case .success:
+                    phase = .completed
+                    lastError = nil
+                case .warning:
+                    phase = .failed
+                    lastError = text
+                case .neutral:
+                    phase = .running
+                    lastError = nil
+                }
+                let event = IslandSessionEvent.sessionStarted(IslandSessionStarted(
+                    sessionID: sessionID,
+                    identity: IslandSessionIdentity(
+                        workspaceID: resolvedWorkspaceID,
+                        worktreePath: worktreePath,
+                        paneID: nil,
+                        sourceID: sessionID
+                    ),
                     title: text,
-                    agentName: nil,
-                    terminalTag: nil,
-                    status: tone == .success ? .completed : .running,
-                    startedAt: Date(),
-                    updatedAt: Date(),
-                    body: nil,
-                    prompt: nil,
-                    action: nil,
-                    lastError: nil
-                )
-                IslandNotificationState.shared.post(item: item)
-                IslandPanelController.shared.show()
+                    tool: .argo,
+                    initialPhase: phase,
+                    summary: text,
+                    timestamp: timestamp,
+                    lastError: lastError
+                ))
+                IslandPanelController.shared.present(event: event)
             } else {
                 // No Island — show toast, and optionally system notification
                 statusMessage = WorkspaceStatusMessage(text: text, tone: tone)

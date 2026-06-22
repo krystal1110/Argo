@@ -59,6 +59,7 @@ Environment:
   GH_TOKEN=token          GitHub token with release access. GITHUB_TOKEN is also supported.
   STABLE_BRANCH=stable    Branch pushed after appcast updates so SUFeedURL can read the feed.
   TAP_PROJECT_PATH=owner/homebrew-tap  Optional GitHub tap repository used when updating the cask.
+                         Defaults to the release owner, e.g. krystal1110/homebrew-tap.
   TAP_REMOTE_URL=git@host:owner/homebrew-tap.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
@@ -134,6 +135,48 @@ brew_install_target() {
   echo "$APP_SLUG"
 }
 
+default_tap_project_path() {
+  [[ -n "$GITHUB_REPOSITORY" && "$GITHUB_REPOSITORY" == */* ]] || return 1
+
+  local owner
+  owner="${GITHUB_REPOSITORY%%/*}"
+  [[ -n "$owner" ]] || return 1
+
+  echo "$owner/homebrew-tap"
+}
+
+ensure_cask_metadata() {
+  local cask_file="$1"
+
+  python3 - "$cask_file" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+metadata = [
+    "  auto_updates true",
+    "  depends_on macos: \">= :sonoma\"",
+]
+missing = [line for line in metadata if line not in lines]
+
+if missing:
+    for index, line in enumerate(lines):
+        if line.startswith("  homepage "):
+            lines[index + 1:index + 1] = ["", *missing]
+            break
+    else:
+        for index, line in enumerate(lines):
+            if line.startswith("  app "):
+                lines[index:index] = [*missing, ""]
+                break
+        else:
+            lines.extend(["", *missing])
+
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+}
+
 # A previous run is considered "fully published" when the GitHub release for
 # the tag already carries every core artifact (DMG, app zip, dSYM zip). The
 # appcast.xml alone does not count — a release with only the appcast is the
@@ -191,6 +234,10 @@ if [[ "$SKIP_GITHUB_RELEASE" != "1" ]]; then
   github_require_auth
 else
   github_require_config
+fi
+
+if [[ -z "$TAP_PROJECT_PATH" && -z "$TAP_REMOTE_URL" ]]; then
+  TAP_PROJECT_PATH="$(default_tap_project_path || true)"
 fi
 
 if [[ -z "$APP_HOMEPAGE" ]]; then
@@ -447,6 +494,9 @@ cask "$APP_SLUG" do
   desc "$APP_DESC"
   homepage "$APP_HOMEPAGE"
 
+  auto_updates true
+  depends_on macos: ">= :sonoma"
+
   app "$APP_NAME.app"
 end
 EOF
@@ -454,6 +504,7 @@ EOF
     sed -i '' "s/^  version \".*\"/  version \"$VERSION\"/" "$CASK_PATH"
     sed -i '' "s/^  sha256 \".*\"/  sha256 \"$SHA256\"/" "$CASK_PATH"
     sed -i '' "s|^  url \".*\"|  url \"$CASK_DMG_URL_TEMPLATE\"|" "$CASK_PATH"
+    ensure_cask_metadata "$CASK_PATH"
   fi
 
   git add "$CASK_PATH"

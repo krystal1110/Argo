@@ -217,28 +217,6 @@ main {
   transform: translateY(-1px);
 }
 
-.source-link {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-muted);
-  font-size: 13.4px;
-  line-height: 1.35;
-  font-weight: 560;
-  letter-spacing: 0;
-}
-
-.source-link:hover {
-  color: rgba(234, 245, 255, 0.86);
-}
-
-.download-note {
-  margin: 12px 0 0;
-  color: rgba(205, 220, 246, 0.38);
-  font-size: 12.8px;
-  line-height: 20px;
-}
-
 .install-copy {
   margin: 22px 0 0;
   color: var(--text-muted);

@@ -29,6 +29,26 @@ struct IslandResponseDispatcher {
 
     func respond(toSessionID sessionID: String, with text: String) {
         guard let session = state.sessionState.session(id: sessionID) else { return }
+        if ClaudeHookInteractionRegistry.shared.resolve(sessionID: sessionID, responseText: text) {
+            let mirroredApprovalError: String? = {
+                guard session.phase == .waitingForApproval else { return nil }
+                guard let paneID = session.identity.paneID else {
+                    return "Pane is no longer available."
+                }
+                return sendText(paneID, text) ? nil : "Could not send response to the pane."
+            }()
+
+            state.post(event: .actionableStateResolved(IslandActionableStateResolved(
+                sessionID: sessionID,
+                summary: "Response sent.",
+                timestamp: Date()
+            )))
+            if let mirroredApprovalError {
+                state.updateSessionError(id: sessionID, error: mirroredApprovalError)
+            }
+            return
+        }
+
         guard let paneID = session.identity.paneID else {
             state.markSessionStale(id: sessionID, error: "Pane is no longer available.")
             return

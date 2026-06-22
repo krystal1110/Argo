@@ -127,6 +127,179 @@ final class AgentNotifyServerTests: XCTestCase {
         wait(for: [received], timeout: 3.0)
         XCTAssertEqual(responseBox.value??.executablePath, executablePath)
     }
+
+    func testControlServerRespondsOnExecutableScopedSocketWhenSharedSocketIsOwned() throws {
+        let sharedSocketURL = try XCTUnwrap(temporarySocketURL)
+        let executablePath = "/debug/Argo.app/Contents/MacOS/Argo"
+        let scopedSocketURL = AgentNotifySocketPath.resolveExecutableSocketURL(executablePath: executablePath)
+        let sharedOwner = AgentNotifyServer(socketURL: sharedSocketURL) { _ in nil }
+        try sharedOwner.start()
+        defer { sharedOwner.stop() }
+
+        let server = AgentNotifyControlServer(
+            socketURL: sharedSocketURL,
+            host: nil,
+            tokenResolver: { nil },
+            executablePathProvider: { executablePath }
+        )
+        try server.start()
+        defer { server.stop() }
+
+        XCTAssertNil(try? ArgoControlClient.send(
+            frame: ArgoControlCLI.encodeFrame(cmd: "ping", token: nil, payload: [:]),
+            socketURL: sharedSocketURL,
+            timeout: 1.0
+        ))
+
+        let responseBox = AgentNotifyControlResponseCapture()
+        let received = expectation(description: "scoped ping response received")
+        let frame = ArgoControlCLI.encodeFrame(cmd: "ping", token: nil, payload: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            responseBox.set(try? ArgoControlClient.send(frame: frame, socketURL: scopedSocketURL, timeout: 1.0))
+            received.fulfill()
+        }
+
+        wait(for: [received], timeout: 3.0)
+        XCTAssertEqual(responseBox.value??.executablePath, executablePath)
+    }
+
+    @MainActor
+    func testClaudeHookPermissionRequestRoundTripsThroughControlSocket() throws {
+        ClaudeHookInteractionRegistry.shared.clearAll()
+        defer { ClaudeHookInteractionRegistry.shared.clearAll() }
+
+        let socketURL = try XCTUnwrap(temporarySocketURL)
+        let receivedNotify = expectation(description: "host received claude hook notify")
+        let receivedResponse = expectation(description: "hook client received response")
+        let host = ClaudeHookRecordingHost { request in
+            XCTAssertEqual(request.kind, .question)
+            XCTAssertEqual(request.sessionID, "claude-e2e")
+            XCTAssertEqual(request.title, "Pick a deploy target?")
+            XCTAssertEqual(request.options?.map(\.label), ["Production", "Staging"])
+            receivedNotify.fulfill()
+        }
+        let server = AgentNotifyControlServer(
+            socketURL: socketURL,
+            host: host,
+            tokenResolver: { nil },
+            executablePathProvider: { "/debug/Argo.app/Contents/MacOS/Argo" }
+        )
+        try server.start()
+        defer { server.stop() }
+
+        var frame = try JSONSerialization.data(withJSONObject: [
+            "cmd": "claude-hook",
+            "cwd": "/tmp/demo",
+            "hook_event_name": "PermissionRequest",
+            "session_id": "claude-e2e",
+            "tool_name": "AskUserQuestion",
+            "tool_input": [
+                "questions": [
+                    [
+                        "question": "Pick a deploy target?",
+                        "header": "Target",
+                        "options": [
+                            ["label": "Production"],
+                            ["label": "Staging"],
+                        ],
+                    ],
+                ],
+            ],
+        ], options: [.sortedKeys])
+        frame.append(0x0A)
+        let responseBox = AgentNotifyRawResponseCapture()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            responseBox.set(try? ArgoControlClient.sendRaw(
+                frame: frame,
+                socketURL: socketURL,
+                timeout: 5.0
+            ))
+            receivedResponse.fulfill()
+        }
+
+        wait(for: [receivedNotify], timeout: 3.0)
+        XCTAssertTrue(ClaudeHookInteractionRegistry.shared.resolve(
+            sessionID: "claude-e2e",
+            responseText: "2\n"
+        ))
+
+        wait(for: [receivedResponse], timeout: 3.0)
+        let responseData = try XCTUnwrap(responseBox.value ?? nil)
+        let stdoutData = try XCTUnwrap(try ClaudeHookNotifyBridge.cliStdout(from: responseData))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: stdoutData) as? [String: Any])
+        let hookSpecificOutput = try XCTUnwrap(object["hookSpecificOutput"] as? [String: Any])
+        let decision = try XCTUnwrap(hookSpecificOutput["decision"] as? [String: Any])
+        let updatedInput = try XCTUnwrap(decision["updatedInput"] as? [String: Any])
+        let answers = try XCTUnwrap(updatedInput["answers"] as? [String: Any])
+        XCTAssertEqual(decision["behavior"] as? String, "allow")
+        XCTAssertEqual(answers["Pick a deploy target?"] as? String, "Staging")
+    }
+
+    @MainActor
+    func testClaudeHookToolPermissionRoundTripsThroughControlSocket() throws {
+        ClaudeHookInteractionRegistry.shared.clearAll()
+        defer { ClaudeHookInteractionRegistry.shared.clearAll() }
+
+        let socketURL = try XCTUnwrap(temporarySocketURL)
+        let receivedNotify = expectation(description: "host received claude hook permission notify")
+        let receivedResponse = expectation(description: "hook client received permission response")
+        let host = ClaudeHookRecordingHost { request in
+            XCTAssertEqual(request.kind, .approval)
+            XCTAssertEqual(request.sessionID, "claude-permission-e2e")
+            XCTAssertEqual(request.title, "Allow Bash")
+            XCTAssertEqual(request.commandPreview, "echo argo-smoke")
+            XCTAssertEqual(request.options?.map(\.label), ["Yes", "No"])
+            receivedNotify.fulfill()
+        }
+        let server = AgentNotifyControlServer(
+            socketURL: socketURL,
+            host: host,
+            tokenResolver: { nil },
+            executablePathProvider: { "/debug/Argo.app/Contents/MacOS/Argo" }
+        )
+        try server.start()
+        defer { server.stop() }
+
+        var frame = try JSONSerialization.data(withJSONObject: [
+            "cmd": "claude-hook",
+            "cwd": "/tmp/demo",
+            "hook_event_name": "PermissionRequest",
+            "session_id": "claude-permission-e2e",
+            "tool_name": "Bash",
+            "tool_input": [
+                "command": "echo argo-smoke",
+                "description": "Run smoke command",
+            ],
+        ], options: [.sortedKeys])
+        frame.append(0x0A)
+        let responseBox = AgentNotifyRawResponseCapture()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            responseBox.set(try? ArgoControlClient.sendRaw(
+                frame: frame,
+                socketURL: socketURL,
+                timeout: 5.0
+            ))
+            receivedResponse.fulfill()
+        }
+
+        wait(for: [receivedNotify], timeout: 3.0)
+        XCTAssertTrue(ClaudeHookInteractionRegistry.shared.resolve(
+            sessionID: "claude-permission-e2e",
+            responseText: "1\n"
+        ))
+
+        wait(for: [receivedResponse], timeout: 3.0)
+        let responseData = try XCTUnwrap(responseBox.value ?? nil)
+        let stdoutData = try XCTUnwrap(try ClaudeHookNotifyBridge.cliStdout(from: responseData))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: stdoutData) as? [String: Any])
+        let hookSpecificOutput = try XCTUnwrap(object["hookSpecificOutput"] as? [String: Any])
+        let decision = try XCTUnwrap(hookSpecificOutput["decision"] as? [String: Any])
+        let updatedInput = try XCTUnwrap(decision["updatedInput"] as? [String: Any])
+        XCTAssertEqual(decision["behavior"] as? String, "allow")
+        XCTAssertEqual(updatedInput["command"] as? String, "echo argo-smoke")
+    }
 }
 
 /// Captures the raw `Data` frame the server hands to its handler. The
@@ -149,5 +322,46 @@ nonisolated final class AgentNotifyControlResponseCapture: @unchecked Sendable {
 
     func set(_ value: ArgoControlResponse??) {
         self.value = value
+    }
+}
+
+nonisolated final class AgentNotifyRawResponseCapture: @unchecked Sendable {
+    var value: Data??
+
+    func set(_ value: Data??) {
+        self.value = value
+    }
+}
+
+nonisolated final class ClaudeHookRecordingHost: ArgoControlHost, @unchecked Sendable {
+    private let onNotify: (AgentNotifyRequest) -> Void
+
+    init(onNotify: @escaping (AgentNotifyRequest) -> Void) {
+        self.onNotify = onNotify
+    }
+
+    @MainActor
+    func handleNotify(_ request: AgentNotifyRequest) {
+        onNotify(request)
+    }
+
+    @MainActor
+    func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true)
+    }
+
+    @MainActor
+    func handleSplit(_ request: ArgoSplitRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true)
+    }
+
+    @MainActor
+    func handleSendKeys(_ request: ArgoSendKeysRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true)
+    }
+
+    @MainActor
+    func handleSessionList(_ request: ArgoSessionListRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true)
     }
 }

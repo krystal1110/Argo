@@ -18,6 +18,10 @@ if let firstArgument = cliArguments.first {
     switch firstArgument {
     case "notify":
         exit(AgentNotifyCLI.run(arguments: rest).rawValue)
+    case "claude-hook":
+        exit(AgentNotifyCLI.runClaudeHook().rawValue)
+    case "claude-hooks":
+        exit(ClaudeHookInstallerCLI.run(arguments: rest).rawValue)
     case "ping":
         exit(ArgoControlCLI.runPing(arguments: rest).rawValue)
     case "open":

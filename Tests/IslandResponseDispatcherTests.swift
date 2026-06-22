@@ -94,6 +94,142 @@ final class IslandResponseDispatcherTests: XCTestCase {
         XCTAssertEqual(state.sessionState.session(id: sessionID)?.phase, .running)
     }
 
+    func testRespondToClaudeHookSessionResolvesPendingHookInsteadOfSendingPaneText() throws {
+        ClaudeHookInteractionRegistry.shared.clearAll()
+        defer { ClaudeHookInteractionRegistry.shared.clearAll() }
+
+        let hookJSON = """
+        {
+          "cwd": "/tmp/demo",
+          "hook_event_name": "PermissionRequest",
+          "session_id": "claude-session",
+          "tool_name": "AskUserQuestion",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Pick a deploy target?",
+                "header": "Target",
+                "options": [
+                  { "label": "Production" },
+                  { "label": "Staging" }
+                ]
+              }
+            ]
+          }
+        }
+        """
+        let payload = try JSONDecoder().decode(ClaudeHookPayload.self, from: Data(hookJSON.utf8))
+        let request = try XCTUnwrap(ClaudeHookNotifyBridge.notifyRequest(from: payload, paneID: "pane-id"))
+        let pending = try XCTUnwrap(ClaudeHookInteractionRegistry.shared.register(payload: payload, request: request))
+
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 20) })
+        let paneID = UUID()
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: "claude-session",
+            identity: IslandSessionIdentity(workspaceID: UUID(), worktreePath: "/tmp/demo", paneID: paneID, sourceID: "claude-session"),
+            title: request.title,
+            tool: .claudeCode,
+            initialPhase: .waitingForAnswer,
+            summary: request.title,
+            timestamp: Date(timeIntervalSince1970: 10)
+        )))
+        state.post(event: .questionAsked(IslandQuestionAsked(
+            sessionID: "claude-session",
+            prompt: IslandQuestionPrompt(
+                title: request.title,
+                options: request.options?.map { IslandQuestionOption(label: $0.label, responseText: $0.responseText) } ?? []
+            ),
+            timestamp: Date(timeIntervalSince1970: 11)
+        )))
+        var sent: [(UUID, String)] = []
+        let dispatcher = IslandResponseDispatcher(
+            state: state,
+            sendText: { pane, text in
+                sent.append((pane, text))
+                return true
+            }
+        )
+
+        dispatcher.respond(toSessionID: "claude-session", with: "2\n")
+
+        XCTAssertTrue(sent.isEmpty)
+        XCTAssertEqual(state.sessionState.session(id: "claude-session")?.phase, .running)
+        let result = try XCTUnwrap(pending.wait(timeout: 0.1))
+        let stdout = try ClaudeHookNotifyBridge.stdout(for: result)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(stdout.utf8)) as? [String: Any])
+        let hookSpecificOutput = try XCTUnwrap(object["hookSpecificOutput"] as? [String: Any])
+        let decision = try XCTUnwrap(hookSpecificOutput["decision"] as? [String: Any])
+        let updatedInput = try XCTUnwrap(decision["updatedInput"] as? [String: Any])
+        let answers = try XCTUnwrap(updatedInput["answers"] as? [String: Any])
+        XCTAssertEqual(answers["Pick a deploy target?"] as? String, "Staging")
+    }
+
+    func testRespondToClaudeHookApprovalAlsoMirrorsNativePromptText() throws {
+        ClaudeHookInteractionRegistry.shared.clearAll()
+        defer { ClaudeHookInteractionRegistry.shared.clearAll() }
+
+        let hookJSON = """
+        {
+          "cwd": "/tmp/demo",
+          "hook_event_name": "PermissionRequest",
+          "session_id": "claude-approval",
+          "tool_name": "Bash",
+          "tool_input": {
+            "command": "rm -rf /tmp/rmrf-test-again && echo removed",
+            "description": "Use rm -rf to remove a test directory"
+          }
+        }
+        """
+        let payload = try JSONDecoder().decode(ClaudeHookPayload.self, from: Data(hookJSON.utf8))
+        let request = try XCTUnwrap(ClaudeHookNotifyBridge.notifyRequest(from: payload, paneID: "pane-id"))
+        let pending = try XCTUnwrap(ClaudeHookInteractionRegistry.shared.register(payload: payload, request: request))
+
+        let state = IslandNotificationState(now: { Date(timeIntervalSince1970: 20) })
+        let paneID = UUID()
+        state.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: "claude-approval",
+            identity: IslandSessionIdentity(workspaceID: UUID(), worktreePath: "/tmp/demo", paneID: paneID, sourceID: "claude-approval"),
+            title: request.title,
+            tool: .claudeCode,
+            initialPhase: .waitingForApproval,
+            summary: request.title,
+            timestamp: Date(timeIntervalSince1970: 10)
+        )))
+        state.post(event: .permissionRequested(IslandPermissionRequested(
+            sessionID: "claude-approval",
+            request: IslandPermissionRequest(
+                title: request.title,
+                summary: request.body ?? request.title,
+                affectedPath: request.affectedPath ?? "",
+                actions: request.options?.map {
+                    IslandPermissionAction(title: $0.label, responseText: $0.responseText)
+                }
+            ),
+            timestamp: Date(timeIntervalSince1970: 11)
+        )))
+        var sent: [(UUID, String)] = []
+        let dispatcher = IslandResponseDispatcher(
+            state: state,
+            sendText: { pane, text in
+                sent.append((pane, text))
+                return true
+            }
+        )
+
+        dispatcher.respond(toSessionID: "claude-approval", with: "1\n")
+
+        XCTAssertEqual(sent.count, 1)
+        XCTAssertEqual(sent.first?.0, paneID)
+        XCTAssertEqual(sent.first?.1, "1\n")
+        XCTAssertEqual(state.sessionState.session(id: "claude-approval")?.phase, .running)
+        let result = try XCTUnwrap(pending.wait(timeout: 0.1))
+        let stdout = try ClaudeHookNotifyBridge.stdout(for: result)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(stdout.utf8)) as? [String: Any])
+        let hookSpecificOutput = try XCTUnwrap(object["hookSpecificOutput"] as? [String: Any])
+        let decision = try XCTUnwrap(hookSpecificOutput["decision"] as? [String: Any])
+        XCTAssertEqual(decision["behavior"] as? String, "allow")
+    }
+
     private func makeQuestionItem(paneID: UUID?) -> IslandNotificationItem {
         IslandNotificationItem(
             id: UUID(),

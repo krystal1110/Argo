@@ -74,6 +74,10 @@ nonisolated final class ArgoControlDispatcher {
             ))
         }
 
+        if cmd == .claudeHook {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.failure("claude-hook-unavailable"))
+        }
+
         // All other commands require auth.
         guard let expected = tokenResolver(), !expected.isEmpty else {
             return ArgoControlEncoder.encodeResponse(.failure("control-disabled"))
@@ -111,6 +115,8 @@ nonisolated final class ArgoControlDispatcher {
         case .sessionList:
             let req = (try? JSONDecoder().decode(ArgoSessionListRequest.self, from: trim(frame))) ?? ArgoSessionListRequest()
             response = host.handleSessionList(req)
+        case .claudeHook:
+            return ClaudeHookNotifyBridge.encodeControlResponse(.failure("invalid-claude-hook-state"))
         }
         return ArgoControlEncoder.encodeResponse(response)
     }

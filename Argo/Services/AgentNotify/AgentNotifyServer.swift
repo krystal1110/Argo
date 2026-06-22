@@ -24,6 +24,7 @@ nonisolated final class AgentNotifyServer {
     private let socketURL: URL
     private let handler: FrameHandler
     private let queue = DispatchQueue(label: "dev.argo.agent-notify.server", qos: .utility)
+    private let clientQueue = DispatchQueue(label: "dev.argo.agent-notify.clients", qos: .utility, attributes: .concurrent)
     private var listenSocket: Int32 = -1
     private var acceptSource: DispatchSourceRead?
     private var isRunning = false
@@ -71,9 +72,15 @@ nonisolated final class AgentNotifyServer {
             throw AgentNotifyError.socketUnavailable
         }
 
-        // Stale socket files from a previous (crashed) run block bind. If the
-        // path exists and nobody is listening on the other side, remove it.
-        unlink(socketPath)
+        // Stale socket files from a previous crashed run block bind. If a
+        // live process owns the path, leave it alone; the control server may
+        // still be able to bind its executable-scoped socket.
+        if FileManager.default.fileExists(atPath: socketPath) {
+            if Self.canConnect(to: socketPath) {
+                throw AgentNotifyError.socketUnavailable
+            }
+            unlink(socketPath)
+        }
 
         let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         guard fd >= 0 else {
@@ -147,7 +154,7 @@ nonisolated final class AgentNotifyServer {
         }
 
         let handler = self.handler
-        queue.async {
+        clientQueue.async {
             defer { close(clientFD) }
 
             var readTimeout = timeval(tv_sec: 2, tv_usec: 0)
@@ -206,6 +213,34 @@ nonisolated final class AgentNotifyServer {
             }
         }
     }
+
+    private static func canConnect(to socketPath: String) -> Bool {
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+
+        var address = sockaddr_un()
+        address.sun_family = sa_family_t(AF_UNIX)
+        let pathBytes = socketPath.utf8CString
+        let pathCapacity = MemoryLayout.size(ofValue: address.sun_path)
+        guard pathBytes.count <= pathCapacity else { return false }
+        withUnsafeMutablePointer(to: &address.sun_path) { tuplePointer in
+            tuplePointer.withMemoryRebound(to: CChar.self, capacity: pathCapacity) { dest in
+                pathBytes.withUnsafeBufferPointer { source in
+                    if let base = source.baseAddress {
+                        dest.update(from: base, count: pathBytes.count)
+                    }
+                }
+            }
+        }
+
+        let connectResult = withUnsafePointer(to: &address) { addrPointer -> Int32 in
+            addrPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddrPointer in
+                connect(fd, sockaddrPointer, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
+        }
+        return connectResult == 0
+    }
 }
 
 /// Owns both the Unix socket server and its dispatcher. Keeping this as a
@@ -213,7 +248,7 @@ nonisolated final class AgentNotifyServer {
 /// short-lived dispatcher and silently returning no response.
 nonisolated final class AgentNotifyControlServer {
     private let dispatcherBox: AgentNotifyDispatcherBox
-    private let server: AgentNotifyServer
+    private let servers: [AgentNotifyServer]
 
     init(
         socketURL: URL = AgentNotifySocketPath.resolveSocketURL(),
@@ -226,22 +261,47 @@ nonisolated final class AgentNotifyControlServer {
             tokenResolver: tokenResolver,
             executablePathProvider: executablePathProvider
         ))
+        let hostBox = AgentNotifyControlHostBox(host)
         self.dispatcherBox = dispatcherBox
-        self.server = AgentNotifyServer(socketURL: socketURL) { frame -> Data? in
-            AgentNotifyMainActorBridge.dispatchOnMain(frame, dispatcher: dispatcherBox.dispatcher)
+        let handler: @Sendable (Data) -> Data? = { frame in
+            if ArgoClaudeHookControlHandler.canHandle(frame) {
+                return ArgoClaudeHookControlHandler.dispatch(frame: frame, hostBox: hostBox)
+            }
+            return AgentNotifyMainActorBridge.dispatchOnMain(frame, dispatcher: dispatcherBox.dispatcher)
         }
+        let executableScopedURL = AgentNotifySocketPath.resolveExecutableSocketURL(
+            executablePath: executablePathProvider()
+        )
+        let socketURLs = [socketURL, executableScopedURL].reduce(into: [URL]()) { urls, url in
+            if !urls.contains(url) {
+                urls.append(url)
+            }
+        }
+        self.servers = socketURLs.map { AgentNotifyServer(socketURL: $0, handler: handler) }
     }
 
     deinit {
-        server.stop()
+        stop()
     }
 
     func start() throws {
-        try server.start()
+        var startedCount = 0
+        var lastError: Error?
+        for server in servers {
+            do {
+                try server.start()
+                startedCount += 1
+            } catch {
+                lastError = error
+            }
+        }
+        if startedCount == 0 {
+            throw lastError ?? AgentNotifyError.socketUnavailable
+        }
     }
 
     func stop() {
-        server.stop()
+        servers.forEach { $0.stop() }
     }
 }
 
@@ -250,6 +310,65 @@ nonisolated private final class AgentNotifyDispatcherBox: @unchecked Sendable {
 
     init(_ dispatcher: ArgoControlDispatcher) {
         self.dispatcher = dispatcher
+    }
+}
+
+nonisolated private final class AgentNotifyControlHostBox: @unchecked Sendable {
+    weak var host: ArgoControlHost?
+
+    init(_ host: ArgoControlHost?) {
+        self.host = host
+    }
+}
+
+nonisolated private enum ArgoClaudeHookControlHandler {
+    static func canHandle(_ frame: Data) -> Bool {
+        guard let envelope = try? JSONDecoder().decode(ArgoControlEnvelope.self, from: trim(frame)) else {
+            return false
+        }
+        return envelope.cmd == .claudeHook
+    }
+
+    static func dispatch(frame: Data, hostBox: AgentNotifyControlHostBox) -> Data? {
+        let controlRequest: ArgoClaudeHookControlRequest
+        do {
+            controlRequest = try ClaudeHookNotifyBridge.decodeControlRequest(from: frame)
+        } catch {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.failure("invalid-claude-hook-payload"))
+        }
+
+        guard let notifyRequest = ClaudeHookNotifyBridge.notifyRequest(from: controlRequest) else {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: nil))
+        }
+        guard let pending = ClaudeHookInteractionRegistry.shared.register(
+            payload: controlRequest.payload,
+            request: notifyRequest
+        ) else {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: nil))
+        }
+
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                hostBox.host?.handleNotify(notifyRequest)
+            }
+        }
+
+        guard let result = pending.wait(timeout: ClaudeHookNotifyBridge.interactiveTimeout) else {
+            ClaudeHookInteractionRegistry.shared.cancel(sessionID: pending.sessionID)
+            return ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: nil))
+        }
+
+        do {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.success(
+                stdout: try ClaudeHookNotifyBridge.stdout(for: result)
+            ))
+        } catch {
+            return ClaudeHookNotifyBridge.encodeControlResponse(.failure("encode-claude-hook-output-failed"))
+        }
+    }
+
+    private static func trim(_ data: Data) -> Data {
+        data.last == 0x0A ? data.dropLast() : data
     }
 }
 

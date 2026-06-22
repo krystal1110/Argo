@@ -13,7 +13,7 @@ grep -q -- "--accent: #5fd7ca" "$css"
 grep -q -- "font-size: 72px" "$css"
 grep -q -- "font-size: 24px" "$css"
 grep -q -- "font-size: 16.8px" "$css"
-grep -q -- "aspect-ratio: 16 / 9.6" "$css"
+grep -q -- "aspect-ratio: 2880 / 1778" "$css"
 grep -q -- "@media (max-width: 760px)" "$css"
 
 if grep -E "font-size:[^;]+vw" "$css"; then

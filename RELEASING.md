@@ -152,12 +152,14 @@ Useful overrides:
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
 - `GITHUB_REPOSITORY=krystal1110/Argo ./deploy.sh`
 - `STABLE_BRANCH=stable ./deploy.sh`
-- `TAP_PROJECT_PATH=owner/homebrew-tap ./deploy.sh`
-- `TAP_REMOTE_URL=git@github.com:owner/homebrew-tap.git ./deploy.sh`
+- `TAP_PROJECT_PATH=owner/homebrew-argo ./deploy.sh` (defaults to `<github-owner>/homebrew-argo`)
+- `TAP_REMOTE_URL=git@github.com:owner/homebrew-argo.git ./deploy.sh`
 - `ARGO_RELEASE_HOME=/secure/release-home ./deploy.sh`
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
 
 `GITHUB_REPOSITORY` is inferred from `origin` when the remote is `git@github.com:owner/repo.git` or `https://github.com/owner/repo.git`. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitHub authentication headers during update checks.
+
+When `TAP_PROJECT_PATH` and `TAP_REMOTE_URL` are omitted, Homebrew cask publishing uses the GitHub owner from `GITHUB_REPOSITORY` and updates `owner/homebrew-argo`. For `krystal1110/Argo`, the generated install command is `brew install --cask krystal1110/argo/argo`.
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 

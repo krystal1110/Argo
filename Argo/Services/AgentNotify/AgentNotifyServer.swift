@@ -18,7 +18,7 @@ import Foundation
 /// touch main-actor state hop themselves (production wiring uses a synchronous
 /// `DispatchQueue.main.async` + semaphore bridge so the response can be
 /// computed on the main actor before the server writes it back).
-final class AgentNotifyServer {
+nonisolated final class AgentNotifyServer {
     typealias FrameHandler = @Sendable (Data) -> Data?
 
     private let socketURL: URL
@@ -208,16 +208,62 @@ final class AgentNotifyServer {
     }
 }
 
+/// Owns both the Unix socket server and its dispatcher. Keeping this as a
+/// single object prevents the production handler from weakly capturing a
+/// short-lived dispatcher and silently returning no response.
+nonisolated final class AgentNotifyControlServer {
+    private let dispatcherBox: AgentNotifyDispatcherBox
+    private let server: AgentNotifyServer
+
+    init(
+        socketURL: URL = AgentNotifySocketPath.resolveSocketURL(),
+        host: ArgoControlHost?,
+        tokenResolver: @escaping () -> String? = { MainActor.assumeIsolated { ArgoURLScheme.isEnabled() ? ArgoURLScheme.storedToken() : nil } },
+        executablePathProvider: @escaping () -> String = { Bundle.main.executablePath ?? CommandLine.arguments.first ?? "" }
+    ) {
+        let dispatcherBox = AgentNotifyDispatcherBox(ArgoControlDispatcher(
+            host: host,
+            tokenResolver: tokenResolver,
+            executablePathProvider: executablePathProvider
+        ))
+        self.dispatcherBox = dispatcherBox
+        self.server = AgentNotifyServer(socketURL: socketURL) { frame -> Data? in
+            AgentNotifyMainActorBridge.dispatchOnMain(frame, dispatcher: dispatcherBox.dispatcher)
+        }
+    }
+
+    deinit {
+        server.stop()
+    }
+
+    func start() throws {
+        try server.start()
+    }
+
+    func stop() {
+        server.stop()
+    }
+}
+
+nonisolated private final class AgentNotifyDispatcherBox: @unchecked Sendable {
+    let dispatcher: ArgoControlDispatcher
+
+    init(_ dispatcher: ArgoControlDispatcher) {
+        self.dispatcher = dispatcher
+    }
+}
+
 /// Bridges the synchronous server-queue frame handler to the @MainActor
 /// dispatcher. Synchronous on purpose: callers writing a response need
 /// the value before the connection closes.
-enum AgentNotifyMainActorBridge {
+nonisolated enum AgentNotifyMainActorBridge {
     static func dispatchOnMain(_ frame: Data, dispatcher: ArgoControlDispatcher) -> Data? {
+        let dispatcherBox = AgentNotifyDispatcherBox(dispatcher)
         let captureBox = AgentNotifyResponseBox()
         let semaphore = DispatchSemaphore(value: 0)
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
-                captureBox.value = dispatcher.dispatch(frame: frame)
+                captureBox.value = dispatcherBox.dispatcher.dispatch(frame: frame)
             }
             semaphore.signal()
         }
@@ -232,6 +278,6 @@ enum AgentNotifyMainActorBridge {
 /// One-slot box for shuttling the response across the dispatch boundary.
 /// Mutated only on the main thread, read only after the semaphore signals,
 /// so no locking is needed.
-private final class AgentNotifyResponseBox: @unchecked Sendable {
+nonisolated private final class AgentNotifyResponseBox: @unchecked Sendable {
     var value: Data?
 }

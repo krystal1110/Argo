@@ -43,6 +43,74 @@ final class AgentNotifyCLITests: XCTestCase {
         XCTAssertEqual(options.agentName, "Codex")
     }
 
+    func testParseApprovalOptions() throws {
+        let options = try AgentNotifyCLI.parse(arguments: [
+            "--approval",
+            "--title", "Approve",
+            "--body", "Run tests?",
+            "--option", "Allow=1\\n",
+            "--option", "Deny=2\\n",
+            "--session", "s1",
+            "--source", "approval-1",
+            "--current-tool", "exec_command",
+            "--command-preview", "xcodebuild test"
+        ])
+        let request = try AgentNotifyCLI.makeRequest(from: options, environment: [:])
+
+        XCTAssertEqual(request.kind, .approval)
+        XCTAssertEqual(request.sessionID, "s1")
+        XCTAssertEqual(request.sourceID, "approval-1")
+        XCTAssertEqual(request.currentTool, "exec_command")
+        XCTAssertEqual(request.commandPreview, "xcodebuild test")
+        XCTAssertEqual(request.options?.map(\.label), ["Allow", "Deny"])
+        XCTAssertEqual(request.options?.map(\.responseText), ["1\n", "2\n"])
+    }
+
+    func testParseApprovalAffectedPath() throws {
+        let options = try AgentNotifyCLI.parse(arguments: [
+            "--approval",
+            "--title", "Approve",
+            "--command-preview", "xcodebuild test",
+            "--affected-path", "/tmp/repo",
+            "--option", "Allow=1\\n",
+            "--option", "Deny=2\\n"
+        ])
+        let request = try AgentNotifyCLI.makeRequest(from: options, environment: [:])
+
+        XCTAssertEqual(request.kind, .approval)
+        XCTAssertEqual(request.commandPreview, "xcodebuild test")
+        XCTAssertEqual(request.affectedPath, "/tmp/repo")
+    }
+
+    func testParseQuestionPromptAlias() throws {
+        let options = try AgentNotifyCLI.parse(arguments: [
+            "--question",
+            "--prompt", "Which target?",
+            "--option", "Production",
+            "--option", "Staging"
+        ])
+        let request = try AgentNotifyCLI.makeRequest(from: options, environment: [:])
+
+        XCTAssertEqual(request.kind, .question)
+        XCTAssertEqual(request.title, "Which target?")
+        XCTAssertNil(request.body)
+        XCTAssertEqual(request.options?.map(\.label), ["Production", "Staging"])
+        XCTAssertEqual(request.options?.map(\.responseText), ["Production\n", "Staging\n"])
+    }
+
+    func testParseCompletedSummaryAndToolAliases() throws {
+        let options = try AgentNotifyCLI.parse(arguments: [
+            "--completed",
+            "--summary", "All tests passed",
+            "--tool", "Codex"
+        ])
+        let request = try AgentNotifyCLI.makeRequest(from: options, environment: [:])
+
+        XCTAssertEqual(request.kind, .completed)
+        XCTAssertEqual(request.title, "All tests passed")
+        XCTAssertEqual(request.toolName, "Codex")
+    }
+
     func testParseHelpAndVersion() throws {
         XCTAssertTrue(try AgentNotifyCLI.parse(arguments: ["--help"]).showHelp)
         XCTAssertTrue(try AgentNotifyCLI.parse(arguments: ["-h"]).showHelp)

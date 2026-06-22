@@ -34,13 +34,16 @@ nonisolated final class ArgoControlDispatcher {
     /// Token resolver — returns the user-configured trust token or nil if
     /// the URL-scheme feature is disabled. Indirection so tests can inject.
     var tokenResolver: () -> String?
+    var executablePathProvider: () -> String
 
     init(
         host: ArgoControlHost?,
-        tokenResolver: @escaping () -> String? = { MainActor.assumeIsolated { ArgoURLScheme.isEnabled() ? ArgoURLScheme.storedToken() : nil } }
+        tokenResolver: @escaping () -> String? = { MainActor.assumeIsolated { ArgoURLScheme.isEnabled() ? ArgoURLScheme.storedToken() : nil } },
+        executablePathProvider: @escaping () -> String = { Bundle.main.executablePath ?? CommandLine.arguments.first ?? "" }
     ) {
         self.host = host
         self.tokenResolver = tokenResolver
+        self.executablePathProvider = executablePathProvider
     }
 
     /// Decode + dispatch a single frame. Returns the response bytes (or nil
@@ -62,6 +65,15 @@ nonisolated final class ArgoControlDispatcher {
             return nil
         }
 
+        if cmd == .ping {
+            return ArgoControlEncoder.encodeResponse(ArgoControlResponse(
+                ok: true,
+                error: nil,
+                sessions: nil,
+                executablePath: executablePathProvider()
+            ))
+        }
+
         // All other commands require auth.
         guard let expected = tokenResolver(), !expected.isEmpty else {
             return ArgoControlEncoder.encodeResponse(.failure("control-disabled"))
@@ -78,6 +90,9 @@ nonisolated final class ArgoControlDispatcher {
         case .notify:
             // Already handled above.
             return nil
+        case .ping:
+            // Already handled above.
+            return ArgoControlEncoder.encodeResponse(.failure("invalid-ping-state"))
         case .open:
             guard let req = try? JSONDecoder().decode(ArgoOpenRequest.self, from: trim(frame)) else {
                 response = .failure("invalid-open-payload")

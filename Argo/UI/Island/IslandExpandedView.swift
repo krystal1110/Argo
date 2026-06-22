@@ -71,7 +71,7 @@ struct IslandExpandedView: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            if state.selectedTab == .sessions && !state.items.isEmpty {
+            if state.selectedTab == .sessions && !state.prioritySessions.isEmpty {
                 Button {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
                         state.clearCompleted()
@@ -207,7 +207,9 @@ struct IslandExpandedView: View {
 
     @ViewBuilder
     private var sessionsTabContent: some View {
-        if state.items.isEmpty {
+        if let activeSurfaceSession = controller.activeSurfaceSession {
+            notificationCardContent(for: activeSurfaceSession)
+        } else if state.prioritySessions.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "bolt.slash")
                     .font(.system(size: 24))
@@ -219,18 +221,44 @@ struct IslandExpandedView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView {
-                LazyVStack(spacing: 2) {
-                    ForEach(state.priorityItems) { item in
-                        if let prompt = item.prompt {
-                            IslandPromptRow(item: item, prompt: prompt, controller: controller)
-                        } else {
-                            IslandNotificationRow(item: item, controller: controller)
-                        }
-                    }
-                }
+                IslandSessionSectionsView(
+                    sessions: state.prioritySessions,
+                    controller: controller
+                )
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
             }
+        }
+    }
+
+    private func notificationCardContent(for session: IslandAgentSession) -> some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            VStack(spacing: 6) {
+                IslandSessionRow(
+                    session: session,
+                    referenceDate: context.date,
+                    isActionable: true,
+                    controller: controller
+                )
+
+                if state.prioritySessions.count > 1 {
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                            controller.showAllSessionsFromNotificationCard()
+                        }
+                    } label: {
+                        Text(LocalizationManager.shared.string("island.action.showAll"))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.36))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 4)
+                            .padding(.bottom, 2)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
         }
     }
 }

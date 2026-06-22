@@ -29,7 +29,7 @@ struct IslandContentView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                if !state.isExpanded && !state.items.isEmpty {
+                if !state.isExpanded && !state.prioritySessions.isEmpty {
                     state.selectedTab = .sessions
                 }
                 state.isExpanded.toggle()

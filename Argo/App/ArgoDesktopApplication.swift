@@ -265,12 +265,7 @@ public final class ArgoDesktopApplication: NSObject {
         if let workspaceID {
             for context in windowContexts {
                 if let workspace = context.store.workspaces.first(where: { $0.id == workspaceID }) {
-                    workspace.postAgentNotification(
-                        title: request.title,
-                        body: request.body,
-                        paneID: paneID,
-                        agentName: request.agentName
-                    )
+                    workspace.postAgentNotification(request: request, paneID: paneID)
                     return
                 }
             }
@@ -282,12 +277,7 @@ public final class ArgoDesktopApplication: NSObject {
             for context in windowContexts {
                 for workspace in context.store.workspaces
                 where workspace.sessionController.session(for: paneID) != nil {
-                    workspace.postAgentNotification(
-                        title: request.title,
-                        body: request.body,
-                        paneID: paneID,
-                        agentName: request.agentName
-                    )
+                    workspace.postAgentNotification(request: request, paneID: paneID)
                     return
                 }
             }
@@ -295,12 +285,7 @@ public final class ArgoDesktopApplication: NSObject {
 
         // 3. Fallback: active workspace.
         if let workspace = activeWorkspaceStore?.selectedWorkspace {
-            workspace.postAgentNotification(
-                title: request.title,
-                body: request.body,
-                paneID: paneID,
-                agentName: request.agentName
-            )
+            workspace.postAgentNotification(request: request, paneID: paneID)
         }
     }
 

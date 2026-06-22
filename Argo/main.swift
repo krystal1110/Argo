@@ -18,6 +18,8 @@ if let firstArgument = cliArguments.first {
     switch firstArgument {
     case "notify":
         exit(AgentNotifyCLI.run(arguments: rest).rawValue)
+    case "ping":
+        exit(ArgoControlCLI.runPing(arguments: rest).rawValue)
     case "open":
         exit(ArgoControlCLI.runOpen(arguments: rest).rawValue)
     case "split":

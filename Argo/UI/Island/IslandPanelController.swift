@@ -22,6 +22,14 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
     let state = IslandNotificationState.shared
     weak var workspaceStore: WorkspaceStore?
+    var surface: IslandSurface = .sessionList()
+
+    var activeSurfaceSession: IslandAgentSession? {
+        guard let sessionID = surface.sessionID else { return nil }
+        let session = state.sessionState.session(id: sessionID)
+        guard surface.matchesCurrentState(of: session) else { return nil }
+        return session
+    }
 
     private var panel: NSPanel?
     private var localEventMonitor: Any?
@@ -37,6 +45,10 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     private(set) var pinnedScreen: NSScreen?
 
     private let collapsedMinWidth: CGFloat = 120
+
+    var shouldCollapseAfterMouseExit: Bool {
+        activeSurfaceSession == nil
+    }
 
     private var widthPreset: IslandWidthPreset {
         workspaceStore?.appSettings.dynamicIslandWidth ?? .standard
@@ -79,6 +91,15 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
     private var expandedWidth: CGFloat { max(400, collapsedMaxWidth) }
     private let expandedMaxHeight: CGFloat = 500
+
+    var currentExpandedPanelHeight: CGFloat {
+        guard let session = activeSurfaceSession else { return expandedMaxHeight }
+        let tabAndChromeHeight: CGFloat = 58
+        let rowHeight: CGFloat = 62
+        let footerHeight: CGFloat = state.prioritySessions.count > 1 ? 28 : 0
+        let bodyHeight = notificationCardBodyHeight(for: session)
+        return min(expandedMaxHeight, max(190, tabAndChromeHeight + rowHeight + bodyHeight + footerHeight))
+    }
 
     private var collapsedMaxWidth: CGFloat {
         max(widthPreset.collapsedMaxWidth, notchAwareMinWidth)
@@ -156,6 +177,47 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         }
     }
 
+    func present(events: [IslandSessionEvent]) {
+        for event in events {
+            present(event: event)
+        }
+    }
+
+    func present(event: IslandSessionEvent) {
+        state.post(event: event)
+        if let nextSurface = IslandSurface.notificationSurface(for: event) {
+            surface = nextSurface
+            state.selectedTab = .sessions
+            state.isExpanded = true
+        }
+        show()
+        repositionPanel()
+    }
+
+    func showAllSessionsFromNotificationCard() {
+        surface = .sessionList()
+        state.selectedTab = .sessions
+        state.isExpanded = true
+        repositionPanel()
+    }
+
+    func navigateToSession(_ session: IslandAgentSession) {
+        let result = WorkspaceNotificationCenter.shared.onNotificationTapped?(
+            session.identity.workspaceID,
+            session.identity.worktreePath,
+            session.identity.paneID
+        ) ?? .workspaceMissing
+        switch result {
+        case .focusedPane, .focusedWorkspace:
+            break
+        case .paneMissing:
+            state.markSessionStale(id: session.id, error: "Pane is no longer available.")
+        case .workspaceMissing:
+            state.markSessionStale(id: session.id, error: "Workspace is no longer available.")
+        }
+        repositionPanel()
+    }
+
     func navigateToWorkspace(_ workspace: WorkspaceModel) {
         _ = WorkspaceNotificationCenter.shared.onNotificationTapped?(workspace.id, nil, nil)
         state.isExpanded = false
@@ -166,8 +228,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         IslandResponseDispatcher(state: state) { [weak self] paneID, text in
             guard let store = self?.workspaceStore else { return false }
             for workspace in store.workspaces {
-                if let session = workspace.sessionController.session(for: paneID) {
-                    session.insertText(text)
+                if workspace.sessionController.sendProgrammaticText(text, to: paneID) {
                     return true
                 }
             }
@@ -177,6 +238,14 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
     func respondToItem(_ item: IslandNotificationItem, text: String) {
         responseDispatcher().respond(to: item.id, with: text)
+        repositionPanel()
+    }
+
+    func respondToSession(_ session: IslandAgentSession, text: String) {
+        responseDispatcher().respond(toSessionID: session.id, with: text)
+        if surface.sessionID == session.id, activeSurfaceSession == nil {
+            surface = .sessionList()
+        }
         repositionPanel()
     }
 
@@ -222,12 +291,12 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     private func collapsedWidth() -> CGFloat {
-        if state.latestItem == nil {
+        let title = state.spotlightSession?.spotlightHeadlineText ?? state.latestItem?.title
+        guard let title else {
             return collapsedMaxWidth
         }
 
         let font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        let title = state.latestItem!.title
         let textWidth = (title as NSString).size(withAttributes: [.font: font]).width
         let hasBadge = state.badgeCount > 1
         let badgeWidth: CGFloat = hasBadge ? 26 : 0
@@ -241,7 +310,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
         let size: NSSize
         if expanded {
-            size = NSSize(width: expandedWidth, height: expandedMaxHeight)
+            size = NSSize(width: expandedWidth, height: currentExpandedPanelHeight)
         } else {
             size = NSSize(width: collapsedWidth(), height: collapsedHeight)
         }
@@ -253,6 +322,19 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         let y = screenFrame.maxY - size.height + topOverlap
 
         return NSRect(origin: NSPoint(x: x, y: y), size: size)
+    }
+
+    private func notificationCardBodyHeight(for session: IslandAgentSession) -> CGFloat {
+        switch session.phase {
+        case .waitingForApproval:
+            92
+        case .waitingForAnswer:
+            max(64, CGFloat(session.questionPrompt?.options.count ?? 0) * 34 + 18)
+        case .completed, .failed:
+            72
+        case .running, .stale:
+            session.lastError == nil ? 20 : 56
+        }
     }
 
     private func removeMouseTracking() {
@@ -320,10 +402,14 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
             // Mouse left — cancel any pending expand, schedule collapse
             expandTask?.cancel()
             expandTask = nil
-            if state.isExpanded && collapseTask == nil {
+            if state.isExpanded && collapseTask == nil && shouldCollapseAfterMouseExit {
                 collapseTask = Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 500_000_000)
                     guard !Task.isCancelled else { return }
+                    guard self.shouldCollapseAfterMouseExit else {
+                        self.collapseTask = nil
+                        return
+                    }
                     self.state.isExpanded = false
                     self.state.currentGroupID = nil
                     self.repositionPanel()

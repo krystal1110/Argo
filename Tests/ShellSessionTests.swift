@@ -397,6 +397,40 @@ final class ShellSessionTests: XCTestCase {
         }
     }
 
+    func testProgrammaticInsertFocusesSurfaceBeforeSendingProgrammaticText() async {
+        await MainActor.run {
+            let surface = FakeManagedTerminalSurfaceController()
+            let session = ShellSession(
+                snapshot: PaneSnapshot.makeDefault(cwd: "/tmp/argo-shell-session-programmatic-insert"),
+                surfaceController: surface
+            )
+
+            let sent = session.insertProgrammaticText("1\n")
+
+            XCTAssertTrue(sent)
+            XCTAssertEqual(surface.events, [.focus, .sendProgrammaticText("1\n")])
+            XCTAssertEqual(surface.sentProgrammaticTexts, ["1\n"])
+            XCTAssertEqual(surface.sentTexts, [])
+            XCTAssertEqual(surface.focusCallCount, 1)
+        }
+    }
+
+    func testProgrammaticInsertReturnsFalseWhenSurfaceRejectsInput() async {
+        await MainActor.run {
+            let surface = FakeManagedTerminalSurfaceController()
+            surface.programmaticTextResult = false
+            let session = ShellSession(
+                snapshot: PaneSnapshot.makeDefault(cwd: "/tmp/argo-shell-session-programmatic-reject"),
+                surfaceController: surface
+            )
+
+            let sent = session.insertProgrammaticText("1\n")
+
+            XCTAssertFalse(sent)
+            XCTAssertEqual(surface.events, [.focus, .sendProgrammaticText("1\n")])
+        }
+    }
+
     func testSurfaceHostAttachNotificationForwardsToSurfaceController() async {
         await MainActor.run {
             let surface = FakeManagedTerminalSurfaceController()
@@ -530,6 +564,12 @@ final class ShellSessionTests: XCTestCase {
     }
 }
 
+private enum FakeTerminalSurfaceEvent: Equatable {
+    case focus
+    case sendText(String)
+    case sendProgrammaticText(String)
+}
+
 @MainActor
 private final class FakeManagedTerminalSurfaceController: ManagedTerminalSessionSurfaceController {
     let resolvedEngine: TerminalEngineKind = .libghosttyPreferred
@@ -550,8 +590,12 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     private(set) var restartCallCount = 0
     private(set) var terminateCallCount = 0
     private(set) var sentTexts: [String] = []
+    var programmaticTextResult = true
+    private(set) var sentProgrammaticTexts: [String] = []
     private(set) var sendReturnCallCount = 0
     private(set) var hostAttachCallCount = 0
+    private(set) var events: [FakeTerminalSurfaceEvent] = []
+    private(set) var focusCallCount = 0
 
     func updateLaunchConfiguration(_ configuration: TerminalLaunchConfiguration) {}
 
@@ -575,6 +619,12 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
 
     func sendText(_ text: String) {
         sentTexts.append(text)
+        events.append(.sendText(text))
+    }
+    func sendProgrammaticText(_ text: String) -> Bool {
+        sentProgrammaticTexts.append(text)
+        events.append(.sendProgrammaticText(text))
+        return programmaticTextResult
     }
     func sendReturn() {
         sendReturnCallCount += 1
@@ -582,7 +632,10 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     func emitResize(cols: Int, rows: Int) {
         onResize?(cols, rows)
     }
-    func focus() {}
+    func focus() {
+        focusCallCount += 1
+        events.append(.focus)
+    }
     func setFocused(_ isFocused: Bool) {}
     func beginSearch(initialText: String?) {}
     func updateSearch(_ text: String) {}

@@ -51,6 +51,11 @@ final class ArgoGhosttyController: ManagedTerminalSessionSurfaceController {
         terminalView.insertTerminalText(text)
     }
 
+    @discardableResult
+    func sendProgrammaticText(_ text: String) -> Bool {
+        terminalView.insertProgrammaticTerminalText(text)
+    }
+
     func sendReturn() {
         terminalView.insertTerminalReturn()
     }
@@ -1590,6 +1595,40 @@ private final class ArgoGhosttySurfaceView: NSView {
 
     func insertTerminalText(_ string: String) {
         sendText(string)
+    }
+
+    @discardableResult
+    func insertProgrammaticTerminalText(_ string: String) -> Bool {
+        guard let surface else { return false }
+        guard !string.isEmpty else { return true }
+
+        window?.makeFirstResponder(self)
+
+        for scalar in string.unicodeScalars {
+            if scalar.value == 0x0A || scalar.value == 0x0D {
+                insertTerminalReturn()
+                continue
+            }
+
+            let text = String(scalar)
+            text.withCString { pointer in
+                var press = ghostty_input_key_s()
+                press.action = GHOSTTY_ACTION_PRESS
+                press.mods = GHOSTTY_MODS_NONE
+                press.consumed_mods = GHOSTTY_MODS_NONE
+                press.keycode = 0
+                press.text = pointer
+                press.unshifted_codepoint = scalar.value
+                press.composing = false
+                _ = ghostty_surface_key(surface, press)
+
+                var release = press
+                release.action = GHOSTTY_ACTION_RELEASE
+                _ = ghostty_surface_key(surface, release)
+            }
+        }
+
+        return true
     }
 
     func insertTerminalReturn() {

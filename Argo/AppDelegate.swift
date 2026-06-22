@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var suppressQuitConfirmationUntil: Date?
     @MainActor private var pendingIncomingURLs: [URL] = []
     @MainActor private var isReadyToHandleURLs = false
-    @MainActor private var agentNotifyServer: AgentNotifyServer?
+    @MainActor private var agentNotifyServer: AgentNotifyControlServer?
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         if argoIsRunningTests() {
@@ -238,11 +238,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @MainActor
     private func startAgentNotifyServer() {
         guard agentNotifyServer == nil else { return }
-        let dispatcher = ArgoControlDispatcher(host: desktopApplication)
-        let server = AgentNotifyServer { [weak dispatcher] frame -> Data? in
-            guard let dispatcher else { return nil }
-            return AgentNotifyMainActorBridge.dispatchOnMain(frame, dispatcher: dispatcher)
-        }
+        let server = AgentNotifyControlServer(host: desktopApplication)
         do {
             try server.start()
             agentNotifyServer = server

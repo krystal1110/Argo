@@ -39,6 +39,8 @@ protocol TerminalSurfaceController: AnyObject {
     var onFocus: (() -> Void)? { get set }
     var onStatusChange: ((TerminalSurfaceStatusSnapshot) -> Void)? { get set }
     func sendText(_ text: String)
+    @discardableResult
+    func sendProgrammaticText(_ text: String) -> Bool
     func sendReturn()
     func focus()
     func setFocused(_ isFocused: Bool)
@@ -101,6 +103,12 @@ nonisolated private final class ArgoTestManagedTerminalSurfaceController: Manage
     }
 
     func sendText(_ text: String) {}
+
+    @discardableResult
+    func sendProgrammaticText(_ text: String) -> Bool {
+        sendText(text)
+        return true
+    }
 
     func sendReturn() {}
 

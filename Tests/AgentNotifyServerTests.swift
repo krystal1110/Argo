@@ -103,6 +103,30 @@ final class AgentNotifyServerTests: XCTestCase {
             XCTAssertEqual(error as? AgentNotifyError, .socketUnavailable)
         }
     }
+
+    func testControlServerRetainsDispatcherAndRespondsToPing() throws {
+        let socketURL = try XCTUnwrap(temporarySocketURL)
+        let executablePath = "/debug/Argo.app/Contents/MacOS/Argo"
+        let server = AgentNotifyControlServer(
+            socketURL: socketURL,
+            host: nil,
+            tokenResolver: { nil },
+            executablePathProvider: { executablePath }
+        )
+        try server.start()
+        defer { server.stop() }
+
+        let responseBox = AgentNotifyControlResponseCapture()
+        let received = expectation(description: "ping response received")
+        let frame = ArgoControlCLI.encodeFrame(cmd: "ping", token: nil, payload: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            responseBox.set(try? ArgoControlClient.send(frame: frame, socketURL: socketURL, timeout: 1.0))
+            received.fulfill()
+        }
+
+        wait(for: [received], timeout: 3.0)
+        XCTAssertEqual(responseBox.value??.executablePath, executablePath)
+    }
 }
 
 /// Captures the raw `Data` frame the server hands to its handler. The
@@ -116,6 +140,14 @@ nonisolated final class AgentNotifyFrameCapture: @unchecked Sendable {
     var value: Data?
 
     func set(_ value: Data) {
+        self.value = value
+    }
+}
+
+nonisolated final class AgentNotifyControlResponseCapture: @unchecked Sendable {
+    var value: ArgoControlResponse??
+
+    func set(_ value: ArgoControlResponse??) {
         self.value = value
     }
 }

@@ -52,6 +52,23 @@ final class ArgoControlDispatcherTests: XCTestCase {
         XCTAssertEqual(host.notifyCalls.count, 1)
     }
 
+    // MARK: - Ping (socket health, no auth)
+
+    func testPingDoesNotRequireTokenAndReturnsExecutablePath() throws {
+        dispatcher = ArgoControlDispatcher(
+            host: host,
+            tokenResolver: { nil },
+            executablePathProvider: { "/debug/Argo.app/Contents/MacOS/Argo" }
+        )
+        let frame = makeFrame(["cmd": "ping"])
+        let response = try XCTUnwrap(dispatcher.dispatch(frame: frame))
+        let decoded = try JSONDecoder().decode(ArgoControlResponse.self, from: response)
+        XCTAssertTrue(decoded.ok)
+        XCTAssertEqual(decoded.executablePath, "/debug/Argo.app/Contents/MacOS/Argo")
+        XCTAssertTrue(host.openCalls.isEmpty)
+        XCTAssertTrue(host.notifyCalls.isEmpty)
+    }
+
     func testInvalidEnvelopeReturnsError() throws {
         let response = try XCTUnwrap(dispatcher.dispatch(frame: Data("not-json".utf8)))
         let decoded = try JSONDecoder().decode(ArgoControlResponse.self, from: response)

@@ -5,7 +5,7 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 PROJECT_FILE="${PROJECT_FILE:-$ROOT_DIR/Argo.xcodeproj/project.pbxproj}"
 APP_NAME="${APP_NAME:-Argo}"
 APP_SLUG="${APP_SLUG:-argo}"
-APP_DESC="${APP_DESC:-Native macOS terminal workspace manager for git repositories, worktrees, and split panes.}"
+APP_DESC="${APP_DESC:-Terminal workspace manager for git repositories, worktrees, and split panes}"
 PROJECT_PATH="${PROJECT_PATH:-$ROOT_DIR/Argo.xcodeproj}"
 SCHEME="${SCHEME:-Argo}"
 RELEASE_ARCHS="${RELEASE_ARCHS:-arm64 x86_64}"
@@ -15,7 +15,7 @@ SIGN_SCRIPT="${SIGN_SCRIPT:-$ROOT_DIR/scripts/sign_macos.sh}"
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 TAP_PROJECT_PATH="${TAP_PROJECT_PATH:-${TAP_REPO:-}}"
 TAP_REMOTE_URL="${TAP_REMOTE_URL:-}"
-TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-tap"
+TAP_DIR_DEFAULT="$ROOT_DIR/tmp/homebrew-argo"
 TAP_DIR="${TAP_DIR:-$TAP_DIR_DEFAULT}"
 CASK_PATH="${CASK_PATH:-Casks/${APP_SLUG}.rb}"
 APP_HOMEPAGE="${APP_HOMEPAGE:-}"
@@ -58,9 +58,9 @@ Environment:
   GITHUB_REPOSITORY=krystal1110/Argo  GitHub repository. Inferred from origin when omitted.
   GH_TOKEN=token          GitHub token with release access. GITHUB_TOKEN is also supported.
   STABLE_BRANCH=stable    Branch pushed after appcast updates so SUFeedURL can read the feed.
-  TAP_PROJECT_PATH=owner/homebrew-tap  Optional GitHub tap repository used when updating the cask.
-                         Defaults to the release owner, e.g. krystal1110/homebrew-tap.
-  TAP_REMOTE_URL=git@host:owner/homebrew-tap.git  Optional explicit tap remote URL.
+  TAP_PROJECT_PATH=owner/homebrew-argo  Optional GitHub tap repository used when updating the cask.
+                         Defaults to the release owner, e.g. krystal1110/homebrew-argo.
+  TAP_REMOTE_URL=git@host:owner/homebrew-argo.git  Optional explicit tap remote URL.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
   NOTARYTOOL_PROFILE=name  Keychain profile used for Apple notarization.
@@ -142,7 +142,7 @@ default_tap_project_path() {
   owner="${GITHUB_REPOSITORY%%/*}"
   [[ -n "$owner" ]] || return 1
 
-  echo "$owner/homebrew-tap"
+  echo "$owner/homebrew-argo"
 }
 
 ensure_cask_metadata() {
@@ -156,7 +156,13 @@ path = Path(sys.argv[1])
 lines = path.read_text(encoding="utf-8").splitlines()
 metadata = [
     "  auto_updates true",
-    "  depends_on macos: \">= :sonoma\"",
+    "  depends_on macos: :sonoma",
+]
+lines = [
+    "  depends_on macos: :sonoma"
+    if line == "  depends_on macos: \">= :sonoma\""
+    else line
+    for line in lines
 ]
 missing = [line for line in metadata if line not in lines]
 
@@ -495,7 +501,7 @@ cask "$APP_SLUG" do
   homepage "$APP_HOMEPAGE"
 
   auto_updates true
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "$APP_NAME.app"
 end

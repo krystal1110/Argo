@@ -1,0 +1,14 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  background: #070d16;
+  color: #f5f9ff;
+}
+
+img {
+  max-width: 100%;
+}

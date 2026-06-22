@@ -13,4 +13,14 @@ if grep -q "website/src/content/docs" docs/README.md; then
   exit 1
 fi
 
+if grep -R "krystal1110/tap/argo" \
+  docs/superpowers/plans/2026-06-22-argo-website.md \
+  docs/superpowers/specs/2026-06-22-argo-website-design.md \
+  website/index.html \
+  scripts/check_website_content.sh \
+  scripts/check_homebrew_support.sh; then
+  echo "old Homebrew tap reference found" >&2
+  exit 1
+fi
+
 echo "website docs ok"

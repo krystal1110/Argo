@@ -44,7 +44,7 @@ CTA:
 Download
 GitHub
 
-brew install --cask krystal1110/tap/argo
+brew install --cask krystal1110/argo/argo
 ```
 
 开源说明:

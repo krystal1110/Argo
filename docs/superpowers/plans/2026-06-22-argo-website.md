@@ -204,7 +204,7 @@ grep -q 'href="https://github.com/krystal1110/Argo"' "$html"
 grep -q 'href="https://github.com/krystal1110/Argo/releases"' "$html"
 grep -q 'Command every repo.' "$html"
 grep -q 'Keep every agent in view.' "$html"
-grep -q 'brew install --cask krystal1110/tap/argo' "$html"
+grep -q 'brew install --cask krystal1110/argo/argo' "$html"
 grep -q 'src="./assets/hero-workspace.png"' "$html"
 grep -q 'src="./assets/app-icon.png"' "$html"
 
@@ -267,7 +267,7 @@ Expected: FAIL,因为 scaffold 还没有 `site-nav`、CTA links、feature anchor
             <a class="button primary" href="https://github.com/krystal1110/Argo/releases">Download</a>
             <a class="button secondary" href="https://github.com/krystal1110/Argo">GitHub</a>
           </div>
-          <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/tap/argo</code></p>
+          <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/argo/argo</code></p>
           <p class="opensource-copy">Free & Open Source. Built for fast local work across many repositories.</p>
         </div>
 
@@ -334,7 +334,7 @@ Expected: FAIL,因为 scaffold 还没有 `site-nav`、CTA links、feature anchor
           <a class="button primary" href="https://github.com/krystal1110/Argo/releases">Download Argo</a>
           <a class="button secondary" href="https://github.com/krystal1110/Argo">View on GitHub</a>
         </div>
-        <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/tap/argo</code></p>
+        <p class="install-copy">Or install through Homebrew:<br><code>brew install --cask krystal1110/argo/argo</code></p>
       </section>
     </main>
   </body>

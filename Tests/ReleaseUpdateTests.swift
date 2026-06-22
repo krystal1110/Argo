@@ -116,7 +116,7 @@ final class ReleaseUpdateTests: XCTestCase {
 
         XCTAssertTrue(homebrewRelease.contains("default_tap_project_path()"))
         XCTAssertTrue(homebrewRelease.contains("owner=\"${GITHUB_REPOSITORY%%/*}\""))
-        XCTAssertTrue(homebrewRelease.contains("echo \"$owner/homebrew-tap\""))
+        XCTAssertTrue(homebrewRelease.contains("echo \"$owner/homebrew-argo\""))
         XCTAssertTrue(homebrewRelease.contains("TAP_PROJECT_PATH=\"$(default_tap_project_path || true)\""))
         XCTAssertTrue(homebrewRelease.contains("brew_install_ref=\"$(brew_install_target)\""))
     }
@@ -128,7 +128,8 @@ final class ReleaseUpdateTests: XCTestCase {
         let homebrewRelease = try String(contentsOf: rootURL.appendingPathComponent("scripts/release_homebrew.sh"), encoding: .utf8)
 
         XCTAssertTrue(homebrewRelease.contains("auto_updates true"))
-        XCTAssertTrue(homebrewRelease.contains("depends_on macos: \">= :sonoma\""))
+        XCTAssertTrue(homebrewRelease.contains("depends_on macos: :sonoma"))
+        XCTAssertFalse(homebrewRelease.contains("depends_on macos: \">= :sonoma\""))
         XCTAssertTrue(homebrewRelease.contains("ensure_cask_metadata \"$CASK_PATH\""))
     }
 
@@ -138,7 +139,7 @@ final class ReleaseUpdateTests: XCTestCase {
             .deletingLastPathComponent()
         let website = try String(contentsOf: rootURL.appendingPathComponent("website/index.html"), encoding: .utf8)
 
-        XCTAssertTrue(website.contains("brew install --cask krystal1110/tap/argo"))
+        XCTAssertTrue(website.contains("brew install --cask krystal1110/argo/argo"))
     }
 
     func testReleaseScriptUsesTeamCommitConventionForReleaseCommit() throws {

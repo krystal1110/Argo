@@ -150,14 +150,14 @@ export GH_TOKEN=<token-with-release-access>
 - `SKIP_GITHUB_RELEASE=1 ./deploy.sh`
 - `SKIP_CASK_UPDATE=1 ./deploy.sh`
 - `GITHUB_REPOSITORY=krystal1110/Argo ./deploy.sh`
-- `TAP_PROJECT_PATH=owner/homebrew-tap ./deploy.sh`（默认使用 `<github-owner>/homebrew-tap`）
-- `TAP_REMOTE_URL=git@github.com:owner/homebrew-tap.git ./deploy.sh`
+- `TAP_PROJECT_PATH=owner/homebrew-argo ./deploy.sh`（默认使用 `<github-owner>/homebrew-argo`）
+- `TAP_REMOTE_URL=git@github.com:owner/homebrew-argo.git ./deploy.sh`
 - `ARGO_RELEASE_HOME=/secure/release-home ./deploy.sh`
 - `SPARKLE_PRIVATE_KEY_FILE=/secure/path/private_key ./deploy.sh`
 
 当 `origin` 是 `git@github.com:owner/repo.git` 或 `https://github.com/owner/repo.git` 时，脚本会自动推断 `GITHUB_REPOSITORY`。如果 GitHub 项目是私有项目，请确认 Sparkle feed 和 package 下载地址对已安装客户端可访问；Sparkle 检查更新时不会自动附加 GitHub 认证 header。
 
-当没有设置 `TAP_PROJECT_PATH` 和 `TAP_REMOTE_URL` 时，Homebrew cask 发布会使用 `GITHUB_REPOSITORY` 的 owner，并更新 `owner/homebrew-tap`。对于 `krystal1110/Argo`，生成的安装命令是 `brew install --cask krystal1110/tap/argo`。
+当没有设置 `TAP_PROJECT_PATH` 和 `TAP_REMOTE_URL` 时，Homebrew cask 发布会使用 `GITHUB_REPOSITORY` 的 owner，并更新 `owner/homebrew-argo`。对于 `krystal1110/Argo`，生成的安装命令是 `brew install --cask krystal1110/argo/argo`。
 
 如果你仍在使用旧路径，`scripts/deploy.sh` 依然保留为兼容包装脚本。
 

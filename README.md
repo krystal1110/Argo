@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://argo.dev">Website</a>
+  <a href="https://krystal1110.github.io/Argo/">Website</a>
   ·
   <a href="https://github.com/krystal1110/Argo/releases">Download</a>
   ·
@@ -17,9 +17,9 @@
 </p>
 
 <p align="center">
-  <a href="https://argo.dev"><img alt="Website" src="https://img.shields.io/badge/Website-argo.dev-111111?style=flat-square"></a>
+  <a href="https://krystal1110.github.io/Argo/"><img alt="Website" src="https://img.shields.io/badge/Website-krystal1110.github.io%2FArgo-111111?style=flat-square"></a>
   <a href="https://github.com/krystal1110/Argo/releases"><img alt="Releases" src="https://img.shields.io/badge/Download-GitHub%20Releases-181717?style=flat-square&logo=github"></a>
-  <a href="https://argo.dev"><img alt="Platform" src="https://img.shields.io/badge/Platform-macOS-black?style=flat-square"></a>
+  <a href="https://krystal1110.github.io/Argo/"><img alt="Platform" src="https://img.shields.io/badge/Platform-macOS-black?style=flat-square"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-2ea44f?style=flat-square"></a>
 </p>
 

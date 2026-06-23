@@ -39,7 +39,7 @@ final class WorkspaceTabsTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface {"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint) {"))
         XCTAssertFalse(terminalPaneSource.contains(".clipShape(RoundedRectangle"))
         XCTAssertFalse(terminalPaneSource.contains(".background(paneFill, in: RoundedRectangle"))
         XCTAssertFalse(terminalPaneSource.contains(".shadow(color:"))

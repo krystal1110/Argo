@@ -34,10 +34,14 @@ grep -q 'June 22, 2026' "$releases"
 grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.6"' "$releases"
 grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.6/Argo-1.0.6.dmg"' "$releases"
 grep -q 'brew install --cask krystal1110/argo/argo' "$releases"
-grep -q 'Argo 1.0.5' "$releases"
-grep -q 'Argo 1.0.2' "$releases"
-grep -q 'Argo 1.0.1' "$releases"
-grep -q 'Argo 1.0.0' "$releases"
+grep -q 'Dynamic Island session center' "$releases"
+grep -q 'Claude hook bridge' "$releases"
+grep -q 'Public website and install path' "$releases"
+
+if grep -Eq 'Argo 1\.0\.[0-5]' "$releases"; then
+  echo "Release notes page should start at Argo 1.0.6" >&2
+  exit 1
+fi
 
 for id in workspaces panes agents workbench native download; do
   grep -q "id=\"$id\"" "$html"

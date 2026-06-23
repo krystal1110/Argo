@@ -6,8 +6,8 @@ cd "$ROOT_DIR"
 
 source "$ROOT_DIR/scripts/release_notes.sh"
 
-notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes-check.XXXXXX.md")"
-source_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes-source.XXXXXX.md")"
+notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes-check.XXXXXX")"
+source_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes-source.XXXXXX")"
 trap 'rm -f "$notes_file" "$source_file"' EXIT
 
 release_notes_write \
@@ -19,10 +19,19 @@ release_notes_write \
   "krystal1110/argo/argo"
 
 grep -Fq '## Argo 1.0.6' "$notes_file"
-grep -Fq '### Highlights' "$notes_file"
-grep -Fq 'feat(island): finish ui' "$notes_file"
-grep -Fq 'feat(web): merge site' "$notes_file"
-grep -Fq 'fix(island): sync claude hooks' "$notes_file"
+grep -Fq '### Summary' "$notes_file"
+grep -Fq 'Adds Dynamic Island UI and session flow, website launch, and Claude hook integration.' "$notes_file"
+summary_block="$(awk '/^### Summary$/ { found=1; next } /^### Install$/ { found=0 } found { print }' "$notes_file")"
+if grep -Eq '^- ' <<< "$summary_block"; then
+  echo "Generated release notes summary should be one sentence, not bullets" >&2
+  exit 1
+fi
+summary_line="$(awk '/^### Summary$/ { found=1; next } found && NF { print; exit }' "$notes_file")"
+summary_words="$(awk '{ print NF }' <<< "$summary_line")"
+if (( summary_words > 50 )); then
+  echo "Generated release notes summary is too long: $summary_words words" >&2
+  exit 1
+fi
 grep -Fq '### Install' "$notes_file"
 grep -Fq 'DMG: `Argo-1.0.6.dmg`' "$notes_file"
 grep -Fq 'Homebrew: `brew install --cask krystal1110/argo/argo`' "$notes_file"

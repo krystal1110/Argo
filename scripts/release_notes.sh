@@ -26,14 +26,77 @@ release_notes_should_skip_commit() {
   return 1
 }
 
-release_notes_write_commit_summary() {
+release_notes_subject_phrase() {
+  local subject="$1"
+  local scope=""
+  local message="$subject"
+
+  if [[ "$subject" == *"):"* ]]; then
+    scope="${subject#*(}"
+    scope="${scope%%)*}"
+    message="${subject#*: }"
+  fi
+
+  case "$scope:$message" in
+    island:"finish ui")
+      echo "Dynamic Island UI and session flow"
+      ;;
+    island:"sync claude hooks")
+      echo "Claude hook integration"
+      ;;
+    web:"merge site")
+      echo "website launch"
+      ;;
+    web:*notes*)
+      echo "release notes"
+      ;;
+    web:*)
+      echo "website updates"
+      ;;
+    release:*brew*)
+      echo "Homebrew release support"
+      ;;
+    release:*)
+      echo "release packaging"
+      ;;
+    island:*)
+      echo "Dynamic Island updates"
+      ;;
+    *)
+      echo "$message"
+      ;;
+  esac
+}
+
+release_notes_join_phrases() {
+  local -a phrases=("$@")
+  local count="${#phrases[@]}"
+
+  case "$count" in
+    0)
+      echo "Initial public release."
+      ;;
+    1)
+      echo "Adds ${phrases[0]}."
+      ;;
+    2)
+      echo "Adds ${phrases[0]} and ${phrases[1]}."
+      ;;
+    *)
+      echo "Adds ${phrases[0]}, ${phrases[1]}, and ${phrases[2]}."
+      ;;
+  esac
+}
+
+release_notes_write_commit_summary_sentence() {
   local previous_tag="$1"
   local target="$2"
   local range=""
-  local wrote=0
+  local -a phrases=()
+  local phrase
 
   if [[ -z "$previous_tag" ]] || ! git rev-parse -q --verify "$previous_tag^{commit}" >/dev/null; then
-    echo "- Initial public release."
+    echo "Initial public release."
     return
   fi
 
@@ -44,12 +107,28 @@ release_notes_write_commit_summary() {
     if release_notes_should_skip_commit "$subject"; then
       continue
     fi
-    echo "- $subject (\`$hash\`)"
-    wrote=1
+    phrase="$(release_notes_subject_phrase "$subject")"
+    local has_phrase=0
+    if ((${#phrases[@]} > 0)); then
+      for existing_phrase in "${phrases[@]}"; do
+        if [[ "$existing_phrase" == "$phrase" ]]; then
+          has_phrase=1
+          break
+        fi
+      done
+    fi
+    if [[ "$has_phrase" -eq 0 ]]; then
+      phrases+=("$phrase")
+    fi
+    if [[ "${#phrases[@]}" -ge 3 ]]; then
+      break
+    fi
   done < <(git log --first-parent --reverse --format='%h%x09%s' "$range")
 
-  if [[ "$wrote" -eq 0 ]]; then
-    echo "- Initial public release."
+  if ((${#phrases[@]} > 0)); then
+    release_notes_join_phrases "${phrases[@]}"
+  else
+    release_notes_join_phrases
   fi
 }
 
@@ -72,9 +151,9 @@ release_notes_write() {
       cat "$source_file"
       echo
     else
-      echo "### Highlights"
+      echo "### Summary"
       echo
-      release_notes_write_commit_summary "$previous_tag" "$target"
+      release_notes_write_commit_summary_sentence "$previous_tag" "$target"
       echo
     fi
     echo "### Install"
@@ -100,7 +179,7 @@ release_notes_create_file() {
   local source_file="${6:-}"
   local release_notes_file
 
-  release_notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
+  release_notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX")"
   release_notes_write \
     "$release_notes_file" \
     "$version" \

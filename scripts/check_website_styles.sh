@@ -16,8 +16,7 @@ grep -q -- "font-size: 16.8px" "$css"
 grep -q -- "aspect-ratio: 2880 / 1778" "$css"
 grep -q -- ".releases-page" "$css"
 grep -q -- ".latest-release" "$css"
-grep -q -- ".release-history" "$css"
-grep -q -- ".release-entry" "$css"
+grep -q -- ".release-summary" "$css"
 grep -q -- "@media (max-width: 760px)" "$css"
 
 if grep -E "font-size:[^;]+vw" "$css"; then

@@ -168,7 +168,9 @@ struct MainWindowView: View {
     }
 
     private var topGlassChrome: some View {
-        HStack(spacing: 14) {
+        let chromeTint = store.chromeTint
+
+        return HStack(spacing: 14) {
             Button {
                 toggleWorkspaceSidebar()
             } label: {
@@ -218,7 +220,7 @@ struct MainWindowView: View {
             GlassToolbarGroup(horizontalPadding: 5, spacing: 2) {
                 GlassToolbarMenuIconButton(
                     systemName: "chevron.left.slash.chevron.right",
-                    tint: ArgoTheme.accent,
+                    tint: chromeTint.components.color,
                     accessibilityLabel: localized("main.toolbar.chooseQuickCommand"),
                     help: localized("main.toolbar.chooseQuickCommand")
                 ) { anchorView in
@@ -227,7 +229,7 @@ struct MainWindowView: View {
 
                 GlassToolbarMenuIconButton(
                     systemName: "play.rectangle.on.rectangle",
-                    tint: ArgoTheme.accent,
+                    tint: chromeTint.components.color,
                     isDisabled: !hasSelectedWorkspace,
                     accessibilityLabel: localized("main.toolbar.chooseWorkflow"),
                     help: localized("main.toolbar.chooseWorkflow")
@@ -238,7 +240,7 @@ struct MainWindowView: View {
                 if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
                     GlassToolbarMenuIconButton(
                         systemName: "dot.radiowaves.left.and.right",
-                        tint: ArgoTheme.accent,
+                        tint: chromeTint.components.color,
                         isDisabled: !hasSelectedWorkspace,
                         accessibilityLabel: hapiInstallation.primaryActionTitle,
                         help: hapiHelpText
@@ -322,10 +324,11 @@ struct MainWindowView: View {
         .background(
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                ArgoTheme.chromeBackground.opacity(0.68)
+                ArgoTheme.chromeBackground.opacity(0.54)
+                chromeTint.topFill.color
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.055),
+                        Color.white.opacity(0.07),
                         Color.clear
                     ],
                     startPoint: .top,
@@ -348,6 +351,7 @@ struct MainWindowView: View {
                 HStack(spacing: 0) {
                     GlobalModeRailView(
                         selectedMode: store.mainWindowMode,
+                        chromeTint: store.chromeTint,
                         uiScale: uiScale,
                         onSelectMode: { mode in
                             selectMainWindowMode(mode, restoreFocus: mode == .workspace)
@@ -358,7 +362,7 @@ struct MainWindowView: View {
                     )
 
                     if layoutState.isWorkspaceSidebarVisible(in: store.mainWindowMode) {
-                        FloatingWorkspaceSidebarSurface {
+                        FloatingWorkspaceSidebarSurface(chromeTint: store.chromeTint) {
                             WorkspaceSidebarView()
                         }
                         .frame(width: workspaceSidebarWidth)
@@ -805,6 +809,7 @@ struct MainWindowView: View {
 }
 
 private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
+    let chromeTint: ArgoChromeTint
     @ViewBuilder var content: () -> Content
 
     private var panelShape: some Shape {
@@ -814,7 +819,21 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
     var body: some View {
         content()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(ArgoTheme.sidebarBackground, in: panelShape)
+            .background {
+                ZStack {
+                    ArgoTheme.sidebarBackground
+                    chromeTint.sidebarFill.color
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.045),
+                            Color.clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+                .clipShape(panelShape)
+            }
             .clipShape(panelShape)
             .overlay {
                 panelShape
@@ -822,7 +841,12 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
             }
             .shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)
             .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))
-            .background(ArgoTheme.appBackground)
+            .background {
+                ZStack {
+                    ArgoTheme.appBackground
+                    chromeTint.leadingFill.color
+                }
+            }
     }
 }
 

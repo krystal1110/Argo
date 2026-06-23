@@ -421,6 +421,10 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
             encoding: .utf8
         )
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
         let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\(chromeTint: store\.chromeTint\)\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
 
         XCTAssertNotNil(
@@ -451,8 +455,12 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(mainWindowSource.contains("chromeTint.sidebarFill.color"))
         XCTAssertTrue(mainWindowSource.contains("chromeTint.leadingFill.color"))
         XCTAssertFalse(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
-        XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))"))
+        XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 2))"))
         XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)"))
+        XCTAssertTrue(workspaceDetailSource.contains(".padding(.top, 6)"))
+        XCTAssertTrue(workspaceDetailSource.contains(".padding(.bottom, 6)"))
+        XCTAssertTrue(workspaceDetailSource.contains(".padding(.leading, 2)"))
+        XCTAssertTrue(workspaceDetailSource.contains(".padding(.trailing, 6)"))
         XCTAssertTrue(railSource.contains("let chromeTint: ArgoChromeTint"))
         XCTAssertTrue(railSource.contains("chromeTint.selectionFill.color"))
         let floatingSurfaceSource = try XCTUnwrap(

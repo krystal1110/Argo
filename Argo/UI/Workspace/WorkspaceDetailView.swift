@@ -133,7 +133,7 @@ private struct WorkspaceSessionDetailView: View {
     @ViewBuilder
     private var terminalContent: some View {
         if let layout = workspace.layout {
-            TerminalWorkspaceSurface {
+            TerminalWorkspaceSurface(chromeTint: store.chromeTint) {
                 VStack(spacing: 0) {
                     TerminalLocalChrome(
                         path: terminalChromePath,
@@ -157,7 +157,7 @@ private struct WorkspaceSessionDetailView: View {
                     .padding(.horizontal, 6)
                     .padding(.top, 3)
                     .padding(.bottom, 3)
-                    .background(TerminalWorkspaceSurfaceStyle.chromeFill)
+                    .background(TerminalWorkspaceSurfaceStyle.chromeFill(for: store.chromeTint))
 
                     Rectangle()
                         .fill(Color.white.opacity(0.105))
@@ -260,9 +260,11 @@ private struct WorkspaceSessionDetailView: View {
 
 private struct TerminalWorkspaceSurface<Content: View>: View {
     @EnvironmentObject private var store: WorkspaceStore
+    let chromeTint: ArgoChromeTint
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(chromeTint: ArgoChromeTint, @ViewBuilder content: () -> Content) {
+        self.chromeTint = chromeTint
         self.content = content()
     }
 
@@ -298,6 +300,8 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
                 if !isTranslucent {
                     surfaceFill
                 }
+                chromeTint.glowFill.color
+                    .opacity(isTranslucent ? 0.5 : 1)
             }
             .clipShape(shape)
             .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
@@ -324,10 +328,11 @@ private struct TerminalBackgroundBlurView: NSViewRepresentable {
 }
 
 private enum TerminalWorkspaceSurfaceStyle {
-    static var chromeFill: some ShapeStyle {
+    static func chromeFill(for chromeTint: ArgoChromeTint) -> some ShapeStyle {
         LinearGradient(
             colors: [
                 Color.white.opacity(0.085),
+                chromeTint.tabBarFill.color,
                 Color.white.opacity(0.035)
             ],
             startPoint: .top,

@@ -488,6 +488,21 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(sidebarSource.contains("private final class SidebarOutlineContainerView: NSView"))
     }
 
+    func testTerminalWorkspaceChromeUsesDynamicTint() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeFill(for: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("chromeTint.tabBarFill.color"))
+        XCTAssertFalse(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeFill)"))
+    }
+
     func testToggleSidebarShortcutUsesFloatingSidebarState() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

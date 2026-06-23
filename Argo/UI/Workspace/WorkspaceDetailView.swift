@@ -41,7 +41,10 @@ struct WorkspaceDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .padding(6)
+            .padding(.top, 6)
+            .padding(.bottom, 6)
+            .padding(.leading, 2)
+            .padding(.trailing, 6)
         }
         .background(terminalIsTranslucent ? Color.clear : ArgoTheme.appBackground)
     }

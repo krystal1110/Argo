@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
 source "$ROOT_DIR/scripts/github_release_tools.sh"
+source "$ROOT_DIR/scripts/release_notes.sh"
 
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 PROJECT_PATH="${PROJECT_PATH:-$ROOT_DIR/Argo.xcodeproj}"
@@ -31,6 +32,8 @@ SKIP_PUSH="${SKIP_PUSH:-0}"
 SKIP_TAG="${SKIP_TAG:-0}"
 SKIP_GITHUB_RELEASE="${SKIP_GITHUB_RELEASE:-0}"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
+BREW_INSTALL_REF="${BREW_INSTALL_REF:-}"
+RELEASE_NOTES_SOURCE_FILE="${RELEASE_NOTES_SOURCE_FILE:-}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
 
@@ -127,6 +130,11 @@ DSYM_PATH="$OUTPUT_DIR/dSYMs/$APP_NAME-$VERSION.app.dSYM"
 DSYM_ZIP_PATH="$DSYM_PATH.zip"
 APPCAST_OUTPUT_PATH="$OUTPUT_DIR/appcast.xml"
 TAG="${TAG:-v$VERSION}"
+PREVIOUS_TAG="$(
+  git tag -l 'v*' --sort=-version:refname |
+    grep -v "^${TAG}$" |
+    head -n 1 || true
+)"
 
 if [[ ! -f "$SPARKLE_PRIVATE_KEY_FILE" ]]; then
   echo "Missing Sparkle private key file: $SPARKLE_PRIVATE_KEY_FILE" >&2
@@ -210,12 +218,15 @@ if [[ "$SKIP_TAG" != "1" ]]; then
   fi
 fi
 
-RELEASE_NOTES_FILE="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
-cat > "$RELEASE_NOTES_FILE" <<EOF
-## Argo $VERSION
-
-- GitHub release: $(github_release_url "$TAG")
-EOF
+RELEASE_NOTES_FILE="$(
+  release_notes_create_file \
+    "$VERSION" \
+    "$TAG" \
+    "$PREVIOUS_TAG" \
+    "$(basename "$DMG_PATH")" \
+    "$BREW_INSTALL_REF" \
+    "$RELEASE_NOTES_SOURCE_FILE"
+)"
 
 APPCAST_STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/argo-appcast.XXXXXX")"
 ZIP_BASENAME="$(basename "$ZIP_PATH" .zip)"

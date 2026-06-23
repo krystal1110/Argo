@@ -35,12 +35,14 @@ SKIP_GITHUB_RELEASE="${SKIP_GITHUB_RELEASE:-0}"
 SKIP_CASK_UPDATE="${SKIP_CASK_UPDATE:-0}"
 FORCE_REBUILD="${FORCE_REBUILD:-1}"
 BUMP_VERSION="${BUMP_VERSION:-}"
+RELEASE_NOTES_SOURCE_FILE="${RELEASE_NOTES_SOURCE_FILE:-}"
 RELEASE_NOTES_FILE=""
 APPCAST_STAGING_DIR=""
 CLONED_DEFAULT_TAP_DIR=0
 
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
 source "$ROOT_DIR/scripts/github_release_tools.sh"
+source "$ROOT_DIR/scripts/release_notes.sh"
 
 usage() {
   cat <<EOF
@@ -61,6 +63,7 @@ Environment:
   TAP_PROJECT_PATH=owner/homebrew-argo  Optional GitHub tap repository used when updating the cask.
                          Defaults to the release owner, e.g. krystal1110/homebrew-argo.
   TAP_REMOTE_URL=git@host:owner/homebrew-argo.git  Optional explicit tap remote URL.
+  RELEASE_NOTES_SOURCE_FILE=path  Optional human-written Markdown body for GitHub/Sparkle release notes.
   ARGO_RELEASE_HOME=dir Release-only secret directory. Default: ~/.argo_release.
   DEFAULT_NOTARYTOOL_PROFILE=name  Auto-detected notarytool profile. Default: argo-notarytool.
   NOTARYTOOL_PROFILE=name  Keychain profile used for Apple notarization.
@@ -104,26 +107,10 @@ generate_release_notes() {
   local tag="$2"
   local previous_tag="$3"
   local dmg_name="$4"
-  local release_notes_file
   local brew_install_ref
 
-  release_notes_file="$(mktemp "${TMPDIR:-/tmp}/argo-release-notes.XXXXXX.md")"
-
   brew_install_ref="$(brew_install_target)"
-
-  {
-    echo "## Argo $version"
-    echo
-    echo "- DMG: \`$dmg_name\`"
-    echo "- Homebrew: \`brew install --cask $brew_install_ref\`"
-    if [[ -n "$previous_tag" ]]; then
-      echo "- Previous release: \`$previous_tag\`"
-    else
-      echo "- Previous release: none"
-    fi
-  } > "$release_notes_file"
-
-  echo "$release_notes_file"
+  release_notes_create_file "$version" "$tag" "$previous_tag" "$dmg_name" "$brew_install_ref" "$RELEASE_NOTES_SOURCE_FILE"
 }
 
 brew_install_target() {

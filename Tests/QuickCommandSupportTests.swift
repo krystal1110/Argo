@@ -399,7 +399,9 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("topShadowOpacity: Double = 0.2"))
         XCTAssertTrue(mainWindowSource.contains(".insetToolbarCapsuleSurface()"))
         XCTAssertTrue(mainWindowSource.contains(".fill(.ultraThinMaterial)"))
-        XCTAssertTrue(mainWindowSource.contains("ArgoTheme.chromeBackground.opacity(0.68)"))
+        XCTAssertTrue(mainWindowSource.contains("let chromeTint = store.chromeTint"))
+        XCTAssertTrue(mainWindowSource.contains("chromeTint.topFill.color"))
+        XCTAssertFalse(mainWindowSource.contains("ArgoTheme.chromeBackground.opacity(0.68)"))
         XCTAssertFalse(controlsSource.contains(".shadow(color: .black.opacity(0.18), radius: 12, y: 6)"))
     }
 
@@ -415,7 +417,11 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"),
             encoding: .utf8
         )
-        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
+        let railSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
+            encoding: .utf8
+        )
+        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\(chromeTint: store\.chromeTint\)\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
 
         XCTAssertNotNil(
             mainWindowSource.range(of: floatingSidebarPattern, options: .regularExpression),
@@ -442,9 +448,13 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
         XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"))
-        XCTAssertTrue(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
+        XCTAssertTrue(mainWindowSource.contains("chromeTint.sidebarFill.color"))
+        XCTAssertTrue(mainWindowSource.contains("chromeTint.leadingFill.color"))
+        XCTAssertFalse(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
         XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 10))"))
         XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)"))
+        XCTAssertTrue(railSource.contains("let chromeTint: ArgoChromeTint"))
+        XCTAssertTrue(railSource.contains("chromeTint.selectionFill.color"))
         let floatingSurfaceSource = try XCTUnwrap(
             mainWindowSource.range(
                 of: #"private struct FloatingWorkspaceSidebarSurface[\s\S]*?private struct TimeCommandPaletteButtonLabel"#,

@@ -34,9 +34,19 @@ grep -q 'June 22, 2026' "$releases"
 grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.6"' "$releases"
 grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.6/Argo-1.0.6.dmg"' "$releases"
 grep -q 'brew install --cask krystal1110/argo/argo' "$releases"
-grep -q 'Dynamic Island session center' "$releases"
-grep -q 'Claude hook bridge' "$releases"
-grep -q 'Public website and install path' "$releases"
+grep -q 'Argo 1.0.6 adds the Dynamic Island session center, Claude hook bridge, public website, GitHub Pages deployment, updated Homebrew cask path, and refreshed Sparkle packaging.' "$releases"
+
+release_summary="$(awk -F '<p class="release-summary">|</p>' '/release-summary/ { print $2; exit }' "$releases")"
+summary_words="$(awk '{ print NF }' <<< "$release_summary")"
+if (( summary_words > 50 )); then
+  echo "Release page summary is too long: $summary_words words" >&2
+  exit 1
+fi
+
+if grep -Eq '<li>|<ul>|release-groups' "$releases"; then
+  echo "Release page should keep each generated note to one concise sentence" >&2
+  exit 1
+fi
 
 if grep -Eq 'Argo 1\.0\.[0-5]' "$releases"; then
   echo "Release notes page should start at Argo 1.0.6" >&2

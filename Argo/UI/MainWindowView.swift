@@ -839,8 +839,8 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
                 panelShape
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
-            .shadow(color: .black.opacity(0.28), radius: 22, x: 14, y: 1)
-            .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 2))
+            .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 1)
+            .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))
             .background {
                 ZStack {
                     ArgoTheme.appBackground

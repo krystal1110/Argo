@@ -43,7 +43,7 @@ struct WorkspaceDetailView: View {
             }
             .padding(.top, 6)
             .padding(.bottom, 6)
-            .padding(.leading, 2)
+            .padding(.leading, 0)
             .padding(.trailing, 6)
         }
         .background(terminalIsTranslucent ? Color.clear : ArgoTheme.appBackground)

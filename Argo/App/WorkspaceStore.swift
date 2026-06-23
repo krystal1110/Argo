@@ -127,6 +127,19 @@ final class WorkspaceStore: ObservableObject {
         return workspaces.first(where: { $0.id == selectedWorkspaceID }) ?? workspaces.first
     }
 
+    var chromeTint: ArgoChromeTint {
+        chromeTint(for: selectedWorkspace)
+    }
+
+    func chromeTint(for workspace: WorkspaceModel?) -> ArgoChromeTint {
+        guard let workspace else { return .fallback }
+        if workspace.supportsRepositoryFeatures,
+           let activeWorktree = workspace.worktrees.first(where: { $0.path == workspace.activeWorktreePath }) {
+            return ArgoChromeTint.resolved(for: sidebarIcon(for: activeWorktree, in: workspace).palette)
+        }
+        return ArgoChromeTint.resolved(for: sidebarIcon(for: workspace).palette)
+    }
+
     var sidebarWorkspaces: [WorkspaceModel] {
         let visible = workspaces.filter { !$0.isArchived }
         return visible.enumerated().sorted { lhs, rhs in

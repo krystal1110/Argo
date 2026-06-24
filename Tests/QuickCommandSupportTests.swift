@@ -474,8 +474,9 @@ final class QuickCommandSupportTests: XCTestCase {
         )
 
         XCTAssertTrue(mainWindowSource.contains("enum WorkspaceChromeMetrics"))
-        XCTAssertTrue(mainWindowSource.contains("static let topHeight: CGFloat = 62"))
+        XCTAssertTrue(mainWindowSource.contains("static let topHeight: CGFloat = 52"))
         XCTAssertTrue(mainWindowSource.contains("static let terminalHeight: CGFloat = 36"))
+        XCTAssertTrue(mainWindowSource.contains("static let statusHeight: CGFloat = 32"))
         XCTAssertFalse(mainWindowSource.contains("@ViewBuilder\n    private var continuousWindowBackground: some View"))
         XCTAssertFalse(mainWindowSource.contains(".background {\n                continuousWindowBackground\n            }"))
         XCTAssertFalse(
@@ -501,6 +502,38 @@ final class QuickCommandSupportTests: XCTestCase {
                 }
 """))
         XCTAssertTrue(mainWindowSource.contains("if store.mainWindowMode != .workspace {\n                Rectangle()\n                    .fill(Color.white.opacity(0.075))"))
+    }
+
+    func testTwilightLayoutMatchesApprovedSpecGrid() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let railSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(mainWindowSource.contains("static let topHeight: CGFloat = 52"))
+        XCTAssertTrue(mainWindowSource.contains("static let statusHeight: CGFloat = 32"))
+        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarDefaultWidth: CGFloat = 280"))
+        XCTAssertTrue(mainWindowSource.contains("TrafficLightAnchor()"))
+        XCTAssertTrue(mainWindowSource.contains("TerminalProfilePill("))
+        XCTAssertTrue(mainWindowSource.contains("TwilightStatusBar("))
+        XCTAssertTrue(mainWindowSource.contains(".frame(height: WorkspaceChromeMetrics.statusHeight)"))
+        XCTAssertTrue(mainWindowSource.contains("branch: selectedWorkspaceStatusBranch"))
+        XCTAssertTrue(mainWindowSource.contains("encoding: \"UTF-8\""))
+        XCTAssertTrue(mainWindowSource.contains(".frame(minWidth: 340 * uiScale, maxWidth: 430 * uiScale)"))
+
+        XCTAssertTrue(railSource.contains("VStack(spacing: 6 * uiScale)"))
+        XCTAssertTrue(railSource.contains(".padding(.vertical, 14 * uiScale)"))
+        XCTAssertTrue(railSource.contains(".frame(width: 64 * uiScale)"))
+        XCTAssertTrue(railSource.contains(".font(.system(size: 19 * uiScale, weight: .semibold))"))
+        XCTAssertTrue(railSource.contains(".frame(width: 38 * uiScale, height: 38 * uiScale)"))
+        XCTAssertTrue(railSource.contains(".offset(x: -14 * uiScale)"))
     }
 
     func testMainWindowWrapsWorkspaceSidebarInFloatingSurface() throws {
@@ -532,7 +565,7 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(mainWindowSource.contains(".frame(width: 260)"))
         XCTAssertTrue(mainWindowSource.contains("@State private var workspaceSidebarWidth = Self.workspaceSidebarDefaultWidth"))
         XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarMinWidth: CGFloat = 210"))
-        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarDefaultWidth: CGFloat = 260"))
+        XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarDefaultWidth: CGFloat = 280"))
         XCTAssertTrue(mainWindowSource.contains("private static let workspaceSidebarMaxWidth: CGFloat = 340"))
         XCTAssertTrue(mainWindowSource.contains("WorkspaceSidebarResizeHandle("))
         XCTAssertTrue(mainWindowSource.contains("private struct WorkspaceSidebarResizeHandle: NSViewRepresentable"))

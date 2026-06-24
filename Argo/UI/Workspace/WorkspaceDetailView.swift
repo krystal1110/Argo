@@ -18,7 +18,7 @@ struct WorkspaceDetailView: View {
     }
 
     private var terminalIsTranslucent: Bool {
-        store.appSettings.terminalBackgroundOpacity < 1
+        store.selectedWorkspace != nil || store.appSettings.terminalBackgroundOpacity < 1
     }
 
     var body: some View {
@@ -41,7 +41,10 @@ struct WorkspaceDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .padding(6)
+            .padding(.top, 0)
+            .padding(.bottom, 0)
+            .padding(.leading, 0)
+            .padding(.trailing, 0)
         }
         .background(terminalIsTranslucent ? Color.clear : ArgoTheme.appBackground)
     }
@@ -133,36 +136,36 @@ private struct WorkspaceSessionDetailView: View {
     @ViewBuilder
     private var terminalContent: some View {
         if let layout = workspace.layout {
-            TerminalWorkspaceSurface {
-                VStack(spacing: 0) {
-                    TerminalLocalChrome(
-                        path: terminalChromePath,
-                        categories: terminalChromeCategoryDescriptors,
-                        activeCategoryID: workspace.activeTabID,
-                        isFocused: terminalChromeTargetPaneID == workspace.sessionController.focusedPaneID,
-                        canCreateCategory: true,
-                        canSplit: terminalChromeTargetPaneID != nil,
-                        onSelectCategory: selectTerminalCategoryFromChrome,
-                        onCloseCategory: closeTerminalCategoryFromChrome,
-                        onRenameCategory: renameTerminalCategoryFromChrome,
-                        onCreateCategory: createTerminalCategoryFromChrome,
-                        onSplitRight: {
-                            splitTerminalFromChrome(axis: .vertical)
-                        },
-                        onSplitDown: {
-                            splitTerminalFromChrome(axis: .horizontal)
-                        }
-                    )
-                    .frame(height: 36)
-                    .padding(.horizontal, 6)
-                    .padding(.top, 3)
-                    .padding(.bottom, 3)
-                    .background(TerminalWorkspaceSurfaceStyle.chromeFill)
+            VStack(spacing: 0) {
+                TerminalLocalChrome(
+                    chromeTint: store.chromeTint,
+                    path: terminalChromePath,
+                    categories: terminalChromeCategoryDescriptors,
+                    activeCategoryID: workspace.activeTabID,
+                    isFocused: terminalChromeTargetPaneID == workspace.sessionController.focusedPaneID,
+                    canCreateCategory: true,
+                    canSplit: terminalChromeTargetPaneID != nil,
+                    onSelectCategory: selectTerminalCategoryFromChrome,
+                    onCloseCategory: closeTerminalCategoryFromChrome,
+                    onRenameCategory: renameTerminalCategoryFromChrome,
+                    onCreateCategory: createTerminalCategoryFromChrome,
+                    onSplitRight: {
+                        splitTerminalFromChrome(axis: .vertical)
+                    },
+                    onSplitDown: {
+                        splitTerminalFromChrome(axis: .horizontal)
+                    }
+                )
+                .frame(height: WorkspaceChromeMetrics.terminalHeight)
+                .background {
+                    TopChromeSurfaceBackground(chromeTint: store.chromeTint)
+                }
 
-                    Rectangle()
-                        .fill(Color.white.opacity(0.105))
-                        .frame(height: 0.8)
+                Rectangle()
+                    .fill(TerminalWorkspaceSurfaceStyle.chromeDivider(for: store.chromeTint))
+                    .frame(height: 0.6)
 
+                TerminalWorkspaceSurface(chromeTint: store.chromeTint) {
                     SplitNodeView(
                         workspace: workspace,
                         sessionController: workspace.sessionController,
@@ -260,9 +263,11 @@ private struct WorkspaceSessionDetailView: View {
 
 private struct TerminalWorkspaceSurface<Content: View>: View {
     @EnvironmentObject private var store: WorkspaceStore
+    let chromeTint: ArgoChromeTint
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(chromeTint: ArgoChromeTint, @ViewBuilder content: () -> Content) {
+        self.chromeTint = chromeTint
         self.content = content()
     }
 
@@ -274,11 +279,26 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
         isTranslucent && store.appSettings.terminalBackgroundBlur
     }
 
+    private var opaqueSurfaceScrimOpacity: Double {
+        0.14
+    }
+
+    private var opaqueGlowOpacity: Double {
+        0.58
+    }
+
+    private var translucentGlowOpacity: Double {
+        chromeTint.isNeutral ? 0.045 : 0.075
+    }
+
     private var surfaceFill: LinearGradient {
-        LinearGradient(
+        let topOpacity = 0.34
+        let bottomOpacity = 0.26
+
+        return LinearGradient(
             colors: [
-                ArgoTheme.panelRaised.opacity(0.98),
-                ArgoTheme.paneBackground.opacity(0.98)
+                ArgoTheme.panelRaised.opacity(topOpacity),
+                ArgoTheme.paneBackground.opacity(bottomOpacity)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -286,7 +306,7 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let shape = Rectangle()
 
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -296,12 +316,15 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
                         .allowsHitTesting(false)
                 }
                 if !isTranslucent {
+                    Rectangle().fill(.ultraThinMaterial)
+                    Color.black.opacity(opaqueSurfaceScrimOpacity)
                     surfaceFill
                 }
+                chromeTint.glowFill.color
+                    .opacity(isTranslucent ? translucentGlowOpacity : opaqueGlowOpacity)
             }
             .clipShape(shape)
             .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
-            .shadow(color: Color.black.opacity(isTranslucent ? 0.16 : 0.10), radius: 12, y: 5)
     }
 }
 
@@ -324,14 +347,16 @@ private struct TerminalBackgroundBlurView: NSViewRepresentable {
 }
 
 private enum TerminalWorkspaceSurfaceStyle {
-    static var chromeFill: some ShapeStyle {
+    static func chromeDivider(for chromeTint: ArgoChromeTint) -> some ShapeStyle {
         LinearGradient(
             colors: [
-                Color.white.opacity(0.085),
-                Color.white.opacity(0.035)
+                Color.clear,
+                chromeTint.components.color.opacity(chromeTint.isNeutral ? 0.08 : 0.15),
+                Color.white.opacity(0.04),
+                Color.clear
             ],
-            startPoint: .top,
-            endPoint: .bottom
+            startPoint: .leading,
+            endPoint: .trailing
         )
     }
 }

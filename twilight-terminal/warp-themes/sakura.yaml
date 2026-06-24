@@ -1,0 +1,27 @@
+# Sakura 樱绯 — 由单色 #ff9ec4 生成（与 HTML 预览同算法）
+# 安装：复制到 ~/.warp/themes/，在 Settings → Appearance → Themes 选择
+# 透明/模糊请在 Settings → Appearance → Window 里设，不要写进主题
+name: Sakura 樱绯
+accent: '#fc69a3'
+background: '#100d21'
+foreground: '#f2eeef'
+details: darker
+terminal_colors:
+  normal:
+    black:   '#1f1c40'
+    red:     '#eb5c67'
+    green:   '#3be637'
+    yellow:  '#fc69a3'
+    blue:    '#5c7feb'
+    magenta: '#ed6eda'
+    cyan:    '#53b6ea'
+    white:   '#d6cdd0'
+  bright:
+    black:   '#4d4983'
+    red:     '#f08991'
+    green:   '#6cec69'
+    yellow:  '#f9bdd5'
+    blue:    '#89a3f0'
+    magenta: '#f39be6'
+    cyan:    '#80c9ef'
+    white:   '#f6f4f5'

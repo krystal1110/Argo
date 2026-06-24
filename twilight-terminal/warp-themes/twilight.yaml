@@ -1,0 +1,27 @@
+# Twilight 暮光 — 由单色 #ffb066 生成（与 HTML 预览同算法）
+# 安装：复制到 ~/.warp/themes/，在 Settings → Appearance → Themes 选择
+# 透明/模糊请在 Settings → Appearance → Window 里设，不要写进主题
+name: Twilight 暮光
+accent: '#fcb069'
+background: '#140d21'
+foreground: '#f2f0ee'
+details: darker
+terminal_colors:
+  normal:
+    black:   '#251c40'
+    red:     '#eb605c'
+    green:   '#37e646'
+    yellow:  '#fcb069'
+    blue:    '#5c70eb'
+    magenta: '#ed6ecd'
+    cyan:    '#53eac0'
+    white:   '#d6d1cd'
+  bright:
+    black:   '#584983'
+    red:     '#f08c89'
+    green:   '#69ec74'
+    yellow:  '#f9d8b9'
+    blue:    '#8998f0'
+    magenta: '#f39bdd'
+    cyan:    '#80efd1'
+    white:   '#f6f5f4'

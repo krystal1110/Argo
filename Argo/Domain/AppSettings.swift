@@ -342,6 +342,7 @@ struct AppSettings: Codable, Hashable {
     var terminalScrollbackLines: Int?
     var terminalBackgroundOpacity: Double
     var terminalBackgroundBlur: Bool
+    var terminalBackgroundAppearanceVersion: Int
     var sidebarShowsSecondaryLabels: Bool
     var sidebarShowsWorkspaceBadges: Bool
     var sidebarShowsWorktreeBadges: Bool
@@ -368,6 +369,10 @@ struct AppSettings: Codable, Hashable {
 
     static let defaultHotKeyWindowShortcut = StoredShortcut(key: " ", command: false, shift: false, option: true, control: false)
     private static let legacyDefaultHotKeyWindowShortcut = StoredShortcut(key: " ", command: true, shift: true, option: false, control: false)
+    private static let legacyTerminalBackgroundOpacityDefault = 0.82
+    static let defaultTerminalBackgroundOpacity = 0.76
+    static let defaultTerminalBackgroundBlur = true
+    static let currentTerminalBackgroundAppearanceVersion = 2
 
     init(
         appLanguage: AppLanguage = .automatic,
@@ -394,8 +399,9 @@ struct AppSettings: Codable, Hashable {
         terminalFontSize: Double? = nil,
         terminalTheme: String? = nil,
         terminalScrollbackLines: Int? = nil,
-        terminalBackgroundOpacity: Double = 1,
-        terminalBackgroundBlur: Bool = false,
+        terminalBackgroundOpacity: Double = AppSettings.defaultTerminalBackgroundOpacity,
+        terminalBackgroundBlur: Bool = AppSettings.defaultTerminalBackgroundBlur,
+        terminalBackgroundAppearanceVersion: Int = AppSettings.currentTerminalBackgroundAppearanceVersion,
         sidebarShowsSecondaryLabels: Bool = true,
         sidebarShowsWorkspaceBadges: Bool = true,
         sidebarShowsWorktreeBadges: Bool = true,
@@ -454,6 +460,7 @@ struct AppSettings: Codable, Hashable {
         self.terminalScrollbackLines = terminalScrollbackLines.map { min(max($0, 1000), 1_000_000) }
         self.terminalBackgroundOpacity = min(max(terminalBackgroundOpacity, 0.5), 1)
         self.terminalBackgroundBlur = terminalBackgroundBlur
+        self.terminalBackgroundAppearanceVersion = terminalBackgroundAppearanceVersion
         self.sidebarShowsSecondaryLabels = sidebarShowsSecondaryLabels
         self.sidebarShowsWorkspaceBadges = sidebarShowsWorkspaceBadges
         self.sidebarShowsWorktreeBadges = sidebarShowsWorktreeBadges
@@ -525,6 +532,7 @@ extension AppSettings {
         case terminalScrollbackLines
         case terminalBackgroundOpacity
         case terminalBackgroundBlur
+        case terminalBackgroundAppearanceVersion
         case sidebarShowsSecondaryLabels
         case sidebarShowsWorkspaceBadges
         case sidebarShowsWorktreeBadges
@@ -563,6 +571,23 @@ extension AppSettings {
         let hotKeyWindowShortcut = decodedHotKeyWindowShortcut == Self.legacyDefaultHotKeyWindowShortcut
             ? Self.defaultHotKeyWindowShortcut
             : decodedHotKeyWindowShortcut ?? Self.defaultHotKeyWindowShortcut
+        let decodedTerminalBackgroundOpacity = try container.decodeIfPresent(Double.self, forKey: .terminalBackgroundOpacity)
+        let decodedTerminalBackgroundBlur = try container.decodeIfPresent(Bool.self, forKey: .terminalBackgroundBlur)
+        let decodedTerminalBackgroundAppearanceVersion = try container.decodeIfPresent(
+            Int.self,
+            forKey: .terminalBackgroundAppearanceVersion
+        ) ?? 0
+        let decodedTerminalBackgroundOpacityWasLegacyDefault = decodedTerminalBackgroundOpacity.map {
+            abs($0 - Self.legacyTerminalBackgroundOpacityDefault) < 0.0001
+        } ?? true
+        let migratesOldTerminalBackgroundDefault = decodedTerminalBackgroundAppearanceVersion < Self.currentTerminalBackgroundAppearanceVersion
+            && ((decodedTerminalBackgroundOpacity ?? 1) >= 1 || decodedTerminalBackgroundOpacityWasLegacyDefault)
+        let terminalBackgroundOpacity = migratesOldTerminalBackgroundDefault
+            ? Self.defaultTerminalBackgroundOpacity
+            : decodedTerminalBackgroundOpacity ?? Self.defaultTerminalBackgroundOpacity
+        let terminalBackgroundBlur = migratesOldTerminalBackgroundDefault
+            ? Self.defaultTerminalBackgroundBlur
+            : decodedTerminalBackgroundBlur ?? Self.defaultTerminalBackgroundBlur
         self.init(
             appLanguage: try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .automatic,
             autoRefreshEnabled: try container.decodeIfPresent(Bool.self, forKey: .autoRefreshEnabled) ?? true,
@@ -588,8 +613,9 @@ extension AppSettings {
             terminalFontSize: try container.decodeIfPresent(Double.self, forKey: .terminalFontSize),
             terminalTheme: try container.decodeIfPresent(String.self, forKey: .terminalTheme),
             terminalScrollbackLines: try container.decodeIfPresent(Int.self, forKey: .terminalScrollbackLines),
-            terminalBackgroundOpacity: try container.decodeIfPresent(Double.self, forKey: .terminalBackgroundOpacity) ?? 1,
-            terminalBackgroundBlur: try container.decodeIfPresent(Bool.self, forKey: .terminalBackgroundBlur) ?? false,
+            terminalBackgroundOpacity: terminalBackgroundOpacity,
+            terminalBackgroundBlur: terminalBackgroundBlur,
+            terminalBackgroundAppearanceVersion: Self.currentTerminalBackgroundAppearanceVersion,
             sidebarShowsSecondaryLabels: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsSecondaryLabels) ?? true,
             sidebarShowsWorkspaceBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorkspaceBadges) ?? true,
             sidebarShowsWorktreeBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorktreeBadges) ?? true,

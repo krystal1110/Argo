@@ -195,6 +195,65 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(store.mainWindowMode, .workspace)
     }
 
+    func testChromeTintPrefersActiveWorktreeIconPalette() {
+        let root = "/tmp/argo"
+        let featurePath = "/tmp/argo/.worktrees/feature"
+        let workspace = WorkspaceModel(record: WorkspaceRecord(
+            id: UUID(),
+            kind: .repository,
+            name: "argo",
+            repositoryRoot: root,
+            activeWorktreePath: featurePath,
+            worktreeStates: [],
+            isSidebarExpanded: true,
+            worktrees: [
+                WorktreeModel(path: root, branch: "main", head: "abc", isMainWorktree: true, isLocked: false, lockReason: nil),
+                WorktreeModel(path: featurePath, branch: "feature", head: "def", isMainWorktree: false, isLocked: false, lockReason: nil),
+            ],
+            settings: WorkspaceSettings(
+                workspaceIcon: SidebarItemIcon(symbolName: "folder.fill", palette: .blue),
+                worktreeIconOverrides: [
+                    featurePath: SidebarItemIcon(symbolName: "circle.fill", palette: .rose)
+                ]
+            ),
+            activityLog: []
+        ))
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.workspaces = [workspace]
+        store.selectedWorkspaceID = workspace.id
+
+        XCTAssertEqual(store.chromeTint, ArgoChromeTint.resolved(for: .rose))
+    }
+
+    func testChromeTintFallsBackToWorkspaceIconPalette() {
+        let root = "/tmp/argo"
+        let workspace = WorkspaceModel(record: WorkspaceRecord(
+            id: UUID(),
+            kind: .repository,
+            name: "argo",
+            repositoryRoot: root,
+            activeWorktreePath: root,
+            worktreeStates: [],
+            isSidebarExpanded: true,
+            worktrees: [],
+            settings: WorkspaceSettings(
+                workspaceIcon: SidebarItemIcon(symbolName: "folder.fill", palette: .gold)
+            ),
+            activityLog: []
+        ))
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        store.workspaces = [workspace]
+        store.selectedWorkspaceID = workspace.id
+
+        XCTAssertEqual(store.chromeTint, ArgoChromeTint.resolved(for: .gold))
+    }
+
+    func testChromeTintUsesAccentFallbackWithoutSelection() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        XCTAssertEqual(store.chromeTint, .fallback)
+    }
+
     func testDynamicIslandStatusMessagePostsSessionEvent() throws {
         let directoryURL = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directoryURL) }

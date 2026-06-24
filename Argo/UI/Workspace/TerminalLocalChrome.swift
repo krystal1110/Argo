@@ -90,6 +90,7 @@ struct TerminalLocalChrome: View {
             HStack(spacing: 6) {
                 ForEach(categories) { category in
                     TerminalChromeCategoryPill(
+                        chromeTint: chromeTint,
                         category: category,
                         isFocused: isFocused && category.isSelected,
                         renamePopoverBinding: renamePopoverBinding(for: category.id),
@@ -122,7 +123,7 @@ struct TerminalLocalChrome: View {
         HStack(spacing: 8) {
             Text("❯")
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundStyle(ArgoTheme.amber)
+                .foregroundStyle(chromeTint.components.color)
 
             Text(path)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
@@ -183,6 +184,7 @@ struct TerminalLocalChrome: View {
 }
 
 private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
+    let chromeTint: ArgoChromeTint
     let category: TerminalChromeCategoryDescriptor
     let isFocused: Bool
     let renamePopoverBinding: Binding<Bool>
@@ -200,7 +202,7 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
                 HStack(spacing: 8) {
                     Text("❯")
                         .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(category.isSelected ? ArgoTheme.amber : ArgoTheme.amber.opacity(0.62))
+                        .foregroundStyle(category.isSelected ? chromeTint.components.color : chromeTint.components.color.opacity(0.62))
 
                     Text(category.title)
                         .font(.system(size: 12, weight: .semibold, design: .monospaced))

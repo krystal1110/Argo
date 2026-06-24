@@ -21,13 +21,11 @@ final class ArgoGhosttyConfigTests: XCTestCase {
         XCTAssertTrue(contents.contains("font-size = 14"))
     }
 
-    func testManagedConfigContentsOnlyContainHeaderWithoutOverrides() {
+    func testManagedConfigContentsIncludesDefaultTranslucentBackground() {
         let contents = ArgoGhosttyConfigManager.managedConfigContents(settings: AppSettings())
 
-        XCTAssertEqual(
-            contents,
-            "# Managed by Argo. Manual edits will be overwritten.\n"
-        )
+        XCTAssertTrue(contents.contains("background-opacity = 0.76"))
+        XCTAssertTrue(contents.contains("background-blur = true"))
     }
 
     func testManagedConfigContentsIncludeBackgroundAppearanceOverrides() {

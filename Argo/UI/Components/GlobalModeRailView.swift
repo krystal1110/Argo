@@ -49,14 +49,11 @@ struct GlobalModeRailView: View {
         .frame(width: 54 * uiScale)
         .frame(maxHeight: .infinity)
         .background {
-            ZStack {
-                ArgoTheme.chromeBackground.opacity(0.98)
-                chromeTint.leadingFill.color
-            }
+            TopChromeSurfaceBackground(chromeTint: chromeTint)
         }
         .overlay(alignment: .trailing) {
             Rectangle()
-                .fill(ArgoTheme.border.opacity(0.8))
+                .fill(Color.white.opacity(0.075))
                 .frame(width: 1)
         }
     }

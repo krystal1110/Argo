@@ -539,9 +539,19 @@ final class WorkspaceTabsTests: XCTestCase {
         let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
 
         XCTAssertTrue(sidebarSource.contains("Text(\"❯\")"))
+        XCTAssertTrue(sidebarSource.contains("Text(\"/\")"))
         XCTAssertFalse(sidebarSource.contains("Image(systemName: \"magnifyingglass\")"))
         XCTAssertTrue(mainWindowSource.contains("ArgoTheme.glassSide"))
         XCTAssertFalse(sidebarSource.contains("ArgoTheme.sidebarBackground, in: RoundedRectangle"))
+        XCTAssertTrue(sidebarSource.contains(".frame(height: 38 * uiScale)"))
+        XCTAssertTrue(sidebarSource.contains(".padding(.horizontal, 14 * uiScale)"))
+        XCTAssertTrue(sidebarSource.contains(".padding(.top, 14 * uiScale)"))
+        XCTAssertTrue(sidebarSource.contains(".padding(.bottom, 10 * uiScale)"))
+        XCTAssertTrue(sidebarSource.contains("outlineView.rowHeight = 52"))
+        XCTAssertTrue(sidebarSource.contains("outlineView.intercellSpacing = NSSize(width: 0, height: 3)"))
+        XCTAssertTrue(sidebarSource.contains("size: 34 * uiScale"))
+        XCTAssertTrue(sidebarSource.contains(".font(.system(size: 13.5 * uiScale, weight: .semibold))"))
+        XCTAssertTrue(sidebarSource.contains(".font(.system(size: 11.5 * uiScale, weight: .regular, design: .monospaced))"))
     }
 
     func testTerminalSurfaceUsesTwilightScrimAndHorizonGlow() throws {

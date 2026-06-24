@@ -117,17 +117,6 @@ struct MainWindowView: View {
         store.availableHAPIInstallation
     }
 
-    private var externalEditorHelpText: String {
-        if let editor = effectiveExternalEditor {
-            return localizedFormat("main.toolbar.openCurrentWorkspaceInFormat", editor.editor.displayName)
-        }
-        return localized("main.toolbar.openCurrentWorkspaceInExternalEditor")
-    }
-
-    private var hapiHelpText: String {
-        availableHAPIInstallation?.primaryActionHelpText ?? localized("main.hapi.defaultHelpText")
-    }
-
     private func selectMainWindowMode(_ mode: MainWindowMode, restoreFocus: Bool = true) {
         let previousMode = store.mainWindowMode
         layoutState.selectMode(mode)
@@ -247,8 +236,8 @@ struct MainWindowView: View {
 
             HStack(spacing: 2) {
                 HTMLReferenceTopActionButton(
-                    systemName: "chevron.left.slash.chevron.right",
-                    tint: chromeTint.components.color,
+                    systemName: "chevron.left.forwardslash.chevron.right",
+                    tint: ArgoTheme.secondaryText,
                     accessibilityLabel: localized("main.toolbar.chooseQuickCommand"),
                     help: localized("main.toolbar.chooseQuickCommand")
                 ) { anchorView in
@@ -256,25 +245,13 @@ struct MainWindowView: View {
                 }
 
                 HTMLReferenceTopActionButton(
-                    systemName: "play.rectangle.on.rectangle",
-                    tint: chromeTint.components.color,
+                    systemName: "square.grid.2x2",
+                    tint: ArgoTheme.secondaryText,
                     isDisabled: !hasSelectedWorkspace,
                     accessibilityLabel: localized("main.toolbar.chooseWorkflow"),
                     help: localized("main.toolbar.chooseWorkflow")
                 ) { anchorView in
-                    present(menu: makeWorkflowMenu(), from: anchorView)
-                }
-
-                if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
-                    HTMLReferenceTopActionButton(
-                        systemName: "dot.radiowaves.left.and.right",
-                        tint: chromeTint.components.color,
-                        isDisabled: !hasSelectedWorkspace,
-                        accessibilityLabel: hapiInstallation.primaryActionTitle,
-                        help: hapiHelpText
-                    ) { anchorView in
-                        present(menu: makeHAPIMenu(using: hapiInstallation), from: anchorView)
-                    }
+                    present(menu: makeWorkspaceActionsMenu(), from: anchorView)
                 }
 
                 HTMLReferenceTopActionButton(
@@ -287,17 +264,6 @@ struct MainWindowView: View {
                 }
 
                 HTMLReferenceTopActionButton(
-                    systemName: store.selectedWorkspace?.isFileTreePresented == true ? "list.bullet.indent" : "sidebar.squares.leading",
-                    tint: ArgoTheme.secondaryText,
-                    isActive: store.selectedWorkspace?.isFileTreePresented == true,
-                    isDisabled: !hasSelectedWorkspace,
-                    accessibilityLabel: localized("main.toolbar.toggleFileTree"),
-                    help: localized("main.toolbar.toggleFileTree")
-                ) { _ in
-                    store.selectedWorkspace?.toggleFileTree()
-                }
-
-                HTMLReferenceTopActionButton(
                     systemName: "globe",
                     tint: ArgoTheme.secondaryText,
                     isDisabled: !hasSelectedWorkspace,
@@ -305,15 +271,6 @@ struct MainWindowView: View {
                     help: localized("main.toolbar.webPreview")
                 ) { anchorView in
                     present(menu: makeWebPreviewMenu(), from: anchorView)
-                }
-
-                HTMLReferenceExternalEditorMenu(
-                    tint: ArgoTheme.secondaryText,
-                    isDisabled: !hasSelectedWorkspace,
-                    accessibilityLabel: localized("main.toolbar.chooseExternalEditor"),
-                    help: externalEditorHelpText
-                ) { anchorView in
-                    present(menu: makeExternalEditorMenu(), from: anchorView)
                 }
             }
             .scaleEffect(uiScale)
@@ -641,12 +598,34 @@ struct MainWindowView: View {
         return menu
     }
 
-    private func makeWorkflowMenu() -> NSMenu {
+    private func makeWorkspaceActionsMenu() -> NSMenu {
         let menu = NSMenu()
+        appendWorkflowItems(to: menu)
+        menu.addItem(.separator())
+        menu.addActionItem(
+            title: localized("main.toolbar.toggleFileTree"),
+            imageSystemName: store.selectedWorkspace?.isFileTreePresented == true ? "list.bullet.indent" : "sidebar.squares.leading",
+            isEnabled: hasSelectedWorkspace
+        ) {
+            store.selectedWorkspace?.toggleFileTree()
+        }
 
+        if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
+            let hapiItem = NSMenuItem(title: hapiInstallation.primaryActionTitle, action: nil, keyEquivalent: "")
+            hapiItem.image = NSImage(systemSymbolName: "dot.radiowaves.left.and.right", accessibilityDescription: hapiInstallation.primaryActionTitle)
+            menu.setSubmenu(makeHAPIMenu(using: hapiInstallation), for: hapiItem)
+            menu.addItem(hapiItem)
+        }
+
+        menu.addItem(.separator())
+        appendExternalEditorItems(to: menu)
+        return menu
+    }
+
+    private func appendWorkflowItems(to menu: NSMenu) {
         guard let workspace = store.selectedWorkspace else {
             menu.addDisabledItem(title: localized("main.workflows.noneConfigured"))
-            return menu
+            return
         }
 
         let workflows = workspace.workflows
@@ -679,13 +658,9 @@ struct MainWindowView: View {
         menu.addActionItem(title: localized("main.workflows.editWorkflows"), imageSystemName: "slider.horizontal.3") {
             store.presentWorkflowEditor(for: workspace)
         }
-
-        return menu
     }
 
-    private func makeExternalEditorMenu() -> NSMenu {
-        let menu = NSMenu()
-
+    private func appendExternalEditorItems(to menu: NSMenu) {
         if availableExternalEditors.isEmpty {
             menu.addDisabledItem(title: localized("main.externalEditor.noneFound"))
         } else {
@@ -704,8 +679,6 @@ struct MainWindowView: View {
         menu.addActionItem(title: localized("menu.app.settings"), imageSystemName: "gearshape") {
             store.presentSettings(for: store.selectedWorkspace)
         }
-
-        return menu
     }
 
     private func makeWebPreviewMenu() -> NSMenu {
@@ -902,7 +875,7 @@ private struct HTMLReferenceTopActionButton: View {
             action(anchorView)
         } label: {
             Image(systemName: systemName)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 16, weight: .medium))
                 .frame(width: 32, height: 32)
                 .foregroundStyle(isActive ? tint : tint.opacity(isDisabled ? 0.42 : 1))
                 .background(
@@ -938,25 +911,6 @@ private struct HTMLTopActionAnchorView: NSViewRepresentable {
             guard anchorView !== nsView else { return }
             anchorView = nsView
         }
-    }
-}
-
-private struct HTMLReferenceExternalEditorMenu: View {
-    let tint: Color
-    let isDisabled: Bool
-    let accessibilityLabel: String
-    let help: String
-    let action: (NSView?) -> Void
-
-    var body: some View {
-        HTMLReferenceTopActionButton(
-            systemName: "arrow.up.forward.app.fill",
-            tint: tint,
-            isDisabled: isDisabled,
-            accessibilityLabel: accessibilityLabel,
-            help: help,
-            action: action
-        )
     }
 }
 

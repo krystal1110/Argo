@@ -343,6 +343,8 @@ struct AppSettings: Codable, Hashable {
     var terminalBackgroundOpacity: Double
     var terminalBackgroundBlur: Bool
     var terminalBackgroundAppearanceVersion: Int
+    var twilightThemeEnabled: Bool
+    var twilightThemeSeedHex: String
     var sidebarShowsSecondaryLabels: Bool
     var sidebarShowsWorkspaceBadges: Bool
     var sidebarShowsWorktreeBadges: Bool
@@ -402,6 +404,8 @@ struct AppSettings: Codable, Hashable {
         terminalBackgroundOpacity: Double = AppSettings.defaultTerminalBackgroundOpacity,
         terminalBackgroundBlur: Bool = AppSettings.defaultTerminalBackgroundBlur,
         terminalBackgroundAppearanceVersion: Int = AppSettings.currentTerminalBackgroundAppearanceVersion,
+        twilightThemeEnabled: Bool = true,
+        twilightThemeSeedHex: String = TwilightTheme.defaultSeedHex,
         sidebarShowsSecondaryLabels: Bool = true,
         sidebarShowsWorkspaceBadges: Bool = true,
         sidebarShowsWorktreeBadges: Bool = true,
@@ -461,6 +465,8 @@ struct AppSettings: Codable, Hashable {
         self.terminalBackgroundOpacity = min(max(terminalBackgroundOpacity, 0.5), 1)
         self.terminalBackgroundBlur = terminalBackgroundBlur
         self.terminalBackgroundAppearanceVersion = terminalBackgroundAppearanceVersion
+        self.twilightThemeEnabled = twilightThemeEnabled
+        self.twilightThemeSeedHex = TwilightTheme.normalizedSeedHex(twilightThemeSeedHex)
         self.sidebarShowsSecondaryLabels = sidebarShowsSecondaryLabels
         self.sidebarShowsWorkspaceBadges = sidebarShowsWorkspaceBadges
         self.sidebarShowsWorktreeBadges = sidebarShowsWorktreeBadges
@@ -533,6 +539,8 @@ extension AppSettings {
         case terminalBackgroundOpacity
         case terminalBackgroundBlur
         case terminalBackgroundAppearanceVersion
+        case twilightThemeEnabled
+        case twilightThemeSeedHex
         case sidebarShowsSecondaryLabels
         case sidebarShowsWorkspaceBadges
         case sidebarShowsWorktreeBadges
@@ -616,6 +624,8 @@ extension AppSettings {
             terminalBackgroundOpacity: terminalBackgroundOpacity,
             terminalBackgroundBlur: terminalBackgroundBlur,
             terminalBackgroundAppearanceVersion: Self.currentTerminalBackgroundAppearanceVersion,
+            twilightThemeEnabled: try container.decodeIfPresent(Bool.self, forKey: .twilightThemeEnabled) ?? true,
+            twilightThemeSeedHex: try container.decodeIfPresent(String.self, forKey: .twilightThemeSeedHex) ?? TwilightTheme.defaultSeedHex,
             sidebarShowsSecondaryLabels: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsSecondaryLabels) ?? true,
             sidebarShowsWorkspaceBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorkspaceBadges) ?? true,
             sidebarShowsWorktreeBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorktreeBadges) ?? true,

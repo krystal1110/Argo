@@ -89,6 +89,43 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertTrue(store.appSettings.terminalBackgroundBlur)
     }
 
+    func testDefaultAppSettingsEnableTwilightTheme() {
+        let settings = AppSettings()
+
+        XCTAssertTrue(settings.twilightThemeEnabled)
+        XCTAssertEqual(settings.twilightThemeSeedHex, "#ffb066")
+    }
+
+    func testAppSettingsNormalizeInvalidTwilightSeed() {
+        let settings = AppSettings(twilightThemeSeedHex: "not-a-color")
+
+        XCTAssertEqual(settings.twilightThemeSeedHex, TwilightTheme.defaultSeedHex)
+    }
+
+    func testDecodedLegacySettingsUseTwilightDefaults() throws {
+        let json = #"{"uiScale":1.1}"#.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: json)
+
+        XCTAssertTrue(settings.twilightThemeEnabled)
+        XCTAssertEqual(settings.twilightThemeSeedHex, TwilightTheme.defaultSeedHex)
+    }
+
+    func testUpdateAppSettingsPreservesTwilightSettings() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+
+        store.updateAppSettings(
+            AppSettings(
+                twilightThemeEnabled: false,
+                twilightThemeSeedHex: "#5cc8ff"
+            )
+        )
+
+        XCTAssertFalse(store.appSettings.twilightThemeEnabled)
+        XCTAssertEqual(store.appSettings.twilightThemeSeedHex, "#5cc8ff")
+        XCTAssertEqual(store.currentTwilightTheme.seedHex, "#5cc8ff")
+    }
+
     func testUpdateAppSettingsPreservesSSHPresets() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
         let customPreset = SSHPreset(

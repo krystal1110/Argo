@@ -105,10 +105,6 @@ struct MainWindowView: View {
         selectedStatusSession?.hasActiveProcess ?? false
     }
 
-    private var effectiveExternalEditorDisplayName: String {
-        effectiveExternalEditor?.editor.displayName ?? localized("main.toolbar.openCurrentWorkspaceInExternalEditor")
-    }
-
     private var availableExternalEditors: [ExternalEditorDescriptor] {
         store.availableExternalEditors
     }
@@ -232,22 +228,6 @@ struct MainWindowView: View {
             }
             .help(selectedWorkspaceDisplayName)
 
-            Button {
-                toggleWorkspaceSidebar()
-            } label: {
-                Image(systemName: "sidebar.leading")
-                    .font(.system(size: 12, weight: .semibold))
-                    .frame(width: 30, height: 30)
-                    .foregroundStyle(store.mainWindowMode == .workspace ? ArgoTheme.secondaryText : ArgoTheme.mutedText)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(store.mainWindowMode != .workspace)
-            .opacity(store.mainWindowMode == .workspace ? 1 : 0.42)
-            .scaleEffect(uiScale)
-            .accessibilityLabel(localized("menu.view.toggleSidebar"))
-            .help(localized("menu.view.toggleSidebar"))
-
             Spacer(minLength: 16)
 
             Button {
@@ -265,8 +245,8 @@ struct MainWindowView: View {
 
             Spacer(minLength: 16)
 
-            GlassToolbarGroup(minHeight: 34, horizontalPadding: 5, spacing: 2) {
-                GlassToolbarMenuIconButton(
+            HStack(spacing: 2) {
+                HTMLReferenceTopActionButton(
                     systemName: "chevron.left.slash.chevron.right",
                     tint: chromeTint.components.color,
                     accessibilityLabel: localized("main.toolbar.chooseQuickCommand"),
@@ -275,7 +255,7 @@ struct MainWindowView: View {
                     present(menu: makeQuickCommandMenu(), from: anchorView)
                 }
 
-                GlassToolbarMenuIconButton(
+                HTMLReferenceTopActionButton(
                     systemName: "play.rectangle.on.rectangle",
                     tint: chromeTint.components.color,
                     isDisabled: !hasSelectedWorkspace,
@@ -286,7 +266,7 @@ struct MainWindowView: View {
                 }
 
                 if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
-                    GlassToolbarMenuIconButton(
+                    HTMLReferenceTopActionButton(
                         systemName: "dot.radiowaves.left.and.right",
                         tint: chromeTint.components.color,
                         isDisabled: !hasSelectedWorkspace,
@@ -297,7 +277,7 @@ struct MainWindowView: View {
                     }
                 }
 
-                GlassToolbarMenuIconButton(
+                HTMLReferenceTopActionButton(
                     systemName: sleepPreventionIconName,
                     tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,
                     accessibilityLabel: store.sleepPreventionStatusText,
@@ -306,67 +286,39 @@ struct MainWindowView: View {
                     present(menu: makeSleepPreventionMenu(), from: anchorView)
                 }
 
-                GlassToolbarIconButton(
+                HTMLReferenceTopActionButton(
                     systemName: store.selectedWorkspace?.isFileTreePresented == true ? "list.bullet.indent" : "sidebar.squares.leading",
                     tint: ArgoTheme.secondaryText,
                     isActive: store.selectedWorkspace?.isFileTreePresented == true,
                     isDisabled: !hasSelectedWorkspace,
                     accessibilityLabel: localized("main.toolbar.toggleFileTree"),
                     help: localized("main.toolbar.toggleFileTree")
-                ) {
+                ) { _ in
                     store.selectedWorkspace?.toggleFileTree()
                 }
 
-                Menu {
-                    webPreviewMenuContent
-                } label: {
-                    Image(systemName: "globe")
-                        .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 28, height: 28)
-                        .foregroundStyle(ArgoTheme.secondaryText)
+                HTMLReferenceTopActionButton(
+                    systemName: "globe",
+                    tint: ArgoTheme.secondaryText,
+                    isDisabled: !hasSelectedWorkspace,
+                    accessibilityLabel: localized("main.toolbar.webPreview"),
+                    help: localized("main.toolbar.webPreview")
+                ) { anchorView in
+                    present(menu: makeWebPreviewMenu(), from: anchorView)
                 }
-                .menuIndicator(.hidden)
-                .disabled(!hasSelectedWorkspace)
-                .accessibilityLabel(localized("main.toolbar.webPreview"))
-                .help(localized("main.toolbar.webPreview"))
+
+                HTMLReferenceExternalEditorMenu(
+                    tint: ArgoTheme.secondaryText,
+                    isDisabled: !hasSelectedWorkspace,
+                    accessibilityLabel: localized("main.toolbar.chooseExternalEditor"),
+                    help: externalEditorHelpText
+                ) { anchorView in
+                    present(menu: makeExternalEditorMenu(), from: anchorView)
+                }
             }
             .scaleEffect(uiScale)
 
             TerminalProfilePill(uiScale: uiScale)
-
-            GlassToolbarSplitButton(
-                leadingAction: { _ in
-                    store.openSelectedWorkspaceInPreferredExternalEditor()
-                },
-                trailingAction: { anchorView in
-                    present(menu: makeExternalEditorMenu(), from: anchorView)
-                },
-                isLeadingDisabled: !hasSelectedWorkspace || effectiveExternalEditor == nil,
-                isTrailingDisabled: !hasSelectedWorkspace,
-                leadingAccessibilityLabel: externalEditorHelpText,
-                leadingHelp: externalEditorHelpText,
-                trailingAccessibilityLabel: localized("main.toolbar.chooseExternalEditor"),
-                trailingHelp: localized("main.toolbar.chooseExternalEditorDefault"),
-                leadingContent: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "arrow.up.forward.app.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(ArgoTheme.secondaryText)
-                        Text(effectiveExternalEditorDisplayName)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(ArgoTheme.tertiaryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .frame(maxWidth: 96)
-                    }
-                },
-                trailingContent: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(ArgoTheme.secondaryText)
-                }
-            )
-            .scaleEffect(uiScale)
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
@@ -408,10 +360,14 @@ struct MainWindowView: View {
                     )
 
                     if layoutState.isWorkspaceSidebarVisible(in: store.mainWindowMode) {
-                        FloatingWorkspaceSidebarSurface(chromeTint: activeChromeTint) {
-                            WorkspaceSidebarView()
-                        }
+                        WorkspaceSidebarView()
                         .frame(width: workspaceSidebarWidth)
+                        .background(ArgoTheme.glassSide)
+                        .overlay(alignment: .trailing) {
+                            Rectangle()
+                                .fill(ArgoTheme.hairlineSoft)
+                                .frame(width: 1)
+                        }
                         .overlay(alignment: .trailing) {
                             WorkspaceSidebarResizeHandle(
                                 currentWidth: workspaceSidebarWidth,
@@ -752,6 +708,39 @@ struct MainWindowView: View {
         return menu
     }
 
+    private func makeWebPreviewMenu() -> NSMenu {
+        let menu = NSMenu()
+
+        guard let workspace = store.selectedWorkspace else {
+            menu.addDisabledItem(title: localized("main.web.noPortsDetected"))
+            return menu
+        }
+
+        if workspace.listeningPorts.isEmpty {
+            menu.addDisabledItem(title: localized("main.web.noPortsDetected"))
+        } else {
+            menu.addSectionHeader(localized("main.web.detectedPorts"))
+            for port in workspace.listeningPorts {
+                menu.addActionItem(title: "localhost:\(port)", imageSystemName: "globe") {
+                    workspace.openPreviewForPort(port)
+                }
+            }
+        }
+
+        menu.addItem(.separator())
+        menu.addActionItem(title: localized("main.web.openURL"), imageSystemName: "link") {
+            promptForWebURL(workspace)
+        }
+        if workspace.previewPanel != nil {
+            menu.addItem(.separator())
+            menu.addActionItem(title: localized("main.web.closePreview"), imageSystemName: "xmark.circle") {
+                workspace.closePreview()
+            }
+        }
+
+        return menu
+    }
+
     private func makeHAPIMenu(using installation: HAPIInstallationStatus) -> NSMenu {
         let menu = NSMenu()
 
@@ -897,6 +886,80 @@ private struct TerminalProfilePill: View {
     }
 }
 
+private struct HTMLReferenceTopActionButton: View {
+    let systemName: String
+    var tint: Color = ArgoTheme.secondaryText
+    var isActive = false
+    var isDisabled = false
+    let accessibilityLabel: String
+    let help: String
+    let action: (NSView?) -> Void
+
+    @State private var anchorView: NSView?
+
+    var body: some View {
+        Button {
+            action(anchorView)
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 32, height: 32)
+                .foregroundStyle(isActive ? tint : tint.opacity(isDisabled ? 0.42 : 1))
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isActive ? tint.opacity(0.14) : Color.white.opacity(0.001))
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(HTMLTopActionAnchorView(anchorView: $anchorView))
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .accessibilityLabel(accessibilityLabel)
+        .help(help)
+    }
+}
+
+private struct HTMLTopActionAnchorView: NSViewRepresentable {
+    @Binding var anchorView: NSView?
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        updateAnchorView(view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        updateAnchorView(nsView)
+    }
+
+    private func updateAnchorView(_ nsView: NSView) {
+        guard anchorView !== nsView else { return }
+        DispatchQueue.main.async {
+            guard anchorView !== nsView else { return }
+            anchorView = nsView
+        }
+    }
+}
+
+private struct HTMLReferenceExternalEditorMenu: View {
+    let tint: Color
+    let isDisabled: Bool
+    let accessibilityLabel: String
+    let help: String
+    let action: (NSView?) -> Void
+
+    var body: some View {
+        HTMLReferenceTopActionButton(
+            systemName: "arrow.up.forward.app.fill",
+            tint: tint,
+            isDisabled: isDisabled,
+            accessibilityLabel: accessibilityLabel,
+            help: help,
+            action: action
+        )
+    }
+}
+
 private struct TwilightStatusBar: View {
     let chromeTint: ArgoChromeTint
     let backendLabel: String
@@ -951,51 +1014,6 @@ struct TopChromeSurfaceBackground: View {
 
     var body: some View {
         ArgoTheme.topGlass
-    }
-}
-
-private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
-    let chromeTint: ArgoChromeTint
-    @ViewBuilder var content: () -> Content
-
-    private var panelShape: some Shape {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-    }
-
-    var body: some View {
-        content()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                ZStack {
-                    ArgoTheme.glassSide
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.028),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-                .clipShape(panelShape)
-            }
-            .clipShape(panelShape)
-            .overlay {
-                panelShape
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 1)
-            .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))
-            .background {
-                LinearGradient(
-                    colors: [
-                        chromeTint.leadingFill.color.opacity(0.42),
-                        Color.clear
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            }
     }
 }
 
@@ -1124,22 +1142,22 @@ private struct TimeCommandPaletteButtonLabel: View {
     }
 
     private var commandTitle: String {
-        guard let shortcutRange = shortcutRange else { return commandText }
-        return String(commandText[..<shortcutRange.lowerBound])
+        guard let range = commandShortcutMarkerRange else { return commandText }
+        return String(commandText[..<range.lowerBound])
     }
 
     private var shortcutText: String? {
-        guard let shortcutRange else { return nil }
+        guard let range = commandShortcutMarkerRange else { return nil }
+        let shortcutRange = range.upperBound..<commandText.index(before: commandText.endIndex)
         return String(commandText[shortcutRange])
-            .trimmingCharacters(in: CharacterSet(charactersIn: " ()"))
     }
 
-    private var shortcutRange: Range<String.Index>? {
+    private var commandShortcutMarkerRange: Range<String.Index>? {
         guard commandText.hasSuffix(")"),
               let range = commandText.range(of: " (", options: .backwards) else {
             return nil
         }
-        return range.upperBound..<commandText.index(before: commandText.endIndex)
+        return range
     }
 
     private var iconSystemName: String {

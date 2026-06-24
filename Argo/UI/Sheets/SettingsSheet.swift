@@ -413,6 +413,8 @@ struct SettingsSheet: View {
     @State private var selectedWorkspaceID: UUID?
     @State private var terminalFontSearchText = ""
     @State private var terminalThemeSearchText = ""
+    @State private var twilightSeedDraft = TwilightTheme.defaultSeedHex
+    @State private var twilightSeedError: String?
     @State private var workspaceSettings = WorkspaceSettings()
     @State private var localizationVersion = 0
     @State private var originalAppLanguage: AppLanguage = .automatic
@@ -962,62 +964,123 @@ struct SettingsSheet: View {
         HStack(alignment: .top, spacing: 20) {
             GroupBox(localized("settings.section.theme.group")) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Toggle(localized("settings.general.terminal.useCustomTheme"), isOn: terminalThemeEnabledBinding)
+                    Toggle(localized("settings.twilight.enabled"), isOn: twilightThemeEnabledBinding)
 
-                    if appSettings.terminalTheme != nil {
-                        if allTerminalThemes.isEmpty {
-                            Text(localized("settings.general.terminal.themeUnavailable"))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Picker(localized("settings.general.terminal.themeName"), selection: terminalThemeBinding) {
-                                ForEach(allTerminalThemes, id: \.self) { theme in
-                                    Text(theme).tag(theme)
+                    Text(localized("settings.twilight.description"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    if appSettings.twilightThemeEnabled {
+                        Text(localized("settings.twilight.presets"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 8) {
+                            ForEach(TwilightTheme.presets) { preset in
+                                Button {
+                                    appSettings.twilightThemeSeedHex = preset.seedHex
+                                    twilightSeedDraft = preset.seedHex
+                                    twilightSeedError = nil
+                                    applyThemeLive()
+                                } label: {
+                                    Circle()
+                                        .fill(TwilightTheme.generate(seed: preset.seedHex).amber.color)
+                                        .frame(width: 24, height: 24)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(
+                                                    appSettings.twilightThemeSeedHex == preset.seedHex ? Color.white : ArgoTheme.hairline,
+                                                    lineWidth: 2
+                                                )
+                                        )
                                 }
+                                .buttonStyle(.plain)
+                                .help(localized(preset.nameKey))
                             }
-                            .pickerStyle(.menu)
-
-                            HStack(spacing: 8) {
-                                Button {
-                                    navigateTheme(direction: -1)
-                                } label: {
-                                    Label(localized("settings.general.terminal.themePrevious"), systemImage: "chevron.up")
-                                }
-
-                                Button {
-                                    navigateTheme(direction: 1)
-                                } label: {
-                                    Label(localized("settings.general.terminal.themeNext"), systemImage: "chevron.down")
-                                }
-
-                                Button {
-                                    navigateThemeRandom()
-                                } label: {
-                                    Label(localized("settings.general.terminal.themeRandom"), systemImage: "shuffle")
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
                         }
 
-                        Text(localized("settings.general.terminal.themeHint"))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 10) {
+                            Text(localized("settings.twilight.seed"))
+                            TextField(localized("settings.twilight.seed"), text: twilightSeedBinding)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .frame(width: 110)
+                        }
+
+                        if let twilightSeedError {
+                            Text(twilightSeedError)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(ArgoTheme.danger)
+                        }
+                    }
+
+                    if !appSettings.twilightThemeEnabled {
+                        Toggle(localized("settings.general.terminal.useCustomTheme"), isOn: terminalThemeEnabledBinding)
+
+                        if appSettings.terminalTheme != nil {
+                            if allTerminalThemes.isEmpty {
+                                Text(localized("settings.general.terminal.themeUnavailable"))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Picker(localized("settings.general.terminal.themeName"), selection: terminalThemeBinding) {
+                                    ForEach(allTerminalThemes, id: \.self) { theme in
+                                        Text(theme).tag(theme)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+
+                                HStack(spacing: 8) {
+                                    Button {
+                                        navigateTheme(direction: -1)
+                                    } label: {
+                                        Label(localized("settings.general.terminal.themePrevious"), systemImage: "chevron.up")
+                                    }
+
+                                    Button {
+                                        navigateTheme(direction: 1)
+                                    } label: {
+                                        Label(localized("settings.general.terminal.themeNext"), systemImage: "chevron.down")
+                                    }
+
+                                    Button {
+                                        navigateThemeRandom()
+                                    } label: {
+                                        Label(localized("settings.general.terminal.themeRandom"), systemImage: "shuffle")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+
+                            Text(localized("settings.general.terminal.themeHint"))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(.top, 8)
             }
             .frame(maxWidth: 420, alignment: .topLeading)
 
-            TerminalThemePreviewCard(
-                themeName: appSettings.terminalTheme,
-                colors: appSettings.terminalTheme.flatMap {
-                    ArgoGhosttyThemeCatalog.loadThemeColors(name: $0)
-                },
-                localized: localized
-            )
-            .id(appSettings.terminalTheme ?? "")
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            if appSettings.twilightThemeEnabled {
+                TwilightThemePreviewCard(
+                    theme: TwilightTheme.generate(seed: appSettings.twilightThemeSeedHex),
+                    localized: localized
+                )
+                .id(appSettings.twilightThemeSeedHex)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else {
+                TerminalThemePreviewCard(
+                    themeName: appSettings.terminalTheme,
+                    colors: appSettings.terminalTheme.flatMap {
+                        ArgoGhosttyThemeCatalog.loadThemeColors(name: $0)
+                    },
+                    localized: localized
+                )
+                .id(appSettings.terminalTheme ?? "")
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
         }
     }
 
@@ -1342,6 +1405,8 @@ struct SettingsSheet: View {
         originalAppLanguage = store.appSettings.appLanguage
         selectedWorkspaceID = request.workspaceID ?? store.selectedWorkspace?.id
         terminalFontSearchText = ""
+        twilightSeedDraft = appSettings.twilightThemeSeedHex
+        twilightSeedError = nil
         loadWorkspaceSettings()
     }
 
@@ -1566,6 +1631,47 @@ struct SettingsSheet: View {
                 appSettings.hotKeyWindowShortcut = newShortcut
             }
         )
+    }
+
+    private var twilightThemeEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { appSettings.twilightThemeEnabled },
+            set: { enabled in
+                appSettings.twilightThemeEnabled = enabled
+                if enabled {
+                    appSettings.twilightThemeSeedHex = TwilightTheme.normalizedSeedHex(appSettings.twilightThemeSeedHex)
+                    twilightSeedDraft = appSettings.twilightThemeSeedHex
+                    twilightSeedError = nil
+                }
+                applyThemeLive()
+            }
+        )
+    }
+
+    private var twilightSeedBinding: Binding<String> {
+        Binding(
+            get: { twilightSeedDraft },
+            set: { value in
+                twilightSeedDraft = value.lowercased()
+                guard let normalized = normalizedTwilightSeedInput(value) else {
+                    twilightSeedError = localized("settings.twilight.invalidSeed")
+                    return
+                }
+                twilightSeedError = nil
+                appSettings.twilightThemeSeedHex = normalized
+                applyThemeLive()
+            }
+        )
+    }
+
+    private func normalizedTwilightSeedInput(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let hex = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
+        guard [3, 6].contains(hex.count),
+              hex.allSatisfy({ $0.isHexDigit }) else {
+            return nil
+        }
+        return TwilightTheme.normalizedSeedHex(trimmed)
     }
 
     private var terminalThemeEnabledBinding: Binding<Bool> {
@@ -1827,6 +1933,56 @@ private struct TerminalThemePreviewCard: View {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .strokeBorder(Color.white.opacity(0.08))
                     )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+        }
+    }
+}
+
+private struct TwilightThemePreviewCard: View {
+    let theme: TwilightTheme
+    let localized: (String) -> String
+
+    private func color(hex: String) -> Color {
+        TwilightHSLColor.hexToHSL(hex).color
+    }
+
+    var body: some View {
+        GroupBox(localized("settings.twilight.preview")) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Text("❯")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(theme.amber.color)
+                        Text("git status")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(color(hex: theme.ghostty.foreground))
+                    }
+
+                    Text(" M Argo/UI/Workspace/TerminalPaneView.swift")
+                        .foregroundStyle(theme.amber2.color)
+                    Text("?? twilight-terminal/design-spec.md")
+                        .foregroundStyle(theme.cyan.color)
+                }
+                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(color(hex: theme.ghostty.background), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(ArgoTheme.hairline, lineWidth: 1)
+                )
+
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(18), spacing: 5), count: 8), spacing: 5) {
+                    ForEach(0..<16, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(color(hex: theme.ghostty.palette[index] ?? theme.ghostty.foreground))
+                            .frame(width: 18, height: 18)
+                            .help("\(index): \(theme.ghostty.palette[index] ?? theme.ghostty.foreground)")
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

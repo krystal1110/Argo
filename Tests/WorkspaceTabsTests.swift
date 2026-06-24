@@ -562,4 +562,14 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(terminalChromeSource.contains("Image(systemName: \"chevron.right\")"))
         XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
     }
+
+    func testSettingsExposeTwilightControlsBeforeGhosttyThemePicker() throws {
+        let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let settingsSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Sheets/SettingsSheet.swift"), encoding: .utf8)
+
+        XCTAssertTrue(settingsSource.contains("Toggle(localized(\"settings.twilight.enabled\")"))
+        XCTAssertTrue(settingsSource.contains("ForEach(TwilightTheme.presets)"))
+        XCTAssertTrue(settingsSource.contains("TwilightThemePreviewCard("))
+        XCTAssertTrue(settingsSource.contains("if !appSettings.twilightThemeEnabled"))
+    }
 }

@@ -11,13 +11,14 @@ import ObjectiveC
 import SwiftUI
 
 enum WorkspaceChromeMetrics {
-    static let topHeight: CGFloat = 62
+    static let topHeight: CGFloat = 52
     static let terminalHeight: CGFloat = 36
+    static let statusHeight: CGFloat = 32
 }
 
 struct MainWindowView: View {
     private static let workspaceSidebarMinWidth: CGFloat = 210
-    private static let workspaceSidebarDefaultWidth: CGFloat = 260
+    private static let workspaceSidebarDefaultWidth: CGFloat = 280
     private static let workspaceSidebarMaxWidth: CGFloat = 340
 
     @EnvironmentObject private var store: WorkspaceStore
@@ -65,6 +66,43 @@ struct MainWindowView: View {
 
     private var selectedWorkspaceDisplayName: String {
         store.selectedWorkspace?.name ?? localized("main.workspace.openWorkspace")
+    }
+
+    private var selectedWorkspaceStatusBranch: String {
+        guard let workspace = store.selectedWorkspace else { return "-" }
+        if workspace.supportsRepositoryFeatures {
+            return workspace.currentBranch
+        }
+        return workspace.activeWorktree?.branch ?? workspace.currentBranch
+    }
+
+    private var selectedStatusSession: ShellSession? {
+        guard let workspace = store.selectedWorkspace else { return nil }
+        if let focusedPaneID = workspace.sessionController.focusedPaneID,
+           let session = workspace.sessionController.session(for: focusedPaneID) {
+            return session
+        }
+        guard let firstPaneID = workspace.paneOrder.first else { return nil }
+        return workspace.sessionController.session(for: firstPaneID)
+    }
+
+    private var selectedStatusBackendLabel: String {
+        selectedStatusSession?.backendLabel ?? localized("session.backend.localShell")
+    }
+
+    private var selectedStatusShellName: String {
+        guard let session = selectedStatusSession else { return "zsh" }
+        let shellName = URL(fileURLWithPath: session.launchPath).lastPathComponent
+        return shellName.isEmpty ? session.title : shellName
+    }
+
+    private var selectedStatusTerminalSize: String {
+        guard let session = selectedStatusSession else { return "80 × 24" }
+        return "\(session.cols) × \(session.rows)"
+    }
+
+    private var selectedStatusIsRunning: Bool {
+        selectedStatusSession?.hasActiveProcess ?? false
     }
 
     private var effectiveExternalEditorDisplayName: String {
@@ -181,7 +219,19 @@ struct MainWindowView: View {
     private var topGlassChrome: some View {
         let chromeTint = activeChromeTint
 
-        return HStack(spacing: 14) {
+        return HStack(spacing: 16) {
+            TrafficLightAnchor()
+
+            GlassToolbarGroup(minHeight: 34, horizontalPadding: 12, spacing: 8) {
+                Image(systemName: "terminal.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(chromeTint.components.color)
+                Text("Terminal")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ArgoTheme.tertiaryText)
+            }
+            .help(selectedWorkspaceDisplayName)
+
             Button {
                 toggleWorkspaceSidebar()
             } label: {
@@ -198,20 +248,7 @@ struct MainWindowView: View {
             .accessibilityLabel(localized("menu.view.toggleSidebar"))
             .help(localized("menu.view.toggleSidebar"))
 
-            GlassToolbarGroup(horizontalPadding: 12, spacing: 8) {
-                Image(systemName: "folder")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ArgoTheme.secondaryText)
-                Text(selectedWorkspaceDisplayName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ArgoTheme.tertiaryText)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: 156, alignment: .leading)
-            }
-            .scaleEffect(uiScale)
-
-            Spacer(minLength: 14)
+            Spacer(minLength: 16)
 
             Button {
                 store.dispatch(.toggleCommandPalette)
@@ -222,13 +259,13 @@ struct MainWindowView: View {
                 )
             }
             .buttonStyle(.plain)
-            .scaleEffect(uiScale)
+            .frame(minWidth: 340 * uiScale, maxWidth: 430 * uiScale)
             .accessibilityLabel(localized("menu.view.commandPalette"))
             .help(localized("menu.view.commandPalette"))
 
-            Spacer(minLength: 14)
+            Spacer(minLength: 16)
 
-            GlassToolbarGroup(horizontalPadding: 5, spacing: 2) {
+            GlassToolbarGroup(minHeight: 34, horizontalPadding: 5, spacing: 2) {
                 GlassToolbarMenuIconButton(
                     systemName: "chevron.left.slash.chevron.right",
                     tint: chromeTint.components.color,
@@ -295,6 +332,8 @@ struct MainWindowView: View {
             }
             .scaleEffect(uiScale)
 
+            TerminalProfilePill(uiScale: uiScale)
+
             GlassToolbarSplitButton(
                 leadingAction: { _ in
                     store.openSelectedWorkspaceInPreferredExternalEditor()
@@ -329,8 +368,7 @@ struct MainWindowView: View {
             )
             .scaleEffect(uiScale)
         }
-        .padding(.leading, 92)
-        .padding(.trailing, 24)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
         .frame(height: WorkspaceChromeMetrics.topHeight)
         .background {
@@ -404,6 +442,16 @@ struct MainWindowView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                TwilightStatusBar(
+                    chromeTint: activeChromeTint,
+                    backendLabel: selectedStatusBackendLabel,
+                    shellName: selectedStatusShellName,
+                    branch: selectedWorkspaceStatusBranch,
+                    encoding: "UTF-8",
+                    terminalSize: selectedStatusTerminalSize,
+                    isRunning: selectedStatusIsRunning
+                )
             }
             .background(windowContentBackground)
 
@@ -816,6 +864,88 @@ struct MainWindowView: View {
     }
 }
 
+private struct TrafficLightAnchor: View {
+    var body: some View {
+        Color.clear
+            .frame(width: 68, height: 24)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct TerminalProfilePill: View {
+    let uiScale: CGFloat
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(ArgoTheme.green)
+                .frame(width: 7, height: 7)
+                .shadow(color: ArgoTheme.green.opacity(0.5), radius: 6)
+            Text("Ghostty")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(ArgoTheme.tertiaryText)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(ArgoTheme.secondaryText)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 34)
+        .insetToolbarCapsuleSurface()
+        .scaleEffect(uiScale)
+        .accessibilityLabel("Ghostty")
+        .help("Ghostty")
+    }
+}
+
+private struct TwilightStatusBar: View {
+    let chromeTint: ArgoChromeTint
+    let backendLabel: String
+    let shellName: String
+    let branch: String
+    let encoding: String
+    let terminalSize: String
+    let isRunning: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(isRunning ? ArgoTheme.green : ArgoTheme.textFaint)
+                    .frame(width: 7, height: 7)
+                    .shadow(color: (isRunning ? ArgoTheme.green : Color.clear).opacity(0.45), radius: 6)
+                Text(backendLabel)
+            }
+
+            Text(shellName)
+                .foregroundStyle(ArgoTheme.text)
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(ArgoTheme.amber)
+                Text(branch)
+            }
+            Text(encoding)
+            Text(terminalSize)
+        }
+        .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+        .foregroundStyle(ArgoTheme.textDim)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .frame(height: WorkspaceChromeMetrics.statusHeight)
+        .background {
+            TopChromeSurfaceBackground(chromeTint: chromeTint)
+        }
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(ArgoTheme.hairlineSoft)
+                .frame(height: 1)
+        }
+    }
+}
+
 struct TopChromeSurfaceBackground: View {
     let chromeTint: ArgoChromeTint
 
@@ -993,6 +1123,25 @@ private struct TimeCommandPaletteButtonLabel: View {
         TimeCommandPaletteClock.timeText(for: date)
     }
 
+    private var commandTitle: String {
+        guard let shortcutRange = shortcutRange else { return commandText }
+        return String(commandText[..<shortcutRange.lowerBound])
+    }
+
+    private var shortcutText: String? {
+        guard let shortcutRange else { return nil }
+        return String(commandText[shortcutRange])
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ()"))
+    }
+
+    private var shortcutRange: Range<String.Index>? {
+        guard commandText.hasSuffix(")"),
+              let range = commandText.range(of: " (", options: .backwards) else {
+            return nil
+        }
+        return range.upperBound..<commandText.index(before: commandText.endIndex)
+    }
+
     private var iconSystemName: String {
         switch phase {
         case .morning:
@@ -1018,29 +1167,51 @@ private struct TimeCommandPaletteButtonLabel: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: iconSystemName)
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(iconColor)
                 .frame(width: 18, height: 18)
 
             Text(timeText)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(ArgoTheme.tertiaryText)
+                .foregroundStyle(ArgoTheme.amber2)
                 .monospacedDigit()
                 .frame(minWidth: 42, alignment: .leading)
 
-            Text("–")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(ArgoTheme.mutedText)
+            Rectangle()
+                .fill(ArgoTheme.hairlineSoft)
+                .frame(width: 1, height: 16)
 
-            Text(commandText)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            Text(commandTitle)
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(ArgoTheme.secondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.88)
+
+            Spacer(minLength: 8)
+
+            if let shortcutText {
+                Text(shortcutText)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(ArgoTheme.textDim)
+                    .padding(.horizontal, 7)
+                    .frame(height: 20)
+                    .background(
+                        Capsule()
+                            .fill(Color.black.opacity(0.28))
+                    )
+            }
         }
-        .padding(.horizontal, 18)
-        .frame(height: 42)
-        .insetToolbarCapsuleSurface()
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity)
+        .frame(height: 34)
+        .background {
+            Capsule()
+                .fill(ArgoTheme.amber.opacity(0.12))
+        }
+        .overlay {
+            Capsule()
+                .stroke(ArgoTheme.amber.opacity(0.32), lineWidth: 1)
+        }
         .contentShape(Capsule())
     }
 }

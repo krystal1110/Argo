@@ -21,7 +21,7 @@ struct GlobalModeRailView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10 * uiScale) {
+        VStack(spacing: 6 * uiScale) {
             ForEach(MainWindowMode.allCases) { mode in
                 GlobalModeRailButton(
                     systemName: mode.iconSystemName(selected: selectedMode == mode),
@@ -45,8 +45,8 @@ struct GlobalModeRailView: View {
                 action: onOpenSettings
             )
         }
-        .padding(.vertical, 12 * uiScale)
-        .frame(width: 54 * uiScale)
+        .padding(.vertical, 14 * uiScale)
+        .frame(width: 64 * uiScale)
         .frame(maxHeight: .infinity)
         .background(ArgoTheme.glassRail)
         .overlay(alignment: .trailing) {
@@ -68,23 +68,24 @@ private struct GlobalModeRailButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 16 * uiScale, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.white : ArgoTheme.secondaryText)
-                .frame(width: 34 * uiScale, height: 34 * uiScale)
+                .font(.system(size: 19 * uiScale, weight: .semibold))
+                .foregroundStyle(isSelected ? chromeTint.components.color : ArgoTheme.textFaint)
+                .frame(width: 38 * uiScale, height: 38 * uiScale)
                 .background(
-                    RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
-                        .fill(isSelected ? chromeTint.selectionFill.color : ArgoTheme.subtleFill.opacity(0.65))
+                    RoundedRectangle(cornerRadius: 10 * uiScale, style: .continuous)
+                        .fill(isSelected ? chromeTint.selectionFill.color : Color.white.opacity(0.001))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
-                        .stroke(isSelected ? chromeTint.components.color.opacity(0.65) : ArgoTheme.border.opacity(0.6), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10 * uiScale, style: .continuous)
+                        .stroke(isSelected ? chromeTint.components.color.opacity(0.65) : Color.clear, lineWidth: 1)
                 )
                 .overlay(alignment: .leading) {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(ArgoTheme.amber)
+                            .fill(chromeTint.components.color)
                             .frame(width: 3 * uiScale, height: 20 * uiScale)
-                            .shadow(color: ArgoTheme.amber.opacity(0.65), radius: 10 * uiScale)
+                            .shadow(color: chromeTint.components.color.opacity(0.65), radius: 10 * uiScale)
+                            .offset(x: -14 * uiScale)
                     }
                 }
         }

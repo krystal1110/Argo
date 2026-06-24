@@ -131,6 +131,10 @@ final class WorkspaceStore: ObservableObject {
         chromeTint(for: selectedWorkspace)
     }
 
+    var currentTwilightTheme: TwilightTheme {
+        TwilightTheme.generate(seed: appSettings.twilightThemeSeedHex)
+    }
+
     func chromeTint(for workspace: WorkspaceModel?) -> ArgoChromeTint {
         guard let workspace else { return .fallback }
         if workspace.supportsRepositoryFeatures,
@@ -952,6 +956,8 @@ final class WorkspaceStore: ObservableObject {
             terminalScrollbackLines: settings.terminalScrollbackLines,
             terminalBackgroundOpacity: settings.terminalBackgroundOpacity,
             terminalBackgroundBlur: settings.terminalBackgroundBlur,
+            twilightThemeEnabled: settings.twilightThemeEnabled,
+            twilightThemeSeedHex: settings.twilightThemeSeedHex,
             sidebarShowsSecondaryLabels: settings.sidebarShowsSecondaryLabels,
             sidebarShowsWorkspaceBadges: settings.sidebarShowsWorkspaceBadges,
             sidebarShowsWorktreeBadges: settings.sidebarShowsWorktreeBadges,

@@ -11,6 +11,7 @@ fi
 
 required_files=(
   "website/index.html"
+  "website/releases/index.html"
   "website/styles.css"
   "website/assets/app-icon.png"
   "website/assets/hero-workspace.png"

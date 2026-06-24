@@ -11,6 +11,7 @@ struct GlobalModeRailView: View {
     @ObservedObject private var localization = LocalizationManager.shared
 
     let selectedMode: MainWindowMode
+    let chromeTint: ArgoChromeTint
     let uiScale: CGFloat
     let onSelectMode: (MainWindowMode) -> Void
     let onOpenSettings: () -> Void
@@ -26,6 +27,7 @@ struct GlobalModeRailView: View {
                     systemName: mode.iconSystemName(selected: selectedMode == mode),
                     title: localized(mode.titleLocalizationKey),
                     isSelected: selectedMode == mode,
+                    chromeTint: chromeTint,
                     uiScale: uiScale
                 ) {
                     onSelectMode(mode)
@@ -38,6 +40,7 @@ struct GlobalModeRailView: View {
                 systemName: "gearshape",
                 title: localized("main.rail.settings"),
                 isSelected: false,
+                chromeTint: chromeTint,
                 uiScale: uiScale,
                 action: onOpenSettings
             )
@@ -45,10 +48,12 @@ struct GlobalModeRailView: View {
         .padding(.vertical, 12 * uiScale)
         .frame(width: 54 * uiScale)
         .frame(maxHeight: .infinity)
-        .background(ArgoTheme.chromeBackground.opacity(0.98))
+        .background {
+            TopChromeSurfaceBackground(chromeTint: chromeTint)
+        }
         .overlay(alignment: .trailing) {
             Rectangle()
-                .fill(ArgoTheme.border.opacity(0.8))
+                .fill(Color.white.opacity(0.075))
                 .frame(width: 1)
         }
     }
@@ -58,6 +63,7 @@ private struct GlobalModeRailButton: View {
     let systemName: String
     let title: String
     let isSelected: Bool
+    let chromeTint: ArgoChromeTint
     let uiScale: CGFloat
     let action: () -> Void
 
@@ -69,11 +75,11 @@ private struct GlobalModeRailButton: View {
                 .frame(width: 34 * uiScale, height: 34 * uiScale)
                 .background(
                     RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
-                        .fill(isSelected ? ArgoTheme.accent : ArgoTheme.subtleFill.opacity(0.65))
+                        .fill(isSelected ? chromeTint.selectionFill.color : ArgoTheme.subtleFill.opacity(0.65))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
-                        .stroke(isSelected ? ArgoTheme.accent.opacity(0.65) : ArgoTheme.border.opacity(0.6), lineWidth: 1)
+                        .stroke(isSelected ? chromeTint.components.color.opacity(0.65) : ArgoTheme.border.opacity(0.6), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)

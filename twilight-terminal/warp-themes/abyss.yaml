@@ -1,0 +1,27 @@
+# Abyss 深海 — 由单色 #5cc8ff 生成（与 HTML 预览同算法）
+# 安装：复制到 ~/.warp/themes/，在 Settings → Appearance → Themes 选择
+# 透明/模糊请在 Settings → Appearance → Window 里设，不要写进主题
+name: Abyss 深海
+accent: '#5fc7fc'
+background: '#0d1421'
+foreground: '#eef0f2'
+details: darker
+terminal_colors:
+  normal:
+    black:   '#1c2b40'
+    red:     '#eb5c8e'
+    green:   '#37e682'
+    yellow:  '#5fc7fc'
+    blue:    '#5ca6eb'
+    magenta: '#dd6eed'
+    cyan:    '#53dfea'
+    white:   '#cdd3d6'
+  bright:
+    black:   '#496283'
+    red:     '#f089ad'
+    green:   '#69eca1'
+    yellow:  '#afe0f8'
+    blue:    '#89bff0'
+    magenta: '#e89bf3'
+    cyan:    '#80e8ef'
+    white:   '#f4f5f6'

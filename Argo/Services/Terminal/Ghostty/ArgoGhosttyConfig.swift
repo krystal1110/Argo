@@ -48,7 +48,13 @@ enum ArgoGhosttyConfigManager {
             "# Managed by Argo. Manual edits will be overwritten."
         ]
 
-        if let themeName = settings.terminalTheme {
+        if settings.twilightThemeEnabled {
+            let theme = TwilightTheme.generate(seed: settings.twilightThemeSeedHex)
+            lines.append("# theme: Twilight \(theme.seedHex)")
+            lines.append("background = \(theme.ghostty.background)")
+            lines.append("foreground = \(theme.ghostty.foreground)")
+            lines.append(contentsOf: theme.ghostty.paletteLines)
+        } else if let themeName = settings.terminalTheme {
             if let themeContents = readThemeFileContents(named: themeName) {
                 // Inline the theme colors directly so that ghostty_config_load_file
                 // picks them up without relying on Ghostty's own theme lookup.

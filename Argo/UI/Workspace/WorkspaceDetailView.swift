@@ -59,6 +59,12 @@ private struct WorkspaceSessionDetailView: View {
         localization.string(key)
     }
 
+    private var activeTerminalChromeTint: ArgoChromeTint {
+        store.appSettings.twilightThemeEnabled
+            ? ArgoChromeTint.resolved(for: store.currentTwilightTheme)
+            : store.chromeTint
+    }
+
     var body: some View {
         HSplitView {
             VStack(spacing: 8) {
@@ -138,7 +144,7 @@ private struct WorkspaceSessionDetailView: View {
         if let layout = workspace.layout {
             VStack(spacing: 0) {
                 TerminalLocalChrome(
-                    chromeTint: store.chromeTint,
+                    chromeTint: activeTerminalChromeTint,
                     path: terminalChromePath,
                     categories: terminalChromeCategoryDescriptors,
                     activeCategoryID: workspace.activeTabID,
@@ -158,14 +164,14 @@ private struct WorkspaceSessionDetailView: View {
                 )
                 .frame(height: WorkspaceChromeMetrics.terminalHeight)
                 .background {
-                    TopChromeSurfaceBackground(chromeTint: store.chromeTint)
+                    TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)
                 }
 
                 Rectangle()
-                    .fill(TerminalWorkspaceSurfaceStyle.chromeDivider(for: store.chromeTint))
+                    .fill(TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint))
                     .frame(height: 0.6)
 
-                TerminalWorkspaceSurface(chromeTint: store.chromeTint) {
+                TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {
                     SplitNodeView(
                         workspace: workspace,
                         sessionController: workspace.sessionController,
@@ -322,7 +328,14 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
                 TwilightTerminalScrim()
                 chromeTint.glowFill.color
                     .opacity(isTranslucent ? translucentGlowOpacity : opaqueGlowOpacity)
-                TwilightHorizonGlow()
+                TwilightHorizonGlow(
+                    startColor: store.appSettings.twilightThemeEnabled
+                        ? store.currentTwilightTheme.amber.color
+                        : chromeTint.components.color,
+                    endColor: store.appSettings.twilightThemeEnabled
+                        ? store.currentTwilightTheme.amber2.color
+                        : chromeTint.components.color
+                )
             }
             .clipShape(shape)
             .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
@@ -347,14 +360,17 @@ private struct TwilightTerminalScrim: View {
 }
 
 private struct TwilightHorizonGlow: View {
+    let startColor: Color
+    let endColor: Color
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
             LinearGradient(
                 stops: [
                     .init(color: .clear, location: 0),
-                    .init(color: ArgoTheme.amber.opacity(0.50), location: 0.55),
-                    .init(color: ArgoTheme.amber2.opacity(0.65), location: 0.75),
+                    .init(color: startColor.opacity(0.50), location: 0.55),
+                    .init(color: endColor.opacity(0.65), location: 0.75),
                     .init(color: .clear, location: 1),
                 ],
                 startPoint: .leading,

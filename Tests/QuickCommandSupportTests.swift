@@ -446,13 +446,14 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("glassHighlightOpacity: Double = 0.05"))
         XCTAssertTrue(controlsSource.contains("topShadowOpacity: Double = 0.2"))
         XCTAssertTrue(mainWindowSource.contains(".insetToolbarCapsuleSurface()"))
-        XCTAssertTrue(mainWindowSource.contains("let chromeTint = store.chromeTint"))
+        XCTAssertTrue(mainWindowSource.contains("let chromeTint = activeChromeTint"))
         XCTAssertTrue(mainWindowSource.contains("struct TopChromeSurfaceBackground: View"))
-        XCTAssertTrue(mainWindowSource.contains("chromeTint.topChromeSurfaceComponents.color"))
+        XCTAssertTrue(mainWindowSource.contains("ArgoTheme.topGlass"))
         XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
         let topChromeSurfaceStart = try XCTUnwrap(mainWindowSource.range(of: "struct TopChromeSurfaceBackground: View")?.lowerBound)
         let topChromeSurfaceEnd = try XCTUnwrap(mainWindowSource.range(of: "private struct FloatingWorkspaceSidebarSurface")?.lowerBound)
         let topChromeSurfaceSource = String(mainWindowSource[topChromeSurfaceStart..<topChromeSurfaceEnd])
+        XCTAssertFalse(topChromeSurfaceSource.contains("chromeTint.topChromeSurfaceComponents.color"))
         XCTAssertFalse(topChromeSurfaceSource.contains(".opacity("))
         XCTAssertFalse(topChromeSurfaceSource.contains("LinearGradient"))
         XCTAssertFalse(mainWindowSource.contains("TopChromeBackdropMaterialView()"))
@@ -522,7 +523,7 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
             encoding: .utf8
         )
-        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\(chromeTint: store\.chromeTint\)\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
+        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\(chromeTint: activeChromeTint\)\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
 
         XCTAssertNotNil(
             mainWindowSource.range(of: floatingSidebarPattern, options: .regularExpression),
@@ -549,7 +550,7 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
         XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"))
-        XCTAssertTrue(mainWindowSource.contains("chromeTint.sidebarFill.color"))
+        XCTAssertTrue(mainWindowSource.contains("ArgoTheme.glassSide"))
         XCTAssertTrue(mainWindowSource.contains("chromeTint.leadingFill.color"))
         XCTAssertFalse(mainWindowSource.contains("WorkspaceGlassBackground(chromeTint: store.chromeTint)"))
         XCTAssertFalse(mainWindowSource.contains("private struct WorkspaceGlassBackground: View"))
@@ -558,14 +559,15 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
         XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))"))
         XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 1)"))
-        XCTAssertTrue(mainWindowSource.contains("Color.black.opacity(0.12)"))
+        XCTAssertTrue(mainWindowSource.contains("Color.white.opacity(0.12)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.top, 0)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.bottom, 0)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.leading, 0)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.trailing, 0)"))
         XCTAssertTrue(railSource.contains("let chromeTint: ArgoChromeTint"))
-        XCTAssertTrue(railSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
+        XCTAssertTrue(railSource.contains("ArgoTheme.glassRail"))
         XCTAssertFalse(railSource.contains("ArgoTheme.chromeBackground.opacity(0.98)"))
+        XCTAssertFalse(railSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
         XCTAssertFalse(railSource.contains("chromeTint.leadingFill.color"))
         XCTAssertTrue(railSource.contains("chromeTint.selectionFill.color"))
         let floatingSurfaceSource = try XCTUnwrap(
@@ -618,15 +620,19 @@ final class QuickCommandSupportTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome(\n                    chromeTint: store.chromeTint"))
+        XCTAssertTrue(workspaceDetailSource.contains("private var activeTerminalChromeTint: ArgoChromeTint"))
+        XCTAssertTrue(workspaceDetailSource.contains("ArgoChromeTint.resolved(for: store.currentTwilightTheme)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome(\n                    chromeTint: activeTerminalChromeTint"))
         XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
         XCTAssertTrue(workspaceDetailSource.contains(".frame(height: WorkspaceChromeMetrics.terminalHeight)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: store.chromeTint)"))
-        XCTAssertTrue(mainWindowSource.contains("chromeTint.topChromeSurfaceComponents.color"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint)"))
+        XCTAssertTrue(mainWindowSource.contains("let chromeTint = activeChromeTint"))
+        XCTAssertTrue(terminalChromeSource.contains("chromeTint.components.color"))
         XCTAssertFalse(terminalChromeSource.contains("chromeTint.topFill.color"))
         XCTAssertFalse(terminalChromeSource.contains("chromeTint.tabBarFill.color"))
+        XCTAssertFalse(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint)"))
         XCTAssertFalse(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.topChromeBackground"))
         XCTAssertFalse(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeFill"))
     }

@@ -44,15 +44,15 @@ final class WorkspaceTabsTests: XCTestCase {
         )
 
         let terminalChromeStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalLocalChrome(")?.lowerBound)
-        let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(chromeTint: store.chromeTint) {")?.lowerBound)
+        let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {")?.lowerBound)
         let terminalSurfaceEnd = try XCTUnwrap(workspaceDetailSource.range(of: "private var terminalChromeTargetPaneID")?.lowerBound)
         let terminalSurfaceBlock = String(workspaceDetailSource[terminalSurfaceStart..<terminalSurfaceEnd])
 
         XCTAssertLessThan(terminalChromeStart, terminalSurfaceStart)
         XCTAssertFalse(terminalSurfaceBlock.contains("TerminalLocalChrome("))
         XCTAssertTrue(terminalSurfaceBlock.contains("SplitNodeView("))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint) {"))
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
         XCTAssertFalse(
             mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
             "Workspace mode should not paint a fixed-height chrome backing behind the content; it shows up as a horizontal band."
@@ -142,17 +142,19 @@ final class WorkspaceTabsTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(workspaceDetailSource.contains("chromeTint: store.chromeTint"))
+        XCTAssertTrue(workspaceDetailSource.contains("private var activeTerminalChromeTint: ArgoChromeTint"))
+        XCTAssertTrue(workspaceDetailSource.contains("chromeTint: activeTerminalChromeTint"))
         XCTAssertFalse(
             mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
             "Terminal chrome should own its local background instead of relying on a window-wide horizontal backing strip."
         )
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: store.chromeTint)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint)"))
         XCTAssertFalse(workspaceDetailSource.contains("static func topChromeBackground"))
         XCTAssertFalse(workspaceDetailSource.contains(".background(TerminalWorkspaceSurfaceStyle.integratedChromeFill"))
         XCTAssertFalse(workspaceDetailSource.contains(".fill(Color.white.opacity(0.105))"))
         XCTAssertTrue(terminalChromeSource.contains("let chromeTint: ArgoChromeTint"))
+        XCTAssertTrue(terminalChromeSource.contains("chromeTint.components.color"))
         XCTAssertTrue(terminalChromeSource.contains("private var backgroundFill: Color"))
         XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
         XCTAssertTrue(terminalChromeSource.contains("return isHovered ? ArgoTheme.glassCard : .clear"))
@@ -547,7 +549,9 @@ final class WorkspaceTabsTests: XCTestCase {
         let workspaceDetailSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"), encoding: .utf8)
 
         XCTAssertTrue(workspaceDetailSource.contains("TwilightTerminalScrim()"))
-        XCTAssertTrue(workspaceDetailSource.contains("TwilightHorizonGlow()"))
+        XCTAssertTrue(workspaceDetailSource.contains("TwilightHorizonGlow("))
+        XCTAssertTrue(workspaceDetailSource.contains("store.currentTwilightTheme.amber.color"))
+        XCTAssertTrue(workspaceDetailSource.contains("store.currentTwilightTheme.amber2.color"))
         XCTAssertTrue(workspaceDetailSource.contains("LinearGradient("))
         XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimStrong"))
         XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimSoft"))
@@ -559,6 +563,7 @@ final class WorkspaceTabsTests: XCTestCase {
         let terminalChromeSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"), encoding: .utf8)
 
         XCTAssertTrue(terminalChromeSource.contains("Text(\"❯\")"))
+        XCTAssertTrue(terminalChromeSource.contains("chromeTint.components.color"))
         XCTAssertFalse(terminalChromeSource.contains("Image(systemName: \"chevron.right\")"))
         XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
     }

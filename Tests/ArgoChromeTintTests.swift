@@ -42,4 +42,21 @@ final class ArgoChromeTintTests: XCTestCase {
         XCTAssertEqual(tint.components, ArgoChromeTint.defaultAccentComponents)
         XCTAssertFalse(tint.isNeutral)
     }
+
+    func testTwilightChromeTintUsesSeedAccent() {
+        let theme = TwilightTheme.generate(seed: "#ffb066")
+        let tint = ArgoChromeTint.resolved(for: theme)
+
+        XCTAssertEqual(tint.components.hexString, "#fcb069")
+        XCTAssertFalse(tint.isNeutral)
+        XCTAssertEqual(tint.topFill.alpha, 0.34, accuracy: 0.0001)
+        XCTAssertEqual(tint.leadingFill.alpha, 0.38, accuracy: 0.0001)
+        XCTAssertEqual(tint.sidebarFill.alpha, 0.42, accuracy: 0.0001)
+    }
+
+    func testTwilightStaticThemeTokensUseReferenceColors() {
+        XCTAssertEqual(ArgoTheme.twilightDefault.seedHex, "#ffb066")
+        XCTAssertEqual(ArgoTheme.accentHexForTests, "#fcb069")
+        XCTAssertEqual(ArgoTheme.localAccentHexForTests, "#53eac0")
+    }
 }

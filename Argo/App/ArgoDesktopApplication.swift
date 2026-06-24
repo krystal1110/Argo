@@ -93,17 +93,12 @@ public final class ArgoDesktopApplication: NSObject {
             controller.window
         }
 
-        /// Applies window translucency + background blur based on the terminal
-        /// background settings. Defaults (opacity == 1) keep the window fully
-        /// opaque with no blur, preserving the original look.
+        /// Keeps the window transparent so SwiftUI material chrome and
+        /// translucent terminal surfaces can reveal the desktop behind Argo.
         func applyBackgroundAppearance(_ settings: AppSettings) {
             guard let window else { return }
-            let transparent = settings.terminalBackgroundOpacity < 1
-            window.isOpaque = !transparent
-            // When transparent we clear the window fill so the translucent
-            // terminal region reveals whatever is behind the window; when
-            // opaque we restore the solid chrome color.
-            window.backgroundColor = transparent ? .clear : WindowContext.opaqueBackgroundColor
+            window.isOpaque = false
+            window.backgroundColor = .clear
             // Blur is scoped to the terminal surface in SwiftUI; keeping the
             // window-level effect disabled avoids blurring the whole app.
             updateBackgroundBlur(enabled: false)

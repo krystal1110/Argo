@@ -18,6 +18,7 @@ struct TerminalChromeCategoryDescriptor: Identifiable, Equatable {
 struct TerminalLocalChrome: View {
     @ObservedObject private var localization = LocalizationManager.shared
 
+    let chromeTint: ArgoChromeTint
     let path: String
     let categories: [TerminalChromeCategoryDescriptor]
     let activeCategoryID: UUID?
@@ -134,8 +135,7 @@ struct TerminalLocalChrome: View {
         .frame(height: 32)
         .padding(.horizontal, 12)
         .background(pathFill(isSelected: true), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.235), lineWidth: 1))
-        .shadow(color: .black.opacity(0.07), radius: 8, y: 3)
+        .overlay(Capsule().stroke(Color.white.opacity(isFocused ? 0.10 : 0.08), lineWidth: 1))
         .layoutPriority(1)
     }
 
@@ -174,15 +174,11 @@ struct TerminalLocalChrome: View {
         renameDraft = ""
     }
 
-    private func pathFill(isSelected: Bool) -> some ShapeStyle {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(isSelected ? (isFocused ? 0.255 : 0.205) : 0.12),
-                Color.white.opacity(isSelected ? (isFocused ? 0.145 : 0.105) : 0.055)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+    private func pathFill(isSelected: Bool) -> Color {
+        if isSelected {
+            return Color.white.opacity(isFocused ? 0.055 : 0.04)
+        }
+        return Color.white.opacity(0.025)
     }
 }
 
@@ -256,7 +252,6 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
         .contentShape(Capsule())
         .background(backgroundFill, in: Capsule())
         .overlay(Capsule().stroke(borderColor, lineWidth: category.isSelected ? 1 : 0.8))
-        .shadow(color: .black.opacity(category.isSelected ? 0.07 : 0), radius: 8, y: 3)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -270,22 +265,18 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
         return Color.white.opacity(isHovered ? 0.70 : 0.46)
     }
 
-    private var backgroundFill: some ShapeStyle {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(category.isSelected ? (isFocused ? 0.255 : 0.205) : (isHovered ? 0.09 : 0.0)),
-                Color.white.opacity(category.isSelected ? (isFocused ? 0.145 : 0.105) : (isHovered ? 0.045 : 0.0))
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+    private var backgroundFill: Color {
+        if category.isSelected {
+            return Color.white.opacity(isFocused ? 0.055 : 0.04)
+        }
+        return Color.white.opacity(isHovered ? 0.04 : 0)
     }
 
     private var borderColor: Color {
         if category.isSelected {
-            return Color.white.opacity(0.235)
+            return Color.white.opacity(isFocused ? 0.10 : 0.08)
         }
-        return Color.white.opacity(isHovered ? 0.10 : 0.0)
+        return Color.white.opacity(isHovered ? 0.055 : 0.0)
     }
 
     private var closeOpacity: Double {

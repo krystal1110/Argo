@@ -26,7 +26,7 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome("))
     }
 
-    func testTerminalChromeAndPanesShareOneOuterSurface() throws {
+    func testTerminalChromeDoesNotUseWindowWideBackingBand() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -38,11 +38,46 @@ final class WorkspaceTabsTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
             encoding: .utf8
         )
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
 
+        let terminalChromeStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalLocalChrome(")?.lowerBound)
+        let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(chromeTint: store.chromeTint) {")?.lowerBound)
+        let terminalSurfaceEnd = try XCTUnwrap(workspaceDetailSource.range(of: "private var terminalChromeTargetPaneID")?.lowerBound)
+        let terminalSurfaceBlock = String(workspaceDetailSource[terminalSurfaceStart..<terminalSurfaceEnd])
+
+        XCTAssertLessThan(terminalChromeStart, terminalSurfaceStart)
+        XCTAssertFalse(terminalSurfaceBlock.contains("TerminalLocalChrome("))
+        XCTAssertTrue(terminalSurfaceBlock.contains("SplitNodeView("))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: store.chromeTint) {"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: store.chromeTint)"))
+        XCTAssertFalse(
+            mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
+            "Workspace mode should not paint a fixed-height chrome backing behind the content; it shows up as a horizontal band."
+        )
         XCTAssertFalse(terminalPaneSource.contains(".clipShape(RoundedRectangle"))
         XCTAssertFalse(terminalPaneSource.contains(".background(paneFill, in: RoundedRectangle"))
         XCTAssertFalse(terminalPaneSource.contains(".shadow(color:"))
+    }
+
+    func testTerminalSurfaceIsFlushInsteadOfFloatingCard() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(workspaceDetailSource.contains("RoundedRectangle(cornerRadius: 12"))
+        XCTAssertTrue(workspaceDetailSource.contains("let shape = Rectangle()"))
+        let terminalChromeStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalLocalChrome(")?.lowerBound)
+        let terminalChromeEnd = try XCTUnwrap(workspaceDetailSource.range(of: ".frame(height: WorkspaceChromeMetrics.terminalHeight)")?.upperBound)
+        let terminalChromeBlock = String(workspaceDetailSource[terminalChromeStart..<terminalChromeEnd])
+        XCTAssertFalse(terminalChromeBlock.contains(".padding(.horizontal, 6)"))
+        XCTAssertFalse(terminalChromeBlock.contains(".padding(.top, 3)"))
     }
 
     func testTerminalBackgroundAppearanceIsScopedToTerminalSurface() throws {
@@ -72,11 +107,58 @@ final class WorkspaceTabsTests: XCTestCase {
 
         XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98)"))
         XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)"))
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(0.98)"))
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(0.98)"))
+        XCTAssertFalse(workspaceDetailSource.contains("Color.black.opacity(0.14)"))
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(0.34)"))
+        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(0.26)"))
+        XCTAssertFalse(workspaceDetailSource.contains("isTranslucent ? 0.24 : 0.58"))
+        XCTAssertTrue(workspaceDetailSource.contains("if !isTranslucent {"))
+        XCTAssertTrue(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)"))
+        XCTAssertTrue(workspaceDetailSource.contains("private var translucentGlowOpacity: Double"))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalBackgroundBlurView()"))
         XCTAssertTrue(workspaceDetailSource.contains("store.appSettings.terminalBackgroundBlur"))
 
         XCTAssertFalse(desktopApplicationSource.contains("updateBackgroundBlur(enabled: transparent && settings.terminalBackgroundBlur)"))
+        XCTAssertTrue(desktopApplicationSource.contains("window.backgroundColor = .clear"))
         XCTAssertTrue(desktopApplicationSource.contains("updateBackgroundBlur(enabled: false)"))
+    }
+
+    func testTerminalChromeBlendsIntoWorkspaceSurface() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceDetailSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
+            encoding: .utf8
+        )
+        let terminalChromeSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
+            encoding: .utf8
+        )
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceDetailSource.contains("chromeTint: store.chromeTint"))
+        XCTAssertFalse(
+            mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
+            "Terminal chrome should own its local background instead of relying on a window-wide horizontal backing strip."
+        )
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: store.chromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: store.chromeTint)"))
+        XCTAssertFalse(workspaceDetailSource.contains("static func topChromeBackground"))
+        XCTAssertFalse(workspaceDetailSource.contains(".background(TerminalWorkspaceSurfaceStyle.integratedChromeFill"))
+        XCTAssertFalse(workspaceDetailSource.contains(".fill(Color.white.opacity(0.105))"))
+        XCTAssertTrue(terminalChromeSource.contains("let chromeTint: ArgoChromeTint"))
+        XCTAssertTrue(terminalChromeSource.contains("private var backgroundFill: Color"))
+        XCTAssertTrue(terminalChromeSource.contains("Color.white.opacity(isHovered ? 0.04 : 0)"))
+        XCTAssertFalse(terminalChromeSource.contains("chromeTint.topFill.color.opacity(category.isSelected"))
+        XCTAssertFalse(terminalChromeSource.contains("LinearGradient("))
+        XCTAssertFalse(terminalChromeSource.contains("chromeTint.tabBarFill.color.opacity"))
+        XCTAssertFalse(terminalChromeSource.contains("Color.white.opacity(category.isSelected ? (isFocused ? 0.255 : 0.205)"))
+        XCTAssertFalse(terminalChromeSource.contains("Color.white.opacity(0.235)"))
     }
 
     func testTerminalChromeUsesCategoriesInsteadOfPaneChips() throws {

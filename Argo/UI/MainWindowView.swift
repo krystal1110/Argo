@@ -10,6 +10,11 @@ import Combine
 import ObjectiveC
 import SwiftUI
 
+enum WorkspaceChromeMetrics {
+    static let topHeight: CGFloat = 62
+    static let terminalHeight: CGFloat = 36
+}
+
 struct MainWindowView: View {
     private static let workspaceSidebarMinWidth: CGFloat = 210
     private static let workspaceSidebarDefaultWidth: CGFloat = 260
@@ -38,7 +43,7 @@ struct MainWindowView: View {
     }
 
     private var terminalIsTranslucent: Bool {
-        store.mainWindowMode == .workspace && store.appSettings.terminalBackgroundOpacity < 1
+        store.mainWindowMode == .workspace
     }
 
     private var windowContentBackground: Color {
@@ -320,26 +325,18 @@ struct MainWindowView: View {
         }
         .padding(.leading, 92)
         .padding(.trailing, 24)
-        .frame(height: 62)
-        .background(
-            ZStack {
-                Rectangle().fill(.ultraThinMaterial)
-                ArgoTheme.chromeBackground.opacity(0.54)
-                chromeTint.topFill.color
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.07),
-                        Color.clear
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
-        )
+        .frame(maxWidth: .infinity)
+        .frame(height: WorkspaceChromeMetrics.topHeight)
+        .background {
+            TopChromeSurfaceBackground(chromeTint: chromeTint)
+                .ignoresSafeArea(.container, edges: .top)
+        }
         .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.white.opacity(0.075))
-                .frame(height: 1)
+            if store.mainWindowMode != .workspace {
+                Rectangle()
+                    .fill(Color.white.opacity(0.075))
+                    .frame(height: 1)
+            }
         }
     }
 
@@ -808,6 +805,14 @@ struct MainWindowView: View {
     }
 }
 
+struct TopChromeSurfaceBackground: View {
+    let chromeTint: ArgoChromeTint
+
+    var body: some View {
+        chromeTint.topChromeSurfaceComponents.color
+    }
+}
+
 private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
     let chromeTint: ArgoChromeTint
     @ViewBuilder var content: () -> Content
@@ -821,11 +826,12 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 ZStack {
-                    ArgoTheme.sidebarBackground
-                    chromeTint.sidebarFill.color
+                    Color.black.opacity(0.12)
+                    ArgoTheme.sidebarBackground.opacity(0.56)
+                    chromeTint.sidebarFill.color.opacity(0.85)
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.045),
+                            Color.white.opacity(0.028),
                             Color.clear
                         ],
                         startPoint: .top,
@@ -839,13 +845,17 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
                 panelShape
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
-            .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 1)
+            .shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 1)
             .padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))
             .background {
-                ZStack {
-                    ArgoTheme.appBackground
-                    chromeTint.leadingFill.color
-                }
+                LinearGradient(
+                    colors: [
+                        chromeTint.leadingFill.color.opacity(0.42),
+                        Color.clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
             }
     }
 }

@@ -16,6 +16,13 @@ struct ArgoChromeTint: Equatable {
             Color(.sRGB, red: red, green: green, blue: blue)
         }
 
+        var hexString: String {
+            let r = Int((red * 255).rounded())
+            let g = Int((green * 255).rounded())
+            let b = Int((blue * 255).rounded())
+            return String(format: "#%02x%02x%02x", r, g, b)
+        }
+
         init(red: Double, green: Double, blue: Double) {
             self.red = red
             self.green = green
@@ -72,6 +79,15 @@ struct ArgoChromeTint: Equatable {
         glow: 0.09
     )
 
+    static let twilightStrength = Strength(
+        top: 0.34,
+        leading: 0.38,
+        sidebar: 0.42,
+        tabBar: 0.34,
+        selection: 0.50,
+        glow: 0.22
+    )
+
     private static let topChromeSurfaceBase = Components(red: 0.29, green: 0.30, blue: 0.31)
     private static let topChromeSurfaceLift = 0.02
 
@@ -102,6 +118,19 @@ struct ArgoChromeTint: Equatable {
         ArgoChromeTint(
             components: defaultAccentComponents,
             strength: balancedStrength,
+            isNeutral: false
+        )
+    }
+
+    static func resolved(for theme: TwilightTheme) -> ArgoChromeTint {
+        let accent = TwilightHSLColor.hslToRGB(
+            hue: theme.amber.hue,
+            saturation: theme.amber.saturation,
+            lightness: theme.amber.lightness
+        )
+        return ArgoChromeTint(
+            components: Components(red: accent.red, green: accent.green, blue: accent.blue),
+            strength: twilightStrength,
             isNeutral: false
         )
     }

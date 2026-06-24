@@ -120,9 +120,9 @@ struct TerminalLocalChrome: View {
 
     private var fallbackCategoryPill: some View {
         HStack(spacing: 8) {
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.white.opacity(0.72))
+            Text("❯")
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(ArgoTheme.amber)
 
             Text(path)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
@@ -135,7 +135,7 @@ struct TerminalLocalChrome: View {
         .frame(height: 32)
         .padding(.horizontal, 12)
         .background(pathFill(isSelected: true), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(isFocused ? 0.10 : 0.08), lineWidth: 1))
+        .overlay(Capsule().stroke(ArgoTheme.hairline, lineWidth: 1))
         .layoutPriority(1)
     }
 
@@ -176,9 +176,9 @@ struct TerminalLocalChrome: View {
 
     private func pathFill(isSelected: Bool) -> Color {
         if isSelected {
-            return Color.white.opacity(isFocused ? 0.055 : 0.04)
+            return ArgoTheme.glassCardH.opacity(isFocused ? 1 : 0.86)
         }
-        return Color.white.opacity(0.025)
+        return ArgoTheme.glassCard
     }
 }
 
@@ -198,9 +198,9 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
         HStack(spacing: 8) {
             Button(action: onSelect) {
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(category.isSelected ? 0.72 : 0.46))
+                    Text("❯")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(category.isSelected ? ArgoTheme.amber : ArgoTheme.amber.opacity(0.62))
 
                     Text(category.title)
                         .font(.system(size: 12, weight: .semibold, design: .monospaced))
@@ -267,16 +267,16 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
 
     private var backgroundFill: Color {
         if category.isSelected {
-            return Color.white.opacity(isFocused ? 0.055 : 0.04)
+            return ArgoTheme.glassCardH.opacity(isFocused ? 1 : 0.86)
         }
-        return Color.white.opacity(isHovered ? 0.04 : 0)
+        return isHovered ? ArgoTheme.glassCard : .clear
     }
 
     private var borderColor: Color {
         if category.isSelected {
-            return Color.white.opacity(isFocused ? 0.10 : 0.08)
+            return ArgoTheme.hairline
         }
-        return Color.white.opacity(isHovered ? 0.055 : 0.0)
+        return isHovered ? ArgoTheme.hairlineSoft : .clear
     }
 
     private var closeOpacity: Double {

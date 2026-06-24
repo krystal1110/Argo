@@ -316,15 +316,53 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
                         .allowsHitTesting(false)
                 }
                 if !isTranslucent {
-                    Rectangle().fill(.ultraThinMaterial)
                     Color.black.opacity(opaqueSurfaceScrimOpacity)
                     surfaceFill
                 }
+                TwilightTerminalScrim()
                 chromeTint.glowFill.color
                     .opacity(isTranslucent ? translucentGlowOpacity : opaqueGlowOpacity)
+                TwilightHorizonGlow()
             }
             .clipShape(shape)
             .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
+    }
+}
+
+private struct TwilightTerminalScrim: View {
+    var body: some View {
+        LinearGradient(
+            stops: [
+                .init(color: ArgoTheme.scrimStrong, location: 0),
+                .init(color: ArgoTheme.scrimStrong, location: 0.14),
+                .init(color: ArgoTheme.scrimSoft, location: 0.46),
+                .init(color: Color(nsColor: NSColor(calibratedRed: 0.031, green: 0.043, blue: 0.071, alpha: 0.04)), location: 0.74),
+                .init(color: .clear, location: 1),
+            ],
+            startPoint: UnitPoint(x: 0, y: 0.45),
+            endPoint: UnitPoint(x: 1, y: 0.55)
+        )
+        .allowsHitTesting(false)
+    }
+}
+
+private struct TwilightHorizonGlow: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: ArgoTheme.amber.opacity(0.50), location: 0.55),
+                    .init(color: ArgoTheme.amber2.opacity(0.65), location: 0.75),
+                    .init(color: .clear, location: 1),
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(height: 2)
+        }
+        .allowsHitTesting(false)
     }
 }
 

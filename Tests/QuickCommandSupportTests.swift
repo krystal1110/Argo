@@ -632,16 +632,40 @@ final class QuickCommandSupportTests: XCTestCase {
         )
 
         XCTAssertTrue(mainWindowSource.contains("HTMLReferenceTopActionButton("))
-        XCTAssertTrue(mainWindowSource.contains("HTMLReferenceExternalEditorMenu("))
         XCTAssertTrue(mainWindowSource.contains("TerminalProfilePill(uiScale: uiScale)"))
         XCTAssertFalse(mainWindowSource.contains("GlassToolbarSplitButton("))
+        XCTAssertFalse(mainWindowSource.contains("HTMLReferenceExternalEditorMenu("))
         XCTAssertFalse(mainWindowSource.contains("effectiveExternalEditorDisplayName"))
         XCTAssertFalse(mainWindowSource.contains("Image(systemName: \"sidebar.leading\")"))
         XCTAssertFalse(mainWindowSource.contains("GlassToolbarGroup(minHeight: 34, horizontalPadding: 5, spacing: 2)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(width: 32, height: 32)"))
-        XCTAssertTrue(mainWindowSource.contains(".font(.system(size: 16, weight: .semibold))"))
+        XCTAssertTrue(mainWindowSource.contains(".font(.system(size: 16, weight: .medium))"))
         XCTAssertTrue(mainWindowSource.contains("commandText[..<range.lowerBound]"))
         XCTAssertFalse(mainWindowSource.contains("commandText[..<shortcutRange.lowerBound]"))
+        XCTAssertTrue(mainWindowSource.contains("private func makeWorkspaceActionsMenu() -> NSMenu"))
+        XCTAssertTrue(mainWindowSource.contains("appendExternalEditorItems(to: menu)"))
+        XCTAssertTrue(mainWindowSource.contains("makeHAPIMenu(using: hapiInstallation)"))
+
+        let topActionsRange = try XCTUnwrap(
+            mainWindowSource.range(
+                of: #"HStack\(spacing: 2\) \{[\s\S]*?\n\s*\}\n\s*\.scaleEffect\(uiScale\)\n\n\s*TerminalProfilePill"#,
+                options: .regularExpression
+            )
+        )
+        let topActionsSource = String(mainWindowSource[topActionsRange])
+        XCTAssertEqual(
+            topActionsSource.components(separatedBy: "HTMLReferenceTopActionButton(").count - 1,
+            4,
+            "The HTML reference top-actions group has four neutral icon buttons before the Ghostty profile."
+        )
+        XCTAssertTrue(topActionsSource.contains("systemName: \"chevron.left.forwardslash.chevron.right\""))
+        XCTAssertTrue(topActionsSource.contains("systemName: \"square.grid.2x2\""))
+        XCTAssertTrue(topActionsSource.contains("systemName: sleepPreventionIconName"))
+        XCTAssertTrue(topActionsSource.contains("systemName: \"globe\""))
+        XCTAssertFalse(topActionsSource.contains("play.rectangle.on.rectangle"))
+        XCTAssertFalse(topActionsSource.contains("arrow.up.forward.app.fill"))
+        XCTAssertFalse(topActionsSource.contains("store.selectedWorkspace?.isFileTreePresented"))
+        XCTAssertFalse(topActionsSource.contains("tint: chromeTint.components.color"))
 
         XCTAssertTrue(railSource.contains(".fill(isSelected ? Color.clear : Color.white.opacity(0.001))"))
         XCTAssertFalse(railSource.contains("chromeTint.selectionFill.color"))

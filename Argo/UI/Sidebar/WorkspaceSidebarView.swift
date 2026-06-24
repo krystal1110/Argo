@@ -37,18 +37,28 @@ struct WorkspaceSidebarView: View {
                     EmptyView()
                 }
                 .textFieldStyle(.plain)
-                .font(.system(size: 12 * uiScale, weight: .regular))
+                .font(.system(size: 13.5 * uiScale, weight: .regular))
+
+                Text("/")
+                    .font(.system(size: 11 * uiScale, weight: .medium, design: .monospaced))
+                    .foregroundStyle(ArgoTheme.mutedText)
+                    .padding(.horizontal, 6 * uiScale)
+                    .padding(.vertical, 1 * uiScale)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5 * uiScale, style: .continuous)
+                            .strokeBorder(ArgoTheme.hairlineSoft, lineWidth: 1)
+                    )
             }
-            .padding(.horizontal, 9 * uiScale)
-            .padding(.vertical, 5 * uiScale)
+            .padding(.horizontal, 12 * uiScale)
+            .frame(height: 38 * uiScale)
             .background(Color.black.opacity(0.20), in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
                     .strokeBorder(ArgoTheme.hairline, lineWidth: 1)
             )
-            .padding(.horizontal, 8 * uiScale)
-            .padding(.top, 7 * uiScale)
-            .padding(.bottom, 6 * uiScale)
+            .padding(.horizontal, 14 * uiScale)
+            .padding(.top, 14 * uiScale)
+            .padding(.bottom, 10 * uiScale)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(ArgoTheme.border.opacity(0.55))
@@ -107,39 +117,45 @@ private struct SidebarFooterView: View {
     }
 
     var body: some View {
-        HStack(spacing: 6 * uiScale) {
+        HStack(spacing: 8 * uiScale) {
             Button(action: openRepositoryAction) {
-                HStack(spacing: 5) {
+                HStack(spacing: 8 * uiScale) {
                     Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 11 * uiScale, weight: .semibold))
+                        .font(.system(size: 15 * uiScale, weight: .medium))
                     Text(localized("sidebar.openFolder"))
-                        .font(.system(size: 11 * uiScale, weight: .semibold))
+                        .font(.system(size: 13 * uiScale, weight: .medium))
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 10 * uiScale)
-                .frame(maxWidth: .infinity, minHeight: 30 * uiScale, alignment: .leading)
-                .contentShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .frame(maxWidth: .infinity, minHeight: 38 * uiScale, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
             }
             .buttonStyle(.plain)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(ArgoTheme.border)
+                RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
+                    .fill(Color.black.opacity(0.18))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
+                    .strokeBorder(ArgoTheme.hairline, lineWidth: 1)
             )
             .foregroundStyle(ArgoTheme.secondaryText)
             .help(localized("sidebar.openFolderHelp"))
 
             Button(action: connectSSHAction) {
                 Image(systemName: "network")
-                    .font(.system(size: 12 * uiScale, weight: .semibold))
-                    .frame(width: 30 * uiScale, height: 30 * uiScale)
-                    .contentShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .font(.system(size: 15 * uiScale, weight: .medium))
+                    .frame(width: 38 * uiScale, height: 38 * uiScale)
+                    .contentShape(RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
             }
             .buttonStyle(.plain)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(ArgoTheme.border)
+                RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
+                    .fill(Color.black.opacity(0.18))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
+                    .strokeBorder(ArgoTheme.hairline, lineWidth: 1)
             )
             .foregroundStyle(ArgoTheme.secondaryText)
             .help(localized("main.sidebar.connectSSH"))
@@ -1411,7 +1427,7 @@ private final class SidebarOutlineContainerView: NSView {
 
         outlineView.headerView = nil
         outlineView.rowSizeStyle = .default
-        outlineView.rowHeight = 46
+        outlineView.rowHeight = 52
         outlineView.indentationPerLevel = 8
         outlineView.floatsGroupRows = false
         outlineView.selectionHighlightStyle = .regular
@@ -1420,7 +1436,7 @@ private final class SidebarOutlineContainerView: NSView {
         outlineView.usesAlternatingRowBackgroundColors = false
         outlineView.allowsMultipleSelection = true
         outlineView.allowsEmptySelection = true
-        outlineView.intercellSpacing = NSSize(width: 0, height: 2)
+        outlineView.intercellSpacing = NSSize(width: 0, height: 3)
         outlineView.setDraggingSourceOperationMask(.move, forLocal: true)
         outlineView.setDraggingSourceOperationMask([], forLocal: false)
         outlineView.draggingDestinationFeedbackStyle = .gap
@@ -1452,10 +1468,10 @@ private final class SidebarOutlineContainerView: NSView {
             footerSeparator.trailingAnchor.constraint(equalTo: trailingAnchor),
             footerSeparator.bottomAnchor.constraint(equalTo: footerHostingView.topAnchor, constant: -4),
 
-            footerHostingView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            footerHostingView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            footerHostingView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+            footerHostingView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
             footerHostingView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10),
-            footerHostingView.heightAnchor.constraint(equalToConstant: 35),
+            footerHostingView.heightAnchor.constraint(equalToConstant: 38),
         ])
     }
 
@@ -1630,8 +1646,8 @@ private final class SidebarOutlineRowView: NSTableRowView {
     override func drawBackground(in dirtyRect: NSRect) {}
 
     override func drawSelection(in dirtyRect: NSRect) {
-        let rect = bounds.insetBy(dx: 4, dy: 1)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3)
+        let rect = bounds.insetBy(dx: 10, dy: 1.5)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8)
         ArgoTheme.sidebarSelectionFill.setFill()
         path.fill()
         ArgoTheme.sidebarSelectionStroke.withAlphaComponent(0.55).setStroke()
@@ -1639,7 +1655,7 @@ private final class SidebarOutlineRowView: NSTableRowView {
         path.stroke()
 
         let bar = NSBezierPath(
-            roundedRect: NSRect(x: rect.minX, y: rect.minY + 3, width: 3, height: rect.height - 6),
+            roundedRect: NSRect(x: rect.minX, y: rect.minY + 9, width: 3, height: rect.height - 18),
             xRadius: 1.5,
             yRadius: 1.5
         )
@@ -1834,23 +1850,23 @@ private struct WorkspaceRowContent: View {
     }
 
     var body: some View {
-        HStack(spacing: 7 * uiScale) {
+        HStack(spacing: 11 * uiScale) {
             SidebarItemIconView(
                 icon: icon,
-                size: 16 * uiScale,
+                size: 34 * uiScale,
                 activityIndicator: iconActivityIndicator,
                 activityPalette: appSettings.sidebarActivityIndicatorPalette,
                 isEmphasized: isSelected
             )
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2 * uiScale) {
                 Text(workspace.name)
-                    .font(.system(size: 11.5 * uiScale, weight: .medium))
+                    .font(.system(size: 13.5 * uiScale, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 if appSettings.sidebarShowsSecondaryLabels {
                     Text(workspace.supportsRepositoryFeatures ? workspace.currentBranch : workspace.activeWorktreePath.lastPathComponentValue)
-                        .font(.system(size: 9.5 * uiScale, weight: .regular, design: .monospaced))
+                        .font(.system(size: 11.5 * uiScale, weight: .regular, design: .monospaced))
                         .foregroundStyle(ArgoTheme.mutedText.opacity(0.85))
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -1907,12 +1923,12 @@ private struct WorkspaceRowContent: View {
                 }
             }
         }
-        .padding(.vertical, 3 * uiScale)
-        .padding(.leading, 2 * uiScale)
-        .padding(.trailing, 8 * uiScale)
+        .padding(.vertical, 5 * uiScale)
+        .padding(.leading, 11 * uiScale)
+        .padding(.trailing, 11 * uiScale)
         .background(
             ArgoTheme.subtleFill.opacity(isHovering ? 1 : 0),
-            in: RoundedRectangle(cornerRadius: 3, style: .continuous)
+            in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
         )
         .onHover { isInside in
             isHovering = isInside
@@ -2026,6 +2042,10 @@ struct SidebarItemIconView: View {
         icon.palette.descriptor
     }
 
+    private var glyphSize: CGFloat {
+        size >= 30 ? size * 0.5 : max(9, size * 0.46)
+    }
+
     private var backgroundShape: some InsettableShape {
         RoundedRectangle(
             cornerRadius: usesCircularShape ? size / 2 : max(2, size * 0.14),
@@ -2036,7 +2056,7 @@ struct SidebarItemIconView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             Image(systemName: icon.symbolName)
-                .font(.system(size: max(9, size * 0.46), weight: .semibold))
+                .font(.system(size: glyphSize, weight: .semibold))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(palette.foreground)
                 .frame(width: size, height: size)

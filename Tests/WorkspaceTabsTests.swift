@@ -114,7 +114,8 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(0.26)"))
         XCTAssertFalse(workspaceDetailSource.contains("isTranslucent ? 0.24 : 0.58"))
         XCTAssertTrue(workspaceDetailSource.contains("if !isTranslucent {"))
-        XCTAssertTrue(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)"))
+        XCTAssertFalse(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TwilightTerminalScrim()"))
         XCTAssertTrue(workspaceDetailSource.contains("private var translucentGlowOpacity: Double"))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalBackgroundBlurView()"))
         XCTAssertTrue(workspaceDetailSource.contains("store.appSettings.terminalBackgroundBlur"))
@@ -153,7 +154,8 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(workspaceDetailSource.contains(".fill(Color.white.opacity(0.105))"))
         XCTAssertTrue(terminalChromeSource.contains("let chromeTint: ArgoChromeTint"))
         XCTAssertTrue(terminalChromeSource.contains("private var backgroundFill: Color"))
-        XCTAssertTrue(terminalChromeSource.contains("Color.white.opacity(isHovered ? 0.04 : 0)"))
+        XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
+        XCTAssertTrue(terminalChromeSource.contains("return isHovered ? ArgoTheme.glassCard : .clear"))
         XCTAssertFalse(terminalChromeSource.contains("chromeTint.topFill.color.opacity(category.isSelected"))
         XCTAssertFalse(terminalChromeSource.contains("LinearGradient("))
         XCTAssertFalse(terminalChromeSource.contains("chromeTint.tabBarFill.color.opacity"))
@@ -538,5 +540,26 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertFalse(sidebarSource.contains("Image(systemName: \"magnifyingglass\")"))
         XCTAssertTrue(mainWindowSource.contains("ArgoTheme.glassSide"))
         XCTAssertFalse(sidebarSource.contains("ArgoTheme.sidebarBackground, in: RoundedRectangle"))
+    }
+
+    func testTerminalSurfaceUsesTwilightScrimAndHorizonGlow() throws {
+        let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let workspaceDetailSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"), encoding: .utf8)
+
+        XCTAssertTrue(workspaceDetailSource.contains("TwilightTerminalScrim()"))
+        XCTAssertTrue(workspaceDetailSource.contains("TwilightHorizonGlow()"))
+        XCTAssertTrue(workspaceDetailSource.contains("LinearGradient("))
+        XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimStrong"))
+        XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimSoft"))
+        XCTAssertFalse(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)\n                    Color.black.opacity(opaqueSurfaceScrimOpacity)"))
+    }
+
+    func testTerminalLocalChromeUsesPromptGlyph() throws {
+        let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let terminalChromeSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"), encoding: .utf8)
+
+        XCTAssertTrue(terminalChromeSource.contains("Text(\"❯\")"))
+        XCTAssertFalse(terminalChromeSource.contains("Image(systemName: \"chevron.right\")"))
+        XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
     }
 }

@@ -80,7 +80,7 @@ struct TerminalPaneView: View {
                 )
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
-                .background(isFocused ? ArgoTheme.panelRaised : ArgoTheme.paneHeaderBackground)
+                .background(ArgoTheme.topGlass)
             }
 
             ZStack {
@@ -269,6 +269,7 @@ private struct PaneTag: View {
     enum Tone: Equatable {
         case neutral
         case accent
+        case success
         case warning
     }
 
@@ -278,11 +279,13 @@ private struct PaneTag: View {
     private var foreground: Color {
         switch tone {
         case .neutral:
-            return ArgoTheme.mutedText
+            return ArgoTheme.textFaint
         case .accent:
-            return ArgoTheme.accent
+            return ArgoTheme.cyan
+        case .success:
+            return ArgoTheme.green
         case .warning:
-            return ArgoTheme.warning
+            return ArgoTheme.amber
         }
     }
 
@@ -294,7 +297,7 @@ private struct PaneTag: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .fixedSize(horizontal: true, vertical: false)
-            .background(ArgoTheme.subtleFill, in: Capsule())
+            .background(ArgoTheme.glassCard, in: Capsule())
     }
 }
 
@@ -336,7 +339,11 @@ private struct PaneSearchBar: View {
                 .onExitCommand(perform: onClose)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
-                .background(ArgoTheme.subtleFill, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .background(Color.black.opacity(0.20), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(ArgoTheme.hairline, lineWidth: 1)
+                )
 
             if let resultLabel {
                 PaneTag(text: resultLabel, tone: .neutral)
@@ -371,7 +378,7 @@ private struct PaneStatusStrip: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            PaneTag(text: backendLabel, tone: .neutral)
+            PaneTag(text: backendLabel, tone: .success)
             PaneTag(text: sizeLabel, tone: .neutral)
 
             if let viewportLabel {
@@ -390,6 +397,6 @@ private struct PaneStatusStrip: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(ArgoTheme.panelRaised.opacity(0.72))
+        .background(ArgoTheme.glassCard.opacity(0.62))
     }
 }

@@ -48,9 +48,7 @@ struct GlobalModeRailView: View {
         .padding(.vertical, 12 * uiScale)
         .frame(width: 54 * uiScale)
         .frame(maxHeight: .infinity)
-        .background {
-            TopChromeSurfaceBackground(chromeTint: chromeTint)
-        }
+        .background(ArgoTheme.glassRail)
         .overlay(alignment: .trailing) {
             Rectangle()
                 .fill(Color.white.opacity(0.075))
@@ -81,6 +79,14 @@ private struct GlobalModeRailButton: View {
                     RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
                         .stroke(isSelected ? chromeTint.components.color.opacity(0.65) : ArgoTheme.border.opacity(0.6), lineWidth: 1)
                 )
+                .overlay(alignment: .leading) {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(ArgoTheme.amber)
+                            .frame(width: 3 * uiScale, height: 20 * uiScale)
+                            .shadow(color: ArgoTheme.amber.opacity(0.65), radius: 10 * uiScale)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)

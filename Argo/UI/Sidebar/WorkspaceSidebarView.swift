@@ -24,9 +24,9 @@ struct WorkspaceSidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11 * uiScale, weight: .regular))
-                    .foregroundStyle(ArgoTheme.mutedText.opacity(0.8))
+                Text("❯")
+                    .font(.system(size: 14 * uiScale, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(ArgoTheme.amber)
 
                 TextField(
                     text: $query,
@@ -41,10 +41,10 @@ struct WorkspaceSidebarView: View {
             }
             .padding(.horizontal, 9 * uiScale)
             .padding(.vertical, 5 * uiScale)
-            .background(ArgoTheme.sidebarSearchBackground, in: RoundedRectangle(cornerRadius: 3, style: .continuous))
+            .background(Color.black.opacity(0.20), in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .strokeBorder(ArgoTheme.border, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
+                    .strokeBorder(ArgoTheme.hairline, lineWidth: 1)
             )
             .padding(.horizontal, 8 * uiScale)
             .padding(.top, 7 * uiScale)
@@ -1637,6 +1637,14 @@ private final class SidebarOutlineRowView: NSTableRowView {
         ArgoTheme.sidebarSelectionStroke.withAlphaComponent(0.55).setStroke()
         path.lineWidth = 1
         path.stroke()
+
+        let bar = NSBezierPath(
+            roundedRect: NSRect(x: rect.minX, y: rect.minY + 3, width: 3, height: rect.height - 6),
+            xRadius: 1.5,
+            yRadius: 1.5
+        )
+        NSColor(TwilightTheme.default.amber.color).setFill()
+        bar.fill()
     }
 
     override var isEmphasized: Bool {

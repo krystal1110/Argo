@@ -451,7 +451,7 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(mainWindowSource.contains("ArgoTheme.topGlass"))
         XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
         let topChromeSurfaceStart = try XCTUnwrap(mainWindowSource.range(of: "struct TopChromeSurfaceBackground: View")?.lowerBound)
-        let topChromeSurfaceEnd = try XCTUnwrap(mainWindowSource.range(of: "private struct FloatingWorkspaceSidebarSurface")?.lowerBound)
+        let topChromeSurfaceEnd = try XCTUnwrap(mainWindowSource.range(of: "private struct WorkspaceSidebarResizeHandle")?.lowerBound)
         let topChromeSurfaceSource = String(mainWindowSource[topChromeSurfaceStart..<topChromeSurfaceEnd])
         XCTAssertFalse(topChromeSurfaceSource.contains("chromeTint.topChromeSurfaceComponents.color"))
         XCTAssertFalse(topChromeSurfaceSource.contains(".opacity("))
@@ -536,7 +536,7 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(railSource.contains(".offset(x: -14 * uiScale)"))
     }
 
-    func testMainWindowWrapsWorkspaceSidebarInFloatingSurface() throws {
+    func testMainWindowKeepsSidebarFlushWithRailLikeHTMLReference() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -556,11 +556,11 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
             encoding: .utf8
         )
-        let floatingSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*FloatingWorkspaceSidebarSurface\(chromeTint: activeChromeTint\)\s*\{\s*WorkspaceSidebarView\(\)\s*\}\s*\.frame\(width: workspaceSidebarWidth\)"#
+        let flushSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*WorkspaceSidebarView\(\)\s*\.frame\(width: workspaceSidebarWidth\)\s*\.background\(ArgoTheme\.glassSide\)"#
 
         XCTAssertNotNil(
-            mainWindowSource.range(of: floatingSidebarPattern, options: .regularExpression),
-            "WorkspaceSidebarView should render as a floating, resizable column outside NavigationSplitView's native sidebar shell."
+            mainWindowSource.range(of: flushSidebarPattern, options: .regularExpression),
+            "The Twilight HTML reference puts rail and sidebar in one flush grid with no floating sidebar card or gutter."
         )
         XCTAssertFalse(mainWindowSource.contains(".frame(width: 260)"))
         XCTAssertTrue(mainWindowSource.contains("@State private var workspaceSidebarWidth = Self.workspaceSidebarDefaultWidth"))
@@ -580,19 +580,16 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(mainWindowSource.contains("NavigationSplitView(columnVisibility:"))
         XCTAssertFalse(mainWindowSource.contains(".navigationSplitViewColumnWidth("))
         XCTAssertFalse(mainWindowSource.contains(".navigationSplitViewStyle("))
-        XCTAssertTrue(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
-        XCTAssertTrue(mainWindowSource.contains("RoundedRectangle(cornerRadius: 8, style: .continuous)"))
-        XCTAssertTrue(mainWindowSource.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"))
+        XCTAssertFalse(mainWindowSource.contains("struct FloatingWorkspaceSidebarSurface<Content: View>: View"))
+        XCTAssertFalse(mainWindowSource.contains("FloatingWorkspaceSidebarSurface(chromeTint: activeChromeTint)"))
         XCTAssertTrue(mainWindowSource.contains("ArgoTheme.glassSide"))
-        XCTAssertTrue(mainWindowSource.contains("chromeTint.leadingFill.color"))
         XCTAssertFalse(mainWindowSource.contains("WorkspaceGlassBackground(chromeTint: store.chromeTint)"))
         XCTAssertFalse(mainWindowSource.contains("private struct WorkspaceGlassBackground: View"))
         XCTAssertFalse(mainWindowSource.contains("Color.black.opacity(0.50)"))
         XCTAssertFalse(mainWindowSource.contains("chromeTint.components.color.opacity(chromeTint.isNeutral ? 0.13 : 0.26)"))
         XCTAssertFalse(mainWindowSource.contains(".background(ArgoTheme.sidebarBackground, in: panelShape)"))
-        XCTAssertTrue(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))"))
-        XCTAssertTrue(mainWindowSource.contains(".shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 1)"))
-        XCTAssertTrue(mainWindowSource.contains("Color.white.opacity(0.12)"))
+        XCTAssertFalse(mainWindowSource.contains(".padding(.init(top: 6, leading: 10, bottom: 6, trailing: 0))"))
+        XCTAssertFalse(mainWindowSource.contains(".shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 1)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.top, 0)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.bottom, 0)"))
         XCTAssertTrue(workspaceDetailSource.contains(".padding(.leading, 0)"))
@@ -602,25 +599,10 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(railSource.contains("ArgoTheme.chromeBackground.opacity(0.98)"))
         XCTAssertFalse(railSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
         XCTAssertFalse(railSource.contains("chromeTint.leadingFill.color"))
-        XCTAssertTrue(railSource.contains("chromeTint.selectionFill.color"))
-        let floatingSurfaceSource = try XCTUnwrap(
-            mainWindowSource.range(
-                of: #"private struct FloatingWorkspaceSidebarSurface[\s\S]*?private struct TimeCommandPaletteButtonLabel"#,
-                options: .regularExpression
-            ).map { String(mainWindowSource[$0]) }
-        )
-        XCTAssertFalse(
-            floatingSurfaceSource.contains(".overlay(alignment: .top)"),
-            "FloatingWorkspaceSidebarSurface should draw one shell, not an inset highlight that reads as a second frame."
-        )
-        XCTAssertEqual(
-            floatingSurfaceSource.components(separatedBy: ".stroke(Color.white.opacity").count - 1,
-            1,
-            "FloatingWorkspaceSidebarSurface should have a single visible panel stroke."
-        )
+        XCTAssertFalse(railSource.contains("chromeTint.selectionFill.color"))
         XCTAssertFalse(
             sidebarSource.contains("FloatingWorkspaceSidebarSurface"),
-            "The existing sidebar contents should not own the floating shell."
+            "The existing sidebar contents should not own a floating shell."
         )
 
         let fullSidebarBackgroundCount = sidebarSource
@@ -634,6 +616,35 @@ final class QuickCommandSupportTests: XCTestCase {
 
         XCTAssertTrue(sidebarSource.contains("let outlineView = SidebarOutlineView()"))
         XCTAssertTrue(sidebarSource.contains("private final class SidebarOutlineContainerView: NSView"))
+    }
+
+    func testTopChromeUsesHTMLReferenceDensityWithoutDuplicateProfilePill() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let railSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(mainWindowSource.contains("HTMLReferenceTopActionButton("))
+        XCTAssertTrue(mainWindowSource.contains("HTMLReferenceExternalEditorMenu("))
+        XCTAssertTrue(mainWindowSource.contains("TerminalProfilePill(uiScale: uiScale)"))
+        XCTAssertFalse(mainWindowSource.contains("GlassToolbarSplitButton("))
+        XCTAssertFalse(mainWindowSource.contains("effectiveExternalEditorDisplayName"))
+        XCTAssertFalse(mainWindowSource.contains("Image(systemName: \"sidebar.leading\")"))
+        XCTAssertFalse(mainWindowSource.contains("GlassToolbarGroup(minHeight: 34, horizontalPadding: 5, spacing: 2)"))
+        XCTAssertTrue(mainWindowSource.contains(".frame(width: 32, height: 32)"))
+        XCTAssertTrue(mainWindowSource.contains(".font(.system(size: 16, weight: .semibold))"))
+        XCTAssertTrue(mainWindowSource.contains("commandText[..<range.lowerBound]"))
+        XCTAssertFalse(mainWindowSource.contains("commandText[..<shortcutRange.lowerBound]"))
+
+        XCTAssertTrue(railSource.contains(".fill(isSelected ? Color.clear : Color.white.opacity(0.001))"))
+        XCTAssertFalse(railSource.contains("chromeTint.selectionFill.color"))
     }
 
     func testTerminalWorkspaceChromeUsesDynamicTint() throws {
@@ -707,7 +718,7 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
             encoding: .utf8
         )
-        let menuButtonPattern = #"GlassToolbarMenuIconButton\(\s*systemName: sleepPreventionIconName,[\s\S]*?\)\s*\{\s*anchorView in\s*present\(menu: makeSleepPreventionMenu\(\), from: anchorView\)\s*\}"#
+        let menuButtonPattern = #"HTMLReferenceTopActionButton\(\s*systemName: sleepPreventionIconName,[\s\S]*?\)\s*\{\s*anchorView in\s*present\(menu: makeSleepPreventionMenu\(\), from: anchorView\)\s*\}"#
 
         XCTAssertNotNil(
             source.range(of: menuButtonPattern, options: .regularExpression),

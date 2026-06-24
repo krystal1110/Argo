@@ -73,11 +73,11 @@ private struct GlobalModeRailButton: View {
                 .frame(width: 38 * uiScale, height: 38 * uiScale)
                 .background(
                     RoundedRectangle(cornerRadius: 10 * uiScale, style: .continuous)
-                        .fill(isSelected ? chromeTint.selectionFill.color : Color.white.opacity(0.001))
+                        .fill(isSelected ? Color.clear : Color.white.opacity(0.001))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10 * uiScale, style: .continuous)
-                        .stroke(isSelected ? chromeTint.components.color.opacity(0.65) : Color.clear, lineWidth: 1)
+                        .stroke(Color.clear, lineWidth: 1)
                 )
                 .overlay(alignment: .leading) {
                     if isSelected {

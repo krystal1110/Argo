@@ -516,4 +516,27 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertEqual(state.tabID(at: 2), thirdTab.id)
         XCTAssertNil(state.tabID(at: 8))
     }
+
+    func testWorkspaceModePaintsTwilightWallpaperBehindChrome() throws {
+        let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
+        let wallpaperSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/TwilightWallpaperView.swift"), encoding: .utf8)
+
+        XCTAssertTrue(mainWindowSource.contains("TwilightWallpaperView(theme: store.currentTwilightTheme)"))
+        XCTAssertTrue(mainWindowSource.contains("ArgoChromeTint.resolved(for: store.currentTwilightTheme)"))
+        XCTAssertTrue(wallpaperSource.contains("RadialGradient"))
+        XCTAssertTrue(wallpaperSource.contains("LinearGradient"))
+        XCTAssertTrue(wallpaperSource.contains("center: UnitPoint(x: 0.82, y: 0.64)"))
+    }
+
+    func testSidebarUsesTwilightPromptAndSingleOuterSurface() throws {
+        let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let sidebarSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"), encoding: .utf8)
+        let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
+
+        XCTAssertTrue(sidebarSource.contains("Text(\"❯\")"))
+        XCTAssertFalse(sidebarSource.contains("Image(systemName: \"magnifyingglass\")"))
+        XCTAssertTrue(mainWindowSource.contains("ArgoTheme.glassSide"))
+        XCTAssertFalse(sidebarSource.contains("ArgoTheme.sidebarBackground, in: RoundedRectangle"))
+    }
 }

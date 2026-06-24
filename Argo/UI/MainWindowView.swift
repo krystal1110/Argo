@@ -50,6 +50,12 @@ struct MainWindowView: View {
         terminalIsTranslucent ? .clear : ArgoTheme.appBackground
     }
 
+    private var activeChromeTint: ArgoChromeTint {
+        store.appSettings.twilightThemeEnabled
+            ? ArgoChromeTint.resolved(for: store.currentTwilightTheme)
+            : store.chromeTint
+    }
+
     private var hasSelectedSession: Bool {
         guard let workspace = store.selectedWorkspace else { return false }
         let targetPaneID = workspace.sessionController.focusedPaneID ?? workspace.paneOrder.first
@@ -173,7 +179,7 @@ struct MainWindowView: View {
     }
 
     private var topGlassChrome: some View {
-        let chromeTint = store.chromeTint
+        let chromeTint = activeChromeTint
 
         return HStack(spacing: 14) {
             Button {
@@ -342,13 +348,18 @@ struct MainWindowView: View {
 
     var body: some View {
         ZStack {
+            if store.mainWindowMode == .workspace, store.appSettings.twilightThemeEnabled {
+                TwilightWallpaperView(theme: store.currentTwilightTheme)
+                    .transition(.opacity)
+            }
+
             VStack(spacing: 0) {
                 topGlassChrome
 
                 HStack(spacing: 0) {
                     GlobalModeRailView(
                         selectedMode: store.mainWindowMode,
-                        chromeTint: store.chromeTint,
+                        chromeTint: activeChromeTint,
                         uiScale: uiScale,
                         onSelectMode: { mode in
                             selectMainWindowMode(mode, restoreFocus: mode == .workspace)
@@ -359,7 +370,7 @@ struct MainWindowView: View {
                     )
 
                     if layoutState.isWorkspaceSidebarVisible(in: store.mainWindowMode) {
-                        FloatingWorkspaceSidebarSurface(chromeTint: store.chromeTint) {
+                        FloatingWorkspaceSidebarSurface(chromeTint: activeChromeTint) {
                             WorkspaceSidebarView()
                         }
                         .frame(width: workspaceSidebarWidth)
@@ -809,7 +820,7 @@ struct TopChromeSurfaceBackground: View {
     let chromeTint: ArgoChromeTint
 
     var body: some View {
-        chromeTint.topChromeSurfaceComponents.color
+        ArgoTheme.topGlass
     }
 }
 
@@ -826,9 +837,7 @@ private struct FloatingWorkspaceSidebarSurface<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 ZStack {
-                    Color.black.opacity(0.12)
-                    ArgoTheme.sidebarBackground.opacity(0.56)
-                    chromeTint.sidebarFill.color.opacity(0.85)
+                    ArgoTheme.glassSide
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.028),
@@ -999,14 +1008,10 @@ private struct TimeCommandPaletteButtonLabel: View {
 
     private var iconColor: Color {
         switch phase {
-        case .morning:
-            return Color(red: 1.0, green: 0.63, blue: 0.25)
-        case .afternoon:
-            return Color(red: 1.0, green: 0.82, blue: 0.22)
-        case .sunset:
-            return Color(red: 1.0, green: 0.16, blue: 0.31)
+        case .morning, .afternoon, .sunset:
+            return ArgoTheme.amber
         case .night:
-            return Color(red: 0.56, green: 0.64, blue: 1.0)
+            return ArgoTheme.cyan
         }
     }
 

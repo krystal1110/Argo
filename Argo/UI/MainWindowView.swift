@@ -57,6 +57,14 @@ struct MainWindowView: View {
             : store.chromeTint
     }
 
+    private var twilightSurfacePalette: TwilightSurfacePalette {
+        store.currentTwilightSurfacePalette
+    }
+
+    private var twilightOpacity: TwilightOpacityModel {
+        store.currentTwilightOpacity
+    }
+
     private var hasSelectedSession: Bool {
         guard let workspace = store.selectedWorkspace else { return false }
         let targetPaneID = workspace.sessionController.focusedPaneID ?? workspace.paneOrder.first
@@ -281,7 +289,11 @@ struct MainWindowView: View {
         .frame(maxWidth: .infinity)
         .frame(height: WorkspaceChromeMetrics.topHeight)
         .background {
-            TopChromeSurfaceBackground(chromeTint: chromeTint)
+            TopChromeSurfaceBackground(
+                surfacePalette: twilightSurfacePalette,
+                opacity: twilightOpacity,
+                usesTwilight: store.appSettings.twilightThemeEnabled
+            )
                 .ignoresSafeArea(.container, edges: .top)
         }
         .overlay(alignment: .bottom) {
@@ -296,7 +308,10 @@ struct MainWindowView: View {
     var body: some View {
         ZStack {
             if store.mainWindowMode == .workspace, store.appSettings.twilightThemeEnabled {
-                TwilightWallpaperView(theme: store.currentTwilightTheme)
+                TwilightWallpaperView(
+                    preset: store.appSettings.twilightWallpaperPreset ?? .desk,
+                    customImagePath: store.appSettings.twilightCustomWallpaperPath
+                )
                     .transition(.opacity)
             }
 
@@ -308,6 +323,9 @@ struct MainWindowView: View {
                         selectedMode: store.mainWindowMode,
                         chromeTint: activeChromeTint,
                         uiScale: uiScale,
+                        surfacePalette: twilightSurfacePalette,
+                        opacity: twilightOpacity,
+                        usesTwilight: store.appSettings.twilightThemeEnabled,
                         onSelectMode: { mode in
                             selectMainWindowMode(mode, restoreFocus: mode == .workspace)
                         },
@@ -319,7 +337,11 @@ struct MainWindowView: View {
                     if layoutState.isWorkspaceSidebarVisible(in: store.mainWindowMode) {
                         WorkspaceSidebarView()
                         .frame(width: workspaceSidebarWidth)
-                        .background(ArgoTheme.glassSide)
+                        .background(
+                            store.appSettings.twilightThemeEnabled
+                                ? twilightSurfacePalette.color(\.glassSide, alpha: twilightOpacity.glassSideAlpha)
+                                : ArgoTheme.glassSide
+                        )
                         .overlay(alignment: .trailing) {
                             Rectangle()
                                 .fill(ArgoTheme.hairlineSoft)
@@ -358,6 +380,9 @@ struct MainWindowView: View {
 
                 TwilightStatusBar(
                     chromeTint: activeChromeTint,
+                    surfacePalette: twilightSurfacePalette,
+                    opacity: twilightOpacity,
+                    usesTwilight: store.appSettings.twilightThemeEnabled,
                     backendLabel: selectedStatusBackendLabel,
                     shellName: selectedStatusShellName,
                     branch: selectedWorkspaceStatusBranch,
@@ -916,6 +941,9 @@ private struct HTMLTopActionAnchorView: NSViewRepresentable {
 
 private struct TwilightStatusBar: View {
     let chromeTint: ArgoChromeTint
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
     let backendLabel: String
     let shellName: String
     let branch: String
@@ -953,7 +981,11 @@ private struct TwilightStatusBar: View {
         .frame(maxWidth: .infinity)
         .frame(height: WorkspaceChromeMetrics.statusHeight)
         .background {
-            TopChromeSurfaceBackground(chromeTint: chromeTint)
+            TopChromeSurfaceBackground(
+                surfacePalette: surfacePalette,
+                opacity: opacity,
+                usesTwilight: usesTwilight
+            )
         }
         .overlay(alignment: .top) {
             Rectangle()
@@ -964,10 +996,16 @@ private struct TwilightStatusBar: View {
 }
 
 struct TopChromeSurfaceBackground: View {
-    let chromeTint: ArgoChromeTint
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
 
     var body: some View {
-        ArgoTheme.topGlass
+        if usesTwilight {
+            surfacePalette.color(\.topGlass, alpha: opacity.topGlassAlpha)
+        } else {
+            ArgoTheme.topGlass
+        }
     }
 }
 

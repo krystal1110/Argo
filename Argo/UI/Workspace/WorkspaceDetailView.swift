@@ -142,9 +142,16 @@ private struct WorkspaceSessionDetailView: View {
     @ViewBuilder
     private var terminalContent: some View {
         if let layout = workspace.layout {
+            let surfacePalette = store.currentTwilightSurfacePalette
+            let opacity = store.currentTwilightOpacity
+            let usesTwilight = store.appSettings.twilightThemeEnabled
+
             VStack(spacing: 0) {
                 TerminalLocalChrome(
                     chromeTint: activeTerminalChromeTint,
+                    surfacePalette: surfacePalette,
+                    opacity: opacity,
+                    usesTwilight: usesTwilight,
                     path: terminalChromePath,
                     categories: terminalChromeCategoryDescriptors,
                     activeCategoryID: workspace.activeTabID,
@@ -164,14 +171,23 @@ private struct WorkspaceSessionDetailView: View {
                 )
                 .frame(height: WorkspaceChromeMetrics.terminalHeight)
                 .background {
-                    TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)
+                    TopChromeSurfaceBackground(
+                        surfacePalette: surfacePalette,
+                        opacity: opacity,
+                        usesTwilight: usesTwilight
+                    )
                 }
 
                 Rectangle()
                     .fill(TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint))
                     .frame(height: 0.6)
 
-                TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {
+                TerminalWorkspaceSurface(
+                    chromeTint: activeTerminalChromeTint,
+                    surfacePalette: surfacePalette,
+                    opacity: opacity,
+                    usesTwilight: usesTwilight
+                ) {
                     SplitNodeView(
                         workspace: workspace,
                         sessionController: workspace.sessionController,
@@ -268,139 +284,86 @@ private struct WorkspaceSessionDetailView: View {
 }
 
 private struct TerminalWorkspaceSurface<Content: View>: View {
-    @EnvironmentObject private var store: WorkspaceStore
     let chromeTint: ArgoChromeTint
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
     let content: Content
 
-    init(chromeTint: ArgoChromeTint, @ViewBuilder content: () -> Content) {
+    init(
+        chromeTint: ArgoChromeTint,
+        surfacePalette: TwilightSurfacePalette,
+        opacity: TwilightOpacityModel,
+        usesTwilight: Bool,
+        @ViewBuilder content: () -> Content
+    ) {
         self.chromeTint = chromeTint
+        self.surfacePalette = surfacePalette
+        self.opacity = opacity
+        self.usesTwilight = usesTwilight
         self.content = content()
-    }
-
-    private var isTranslucent: Bool {
-        store.appSettings.terminalBackgroundOpacity < 1
-    }
-
-    private var usesBackgroundBlur: Bool {
-        isTranslucent && store.appSettings.terminalBackgroundBlur
-    }
-
-    private var opaqueSurfaceScrimOpacity: Double {
-        0.14
-    }
-
-    private var opaqueGlowOpacity: Double {
-        0.58
-    }
-
-    private var translucentGlowOpacity: Double {
-        chromeTint.isNeutral ? 0.045 : 0.075
-    }
-
-    private var surfaceFill: LinearGradient {
-        let topOpacity = 0.34
-        let bottomOpacity = 0.26
-
-        return LinearGradient(
-            colors: [
-                ArgoTheme.panelRaised.opacity(topOpacity),
-                ArgoTheme.paneBackground.opacity(bottomOpacity)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
 
     var body: some View {
         let shape = Rectangle()
 
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                if usesBackgroundBlur {
-                    TerminalBackgroundBlurView()
-                        .allowsHitTesting(false)
-                }
-                if !isTranslucent {
-                    Color.black.opacity(opaqueSurfaceScrimOpacity)
-                    surfaceFill
-                }
-                TwilightTerminalScrim()
-                chromeTint.glowFill.color
-                    .opacity(isTranslucent ? translucentGlowOpacity : opaqueGlowOpacity)
-                TwilightHorizonGlow(
-                    startColor: store.appSettings.twilightThemeEnabled
-                        ? store.currentTwilightTheme.amber.color
-                        : chromeTint.components.color,
-                    endColor: store.appSettings.twilightThemeEnabled
-                        ? store.currentTwilightTheme.amber2.color
-                        : chromeTint.components.color
+        ZStack {
+            if usesTwilight {
+                surfacePalette.color(\.term, alpha: opacity.termAlpha)
+                LinearGradient(
+                    stops: [
+                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim1Alpha), location: 0),
+                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim1Alpha), location: 0.14),
+                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim2Alpha), location: 0.46),
+                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim2Alpha * 0.2), location: 0.74),
+                        .init(color: .clear, location: 1),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
                 )
+                .allowsHitTesting(false)
+            } else {
+                TerminalWorkspaceSurfaceStyle.background(for: chromeTint)
             }
-            .clipShape(shape)
-            .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
-    }
-}
 
-private struct TwilightTerminalScrim: View {
-    var body: some View {
-        LinearGradient(
-            stops: [
-                .init(color: ArgoTheme.scrimStrong, location: 0),
-                .init(color: ArgoTheme.scrimStrong, location: 0.14),
-                .init(color: ArgoTheme.scrimSoft, location: 0.46),
-                .init(color: Color(nsColor: NSColor(calibratedRed: 0.031, green: 0.043, blue: 0.071, alpha: 0.04)), location: 0.74),
-                .init(color: .clear, location: 1),
-            ],
-            startPoint: UnitPoint(x: 0, y: 0.45),
-            endPoint: UnitPoint(x: 1, y: 0.55)
-        )
-        .allowsHitTesting(false)
-    }
-}
-
-private struct TwilightHorizonGlow: View {
-    let startColor: Color
-    let endColor: Color
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .clipShape(shape)
+        .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
+        .overlay(alignment: .bottom) {
             LinearGradient(
                 stops: [
                     .init(color: .clear, location: 0),
-                    .init(color: startColor.opacity(0.50), location: 0.55),
-                    .init(color: endColor.opacity(0.65), location: 0.75),
+                    .init(color: chromeTint.components.color.opacity(0.50), location: 0.55),
+                    .init(color: ArgoTheme.amber2.opacity(0.65), location: 0.75),
                     .init(color: .clear, location: 1),
                 ],
                 startPoint: .leading,
                 endPoint: .trailing
             )
             .frame(height: 2)
+            .allowsHitTesting(false)
         }
-        .allowsHitTesting(false)
-    }
-}
-
-private struct TerminalBackgroundBlurView: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        configure(view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        configure(nsView)
-    }
-
-    private func configure(_ view: NSVisualEffectView) {
-        view.blendingMode = .behindWindow
-        view.material = .underWindowBackground
-        view.state = .active
     }
 }
 
 private enum TerminalWorkspaceSurfaceStyle {
+    @ViewBuilder
+    static func background(for chromeTint: ArgoChromeTint) -> some View {
+        Color.black.opacity(0.14)
+        LinearGradient(
+            colors: [
+                ArgoTheme.panelRaised.opacity(0.34),
+                ArgoTheme.paneBackground.opacity(0.26)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        chromeTint.glowFill.color
+            .opacity(chromeTint.isNeutral ? 0.045 : 0.075)
+    }
+
     static func chromeDivider(for chromeTint: ArgoChromeTint) -> some ShapeStyle {
         LinearGradient(
             colors: [

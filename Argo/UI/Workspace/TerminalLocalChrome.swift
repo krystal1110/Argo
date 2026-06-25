@@ -19,6 +19,9 @@ struct TerminalLocalChrome: View {
     @ObservedObject private var localization = LocalizationManager.shared
 
     let chromeTint: ArgoChromeTint
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
     let path: String
     let categories: [TerminalChromeCategoryDescriptor]
     let activeCategoryID: UUID?
@@ -91,6 +94,9 @@ struct TerminalLocalChrome: View {
                 ForEach(categories) { category in
                     TerminalChromeCategoryPill(
                         chromeTint: chromeTint,
+                        surfacePalette: surfacePalette,
+                        opacity: opacity,
+                        usesTwilight: usesTwilight,
                         category: category,
                         isFocused: isFocused && category.isSelected,
                         renamePopoverBinding: renamePopoverBinding(for: category.id),
@@ -176,6 +182,13 @@ struct TerminalLocalChrome: View {
     }
 
     private func pathFill(isSelected: Bool) -> Color {
+        if usesTwilight {
+            if isSelected {
+                return surfacePalette.color(\.glassCardH, alpha: opacity.glassCardHAlpha)
+                    .opacity(isFocused ? 1 : 0.86)
+            }
+            return surfacePalette.color(\.glassCard, alpha: opacity.glassCardAlpha)
+        }
         if isSelected {
             return ArgoTheme.glassCardH.opacity(isFocused ? 1 : 0.86)
         }
@@ -185,6 +198,9 @@ struct TerminalLocalChrome: View {
 
 private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
     let chromeTint: ArgoChromeTint
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
     let category: TerminalChromeCategoryDescriptor
     let isFocused: Bool
     let renamePopoverBinding: Binding<Bool>
@@ -268,6 +284,15 @@ private struct TerminalChromeCategoryPill<RenamePopover: View>: View {
     }
 
     private var backgroundFill: Color {
+        if usesTwilight {
+            if category.isSelected {
+                return surfacePalette.color(\.glassCardH, alpha: opacity.glassCardHAlpha)
+                    .opacity(isFocused ? 1 : 0.86)
+            }
+            return isHovered
+                ? surfacePalette.color(\.glassCard, alpha: opacity.glassCardAlpha)
+                : .clear
+        }
         if category.isSelected {
             return ArgoTheme.glassCardH.opacity(isFocused ? 1 : 0.86)
         }

@@ -34,7 +34,10 @@ struct TerminalPaneView: View {
     /// When the terminal background is translucent, the pane fill is cleared so
     /// the terminal region reveals the (optionally blurred) window backdrop.
     private var paneFill: Color {
-        store.appSettings.terminalBackgroundOpacity < 1 ? .clear : ArgoTheme.paneBackground
+        if store.appSettings.twilightThemeEnabled || store.appSettings.terminalBackgroundOpacity < 1 {
+            return .clear
+        }
+        return ArgoTheme.paneBackground
     }
 
     private func localized(_ key: String) -> String {

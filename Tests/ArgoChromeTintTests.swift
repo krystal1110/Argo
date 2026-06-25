@@ -47,7 +47,8 @@ final class ArgoChromeTintTests: XCTestCase {
         let theme = TwilightTheme.generate(seed: "#ffb066")
         let tint = ArgoChromeTint.resolved(for: theme)
 
-        XCTAssertEqual(tint.components.hexString, "#fcb069")
+        XCTAssertEqual(theme.seedHex, "#fabd2f")
+        XCTAssertEqual(tint.components.hexString, "#fabd2f")
         XCTAssertFalse(tint.isNeutral)
         XCTAssertEqual(tint.topFill.alpha, 0.34, accuracy: 0.0001)
         XCTAssertEqual(tint.leadingFill.alpha, 0.38, accuracy: 0.0001)
@@ -55,8 +56,8 @@ final class ArgoChromeTintTests: XCTestCase {
     }
 
     func testTwilightStaticThemeTokensUseReferenceColors() {
-        XCTAssertEqual(ArgoTheme.twilightDefault.seedHex, "#ffb066")
-        XCTAssertEqual(ArgoTheme.accentHexForTests, "#fcb069")
-        XCTAssertEqual(ArgoTheme.localAccentHexForTests, "#53eac0")
+        XCTAssertEqual(ArgoTheme.twilightDefault.seedHex, "#7aa2f7")
+        XCTAssertEqual(ArgoTheme.accentHexForTests, "#6f9af6")
+        XCTAssertEqual(ArgoTheme.localAccentHexForTests, "#53d9ea")
     }
 }

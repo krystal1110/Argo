@@ -4,6 +4,7 @@
 //
 
 import AppKit
+import Foundation
 import SwiftUI
 
 struct TwilightTheme: Equatable {
@@ -13,14 +14,23 @@ struct TwilightTheme: Equatable {
         let seedHex: String
     }
 
-    static let defaultSeedHex = "#ffb066"
+    static let defaultSeedHex = "#cba6f7"
 
     static let presets: [Preset] = [
-        Preset(id: "twilight", nameKey: "settings.twilight.preset.twilight", seedHex: "#ffb066"),
-        Preset(id: "aurora", nameKey: "settings.twilight.preset.aurora", seedHex: "#7af0c0"),
-        Preset(id: "abyss", nameKey: "settings.twilight.preset.abyss", seedHex: "#5cc8ff"),
-        Preset(id: "sakura", nameKey: "settings.twilight.preset.sakura", seedHex: "#ff9ec4"),
-        Preset(id: "ember", nameKey: "settings.twilight.preset.ember", seedHex: "#ff7a59"),
+        Preset(id: "catppuccinMocha", nameKey: "settings.twilight.preset.catppuccinMocha", seedHex: "#cba6f7"),
+        Preset(id: "tokyoNight", nameKey: "settings.twilight.preset.tokyoNight", seedHex: "#7aa2f7"),
+        Preset(id: "dracula", nameKey: "settings.twilight.preset.dracula", seedHex: "#bd93f9"),
+        Preset(id: "nord", nameKey: "settings.twilight.preset.nord", seedHex: "#88c0d0"),
+        Preset(id: "gruvbox", nameKey: "settings.twilight.preset.gruvbox", seedHex: "#fabd2f"),
+        Preset(id: "rosePine", nameKey: "settings.twilight.preset.rosePine", seedHex: "#ebbcba"),
+    ]
+
+    private static let oldPresetMigration: [String: String] = [
+        "#ffb066": "#fabd2f",
+        "#7af0c0": "#88c0d0",
+        "#5cc8ff": "#7aa2f7",
+        "#ff9ec4": "#ebbcba",
+        "#ff7a59": "#bd93f9",
     ]
 
     let seedHex: String
@@ -37,7 +47,7 @@ struct TwilightTheme: Equatable {
     }
 
     static func generate(seed: String) -> TwilightTheme {
-        let normalizedSeed = normalizedSeedHex(seed)
+        let normalizedSeed = migratedSeedHex(seed)
         let source = TwilightHSLColor.hexToHSL(normalizedSeed)
         let h = source.hue
         let s = source.saturation
@@ -51,7 +61,7 @@ struct TwilightTheme: Equatable {
         let magenta = TwilightHSLColor(hue: h - 46, saturation: clamp(S - 4, 46, 82), lightness: 72)
 
         let skyH = lerpHue(h, 250, 0.72)
-        let waterH = lerpHue(h, 218, 0.78)
+        let waterH = lerpHue(h, 214, 0.86)
         let sunS = clamp(S + 4, 55, 98)
 
         let wallpaper = TwilightWallpaper(
@@ -129,6 +139,11 @@ struct TwilightTheme: Equatable {
         validSeedHex(seed) ?? defaultSeedHex
     }
 
+    static func migratedSeedHex(_ seed: String?) -> String {
+        let normalized = normalizedSeedHex(seed)
+        return oldPresetMigration[normalized] ?? normalized
+    }
+
     static func validSeedHex(_ seed: String?) -> String? {
         guard var hex = seed?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !hex.isEmpty else {
             return nil
@@ -156,6 +171,71 @@ struct TwilightTheme: Equatable {
     static func lerpHue(_ a: Double, _ b: Double, _ t: Double) -> Double {
         let delta = (b - a + 540).truncatingRemainder(dividingBy: 360) - 180
         return a + delta * t
+    }
+
+    static func surfacePalette(seed: String) -> TwilightSurfacePalette {
+        let normalizedSeed = migratedSeedHex(seed)
+        let source = TwilightHSLColor.hexToHSL(normalizedSeed)
+        let tintHex = TwilightHSLColor.hslToHex(
+            hue: source.hue,
+            saturation: clamp(clamp(source.saturation, 42, 96) * 0.55, 26, 62),
+            lightness: 34
+        )
+        let tint = rgb255(from: tintHex)
+
+        func mixed(_ base: (Double, Double, Double), _ amount: Double) -> TwilightRGBColor {
+            TwilightRGBColor(
+                red: base.0 + (tint.red - base.0) * amount,
+                green: base.1 + (tint.green - base.1) * amount,
+                blue: base.2 + (tint.blue - base.2) * amount
+            )
+        }
+
+        return TwilightSurfacePalette(
+            app: mixed((14, 15, 18), 0.06),
+            glassSide: mixed((18, 19, 23), 0.10),
+            glassRail: mixed((14, 15, 19), 0.08),
+            glassCard: mixed((32, 33, 39), 0.11),
+            glassCardH: mixed((42, 43, 51), 0.13),
+            topGlass: mixed((18, 19, 23), 0.09),
+            term: mixed((9, 10, 13), 0.05),
+            scrim: mixed((7, 8, 11), 0.06),
+            dock: mixed((18, 19, 23), 0.10),
+            toast: mixed((20, 21, 25), 0.10)
+        )
+    }
+
+    static func opacityModel(percent: Int) -> TwilightOpacityModel {
+        let normalized = min(max(percent, 0), 100)
+        func alpha(_ target: Double) -> Double {
+            normalized == 0 ? 0 : clamp(target * Double(normalized) / 100, 0, 1)
+        }
+
+        return TwilightOpacityModel(
+            percent: normalized,
+            appAlpha: alpha(0.35),
+            glassSideAlpha: alpha(1),
+            glassRailAlpha: alpha(1),
+            glassCardAlpha: alpha(1),
+            glassCardHAlpha: alpha(1),
+            topGlassAlpha: alpha(1),
+            termAlpha: alpha(0.65),
+            scrim1Alpha: alpha(1),
+            scrim2Alpha: alpha(0.45),
+            softFillAlpha: alpha(0.45),
+            dockAlpha: alpha(1),
+            toastAlpha: alpha(1)
+        )
+    }
+
+    private static func rgb255(from hex: String) -> TwilightRGBColor {
+        let normalized = normalizedSeedHex(hex).dropFirst()
+        let value = UInt64(normalized, radix: 16)!
+        return TwilightRGBColor(
+            red: Double((value >> 16) & 0xff),
+            green: Double((value >> 8) & 0xff),
+            blue: Double(value & 0xff)
+        )
     }
 }
 
@@ -312,6 +392,93 @@ struct TwilightGhosttyTheme: Equatable {
     var paletteLines: [String] {
         (0...15).map { index in
             "palette = \(index)=\(palette[index]!)"
+        }
+    }
+}
+
+struct TwilightRGBColor: Equatable {
+    var red: Double
+    var green: Double
+    var blue: Double
+
+    var color: Color {
+        Color(nsColor: nsColor(alpha: 1))
+    }
+
+    func color(alpha: Double) -> Color {
+        Color(nsColor: nsColor(alpha: alpha))
+    }
+
+    func nsColor(alpha: Double) -> NSColor {
+        NSColor(
+            calibratedRed: TwilightTheme.clamp(red, 0, 255) / 255,
+            green: TwilightTheme.clamp(green, 0, 255) / 255,
+            blue: TwilightTheme.clamp(blue, 0, 255) / 255,
+            alpha: TwilightTheme.clamp(alpha, 0, 1)
+        )
+    }
+}
+
+struct TwilightSurfacePalette: Equatable {
+    var app: TwilightRGBColor
+    var glassSide: TwilightRGBColor
+    var glassRail: TwilightRGBColor
+    var glassCard: TwilightRGBColor
+    var glassCardH: TwilightRGBColor
+    var topGlass: TwilightRGBColor
+    var term: TwilightRGBColor
+    var scrim: TwilightRGBColor
+    var dock: TwilightRGBColor
+    var toast: TwilightRGBColor
+
+    func color(_ keyPath: KeyPath<TwilightSurfacePalette, TwilightRGBColor>, alpha: Double) -> Color {
+        self[keyPath: keyPath].color(alpha: alpha)
+    }
+}
+
+struct TwilightOpacityModel: Equatable {
+    var percent: Int
+    var appAlpha: Double
+    var glassSideAlpha: Double
+    var glassRailAlpha: Double
+    var glassCardAlpha: Double
+    var glassCardHAlpha: Double
+    var topGlassAlpha: Double
+    var termAlpha: Double
+    var scrim1Alpha: Double
+    var scrim2Alpha: Double
+    var softFillAlpha: Double
+    var dockAlpha: Double
+    var toastAlpha: Double
+}
+
+enum TwilightWallpaperPreset: String, Codable, CaseIterable, Identifiable {
+    case desk
+    case mountain
+    case forest
+    case night
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .desk: return "Desk"
+        case .mountain: return "Mountain"
+        case .forest: return "Forest"
+        case .night: return "Night"
+        }
+    }
+
+    var remoteURL: URL {
+        switch self {
+        case .desk:
+            return URL(string: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2400&q=82")!
+        case .mountain:
+            return URL(string: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=82")!
+        case .forest:
+            return URL(string: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&q=82")!
+        case .night:
+            return URL(string: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&q=82")!
         }
     }
 }

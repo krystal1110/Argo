@@ -160,6 +160,29 @@ final class LocalizationManagerTests: XCTestCase {
         XCTAssertEqual(LocalizationManager.shared.string("island.action.clearCompleted"), "清除已完成")
     }
 
+    func testCurrentTwilightPresetLocalization() {
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.catppuccinMocha", language: .english), "Catppuccin Mocha")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.tokyoNight", language: .english), "Tokyo Night")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.dracula", language: .english), "Dracula")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.nord", language: .english), "Nord")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.gruvbox", language: .english), "Gruvbox")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.rosePine", language: .english), "Rosé Pine")
+
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.catppuccinMocha", language: .simplifiedChinese), "Catppuccin Mocha")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.tokyoNight", language: .simplifiedChinese), "Tokyo Night")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.dracula", language: .simplifiedChinese), "Dracula")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.nord", language: .simplifiedChinese), "Nord")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.gruvbox", language: .simplifiedChinese), "Gruvbox")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.rosePine", language: .simplifiedChinese), "Rosé Pine")
+    }
+
+    func testTwilightWallpaperAndOpacityLocalization() {
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.wallpaper", language: .english), "Wallpaper")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.opacity", language: .english), "Opacity")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.wallpaper", language: .simplifiedChinese), "背景图片")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.opacity", language: .simplifiedChinese), "透明度")
+    }
+
     func testUpdateSelectedLanguagePostsChangeNotification() {
         let expectation = expectation(forNotification: .argoLocalizationDidChange, object: nil)
 

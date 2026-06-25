@@ -925,21 +925,23 @@ struct SettingsSheet: View {
 
                     Divider()
 
-                    HStack {
-                        Text(localized("settings.general.terminal.backgroundOpacity"))
-                        Spacer()
-                        Text("\(Int((appSettings.terminalBackgroundOpacity * 100).rounded()))%")
+                    if !appSettings.twilightThemeEnabled {
+                        HStack {
+                            Text(localized("settings.general.terminal.backgroundOpacity"))
+                            Spacer()
+                            Text("\(Int((appSettings.terminalBackgroundOpacity * 100).rounded()))%")
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(value: terminalBackgroundOpacityBinding, in: 0.5...1, step: 0.05)
+
+                        Toggle(localized("settings.general.terminal.backgroundBlur"), isOn: $appSettings.terminalBackgroundBlur)
+                            .disabled(appSettings.terminalBackgroundOpacity >= 1)
+
+                        Text(localized("settings.general.terminal.backgroundOpacityHint"))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
-
-                    Slider(value: $appSettings.terminalBackgroundOpacity, in: 0.5...1, step: 0.05)
-
-                    Toggle(localized("settings.general.terminal.backgroundBlur"), isOn: $appSettings.terminalBackgroundBlur)
-                        .disabled(appSettings.terminalBackgroundOpacity >= 1)
-
-                    Text(localized("settings.general.terminal.backgroundOpacityHint"))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
             }
@@ -1012,6 +1014,61 @@ struct SettingsSheet: View {
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(ArgoTheme.danger)
                         }
+
+                        Text(localized("settings.twilight.wallpaper"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 8) {
+                            ForEach(TwilightWallpaperPreset.allCases) { preset in
+                                Button {
+                                    appSettings.twilightWallpaperPreset = preset
+                                    appSettings.twilightCustomWallpaperPath = nil
+                                    applyThemeLive()
+                                } label: {
+                                    Text(preset.label)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .padding(.horizontal, 8)
+                                        .frame(height: 26)
+                                        .background(
+                                            (appSettings.twilightWallpaperPreset == preset && appSettings.twilightCustomWallpaperPath == nil)
+                                                ? ArgoTheme.accentMuted
+                                                : ArgoTheme.glassCard,
+                                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            if appSettings.twilightCustomWallpaperPath != nil {
+                                Text(localized("settings.twilight.customWallpaper"))
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .padding(.horizontal, 8)
+                                    .frame(height: 26)
+                                    .background(ArgoTheme.accentMuted, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            }
+                        }
+
+                        HStack {
+                            Text(localized("settings.twilight.opacity"))
+                            Spacer()
+                            Text("\(appSettings.twilightOpacityPercent)%")
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(
+                            value: Binding(
+                                get: { Double(appSettings.twilightOpacityPercent) },
+                                set: { value in
+                                    appSettings.twilightOpacityPercent = Int(value.rounded())
+                                    appSettings.terminalBackgroundOpacity = Double(appSettings.twilightOpacityPercent) / 100
+                                    appSettings.terminalBackgroundBlur = false
+                                    applyThemeLive()
+                                }
+                            ),
+                            in: 0...100,
+                            step: 1
+                        )
                     }
 
                     if !appSettings.twilightThemeEnabled {
@@ -1639,7 +1696,9 @@ struct SettingsSheet: View {
             set: { enabled in
                 appSettings.twilightThemeEnabled = enabled
                 if enabled {
-                    appSettings.twilightThemeSeedHex = TwilightTheme.normalizedSeedHex(appSettings.twilightThemeSeedHex)
+                    appSettings.twilightThemeSeedHex = TwilightTheme.migratedSeedHex(appSettings.twilightThemeSeedHex)
+                    appSettings.terminalBackgroundOpacity = Double(appSettings.twilightOpacityPercent) / 100
+                    appSettings.terminalBackgroundBlur = false
                     twilightSeedDraft = appSettings.twilightThemeSeedHex
                     twilightSeedError = nil
                 }
@@ -1657,8 +1716,9 @@ struct SettingsSheet: View {
                     twilightSeedError = localized("settings.twilight.invalidSeed")
                     return
                 }
+                let migrated = TwilightTheme.migratedSeedHex(normalized)
                 twilightSeedError = nil
-                appSettings.twilightThemeSeedHex = normalized
+                appSettings.twilightThemeSeedHex = migrated
                 applyThemeLive()
             }
         )
@@ -1671,7 +1731,14 @@ struct SettingsSheet: View {
               hex.allSatisfy({ $0.isHexDigit }) else {
             return nil
         }
-        return TwilightTheme.normalizedSeedHex(trimmed)
+        return TwilightTheme.migratedSeedHex(trimmed)
+    }
+
+    private var terminalBackgroundOpacityBinding: Binding<Double> {
+        Binding(
+            get: { appSettings.terminalBackgroundOpacity },
+            set: { appSettings.terminalBackgroundOpacity = min(max($0, 0.5), 1) }
+        )
     }
 
     private var terminalThemeEnabledBinding: Binding<Bool> {

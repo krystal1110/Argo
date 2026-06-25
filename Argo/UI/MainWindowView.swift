@@ -409,6 +409,23 @@ struct MainWindowView: View {
                 Spacer()
             }
             .zIndex(2)
+
+            if store.mainWindowMode == .workspace, store.appSettings.twilightThemeEnabled {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        TwilightThemeDockView(
+                            surfacePalette: twilightSurfacePalette,
+                            opacity: twilightOpacity
+                        )
+                        .environmentObject(store)
+                        .padding(.trailing, 26)
+                        .padding(.bottom, 26)
+                    }
+                }
+                .zIndex(2.5)
+            }
         }
         .ignoresSafeArea(.container, edges: .top)
         .task {

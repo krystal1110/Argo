@@ -57,6 +57,23 @@ final class TwilightUISourceTests: XCTestCase {
         XCTAssertTrue(chromeSource.contains("glassCardAlpha"))
     }
 
+    func testThemeDockExistsAndIsMountedInMainWindow() throws {
+        let dock = try read("Argo/UI/Components/TwilightThemeDockView.swift")
+        let main = try read("Argo/UI/MainWindowView.swift")
+
+        XCTAssertTrue(dock.contains("struct TwilightThemeDockView"))
+        XCTAssertTrue(dock.contains("TwilightTheme.presets"))
+        XCTAssertTrue(dock.contains("TwilightWallpaperPreset.allCases"))
+        XCTAssertTrue(dock.contains("NSOpenPanel"))
+        XCTAssertTrue(dock.contains("Slider("))
+        XCTAssertTrue(dock.contains("TextField("))
+        XCTAssertTrue(dock.contains("exportCurrentTwilightWarpTheme"))
+        XCTAssertTrue(dock.contains("mv ~/Downloads/"))
+        XCTAssertTrue(main.contains("TwilightThemeDockView("))
+        XCTAssertTrue(main.contains(".padding(.trailing, 26)"))
+        XCTAssertTrue(main.contains(".padding(.bottom, 26)"))
+    }
+
     private func read(_ path: String) throws -> String {
         try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
     }

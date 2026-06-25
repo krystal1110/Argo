@@ -83,10 +83,14 @@ enum ArgoGhosttyConfigManager {
         // Only emit background-opacity when the terminal is meant to be
         // translucent. At full opacity we leave it unset so Ghostty keeps its
         // default opaque background (and the host view stays fully opaque).
-        if settings.terminalBackgroundOpacity < 1 {
-            let opacity = min(max(settings.terminalBackgroundOpacity, 0.5), 1)
+        let configuredOpacity = settings.twilightThemeEnabled
+            ? Double(settings.twilightOpacityPercent) / 100
+            : settings.terminalBackgroundOpacity
+
+        if configuredOpacity < 1 {
+            let opacity = min(max(configuredOpacity, 0), 1)
             lines.append("background-opacity = \(String(format: "%.2f", opacity))")
-            if settings.terminalBackgroundBlur {
+            if !settings.twilightThemeEnabled, settings.terminalBackgroundBlur {
                 lines.append("background-blur = true")
             }
         }

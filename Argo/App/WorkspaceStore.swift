@@ -1055,6 +1055,13 @@ final class WorkspaceStore: ObservableObject {
         updateAppSettings(settings)
     }
 
+    func exportCurrentTwilightWarpTheme() throws -> URL {
+        try TwilightWarpExporter.export(
+            theme: currentTwilightTheme,
+            seedHex: appSettings.twilightThemeSeedHex
+        )
+    }
+
     func updateWorkspaceSettings(workspaceID: UUID, settings: WorkspaceSettings) {
         guard let workspace = workspace(for: workspaceID) else { return }
         workspace.settings = normalizedWorkspaceSettings(settings, for: workspace)

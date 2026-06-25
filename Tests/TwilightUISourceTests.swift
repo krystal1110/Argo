@@ -74,6 +74,15 @@ final class TwilightUISourceTests: XCTestCase {
         XCTAssertTrue(main.contains(".padding(.bottom, 26)"))
     }
 
+    func testSettingsUseTwilightOpacityPercentAndWallpaperControls() throws {
+        let source = try read("Argo/UI/Sheets/SettingsSheet.swift")
+
+        XCTAssertTrue(source.contains("twilightOpacityPercent"))
+        XCTAssertTrue(source.contains("TwilightWallpaperPreset.allCases"))
+        XCTAssertTrue(source.contains("0...100"))
+        XCTAssertFalse(source.contains("Slider(value: $appSettings.terminalBackgroundOpacity, in: 0.5...1"))
+    }
+
     private func read(_ path: String) throws -> String {
         try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
     }

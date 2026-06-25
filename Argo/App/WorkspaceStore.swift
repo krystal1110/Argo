@@ -135,6 +135,14 @@ final class WorkspaceStore: ObservableObject {
         TwilightTheme.generate(seed: appSettings.twilightThemeSeedHex)
     }
 
+    var currentTwilightOpacity: TwilightOpacityModel {
+        TwilightTheme.opacityModel(percent: appSettings.twilightOpacityPercent)
+    }
+
+    var currentTwilightSurfacePalette: TwilightSurfacePalette {
+        TwilightTheme.surfacePalette(seed: appSettings.twilightThemeSeedHex)
+    }
+
     func chromeTint(for workspace: WorkspaceModel?) -> ArgoChromeTint {
         guard let workspace else { return .fallback }
         if workspace.supportsRepositoryFeatures,
@@ -958,6 +966,9 @@ final class WorkspaceStore: ObservableObject {
             terminalBackgroundBlur: settings.terminalBackgroundBlur,
             twilightThemeEnabled: settings.twilightThemeEnabled,
             twilightThemeSeedHex: settings.twilightThemeSeedHex,
+            twilightWallpaperPreset: settings.twilightWallpaperPreset,
+            twilightCustomWallpaperPath: settings.twilightCustomWallpaperPath,
+            twilightOpacityPercent: settings.twilightOpacityPercent,
             sidebarShowsSecondaryLabels: settings.sidebarShowsSecondaryLabels,
             sidebarShowsWorkspaceBadges: settings.sidebarShowsWorkspaceBadges,
             sidebarShowsWorktreeBadges: settings.sidebarShowsWorktreeBadges,
@@ -1001,6 +1012,47 @@ final class WorkspaceStore: ObservableObject {
             await refreshAllRepositories(persistAfterEachWorkspace: false)
             persist()
         }
+    }
+
+    func setTwilightSeedHex(_ seedHex: String) {
+        var settings = appSettings
+        settings.twilightThemeSeedHex = TwilightTheme.migratedSeedHex(seedHex)
+        updateAppSettings(settings)
+    }
+
+    func setTwilightWallpaperPreset(_ preset: TwilightWallpaperPreset) {
+        var settings = appSettings
+        settings.twilightWallpaperPreset = preset
+        settings.twilightCustomWallpaperPath = nil
+        updateAppSettings(settings)
+    }
+
+    func setTwilightOpacityPercent(_ percent: Int) {
+        var settings = appSettings
+        settings.twilightOpacityPercent = min(max(percent, 0), 100)
+        settings.terminalBackgroundOpacity = Double(settings.twilightOpacityPercent) / 100
+        settings.terminalBackgroundBlur = false
+        updateAppSettings(settings)
+    }
+
+    func setTwilightCustomWallpaper(url: URL) throws {
+        let fileExtension = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "png"
+        let destination = argoStateDirectoryURL()
+            .appendingPathComponent("twilight-wallpapers", isDirectory: true)
+            .appendingPathComponent("custom.\(fileExtension.lowercased())")
+        try FileManager.default.createDirectory(
+            at: destination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.removeItem(at: destination)
+        }
+        try FileManager.default.copyItem(at: url, to: destination)
+
+        var settings = appSettings
+        settings.twilightWallpaperPreset = nil
+        settings.twilightCustomWallpaperPath = destination.path
+        updateAppSettings(settings)
     }
 
     func updateWorkspaceSettings(workspaceID: UUID, settings: WorkspaceSettings) {

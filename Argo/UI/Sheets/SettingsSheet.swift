@@ -415,6 +415,7 @@ struct SettingsSheet: View {
     @State private var terminalThemeSearchText = ""
     @State private var twilightSeedDraft = TwilightTheme.defaultSeedHex
     @State private var twilightSeedError: String?
+    @State private var twilightExportedWarpFileName: String?
     @State private var workspaceSettings = WorkspaceSettings()
     @State private var localizationVersion = 0
     @State private var originalAppLanguage: AppLanguage = .automatic
@@ -925,23 +926,23 @@ struct SettingsSheet: View {
 
                     Divider()
 
-                    if !appSettings.twilightThemeEnabled {
-                        HStack {
-                            Text(localized("settings.general.terminal.backgroundOpacity"))
-                            Spacer()
-                            Text("\(Int((appSettings.terminalBackgroundOpacity * 100).rounded()))%")
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Slider(value: terminalBackgroundOpacityBinding, in: 0.5...1, step: 0.05)
-
-                        Toggle(localized("settings.general.terminal.backgroundBlur"), isOn: $appSettings.terminalBackgroundBlur)
-                            .disabled(appSettings.terminalBackgroundOpacity >= 1)
-
-                        Text(localized("settings.general.terminal.backgroundOpacityHint"))
-                            .font(.system(size: 11, weight: .medium))
+                    HStack {
+                        Text(localized("settings.general.terminal.backgroundOpacity"))
+                        Spacer()
+                        Text("\(Int((appSettings.terminalBackgroundOpacity * 100).rounded()))%")
                             .foregroundStyle(.secondary)
                     }
+
+                    Slider(value: terminalBackgroundOpacityBinding, in: 0...1, step: 0.05)
+
+                    if !appSettings.twilightThemeEnabled {
+                        Toggle(localized("settings.general.terminal.backgroundBlur"), isOn: $appSettings.terminalBackgroundBlur)
+                            .disabled(appSettings.terminalBackgroundOpacity >= 1)
+                    }
+
+                    Text(localized("settings.general.terminal.backgroundOpacityHint"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
             }
@@ -1007,46 +1008,19 @@ struct SettingsSheet: View {
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .frame(width: 110)
+
+                            ColorPicker(
+                                localized("settings.twilight.color"),
+                                selection: twilightSeedColorBinding
+                            )
+                            .labelsHidden()
+                            .frame(width: 32, height: 28)
                         }
 
                         if let twilightSeedError {
                             Text(twilightSeedError)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(ArgoTheme.danger)
-                        }
-
-                        Text(localized("settings.twilight.wallpaper"))
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-
-                        HStack(spacing: 8) {
-                            ForEach(TwilightWallpaperPreset.allCases) { preset in
-                                Button {
-                                    appSettings.twilightWallpaperPreset = preset
-                                    appSettings.twilightCustomWallpaperPath = nil
-                                    applyThemeLive()
-                                } label: {
-                                    Text(preset.label)
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .padding(.horizontal, 8)
-                                        .frame(height: 26)
-                                        .background(
-                                            (appSettings.twilightWallpaperPreset == preset && appSettings.twilightCustomWallpaperPath == nil)
-                                                ? ArgoTheme.accentMuted
-                                                : ArgoTheme.glassCard,
-                                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            if appSettings.twilightCustomWallpaperPath != nil {
-                                Text(localized("settings.twilight.customWallpaper"))
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .padding(.horizontal, 8)
-                                    .frame(height: 26)
-                                    .background(ArgoTheme.accentMuted, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            }
                         }
 
                         HStack {
@@ -1061,14 +1035,32 @@ struct SettingsSheet: View {
                                 get: { Double(appSettings.twilightOpacityPercent) },
                                 set: { value in
                                     appSettings.twilightOpacityPercent = Int(value.rounded())
-                                    appSettings.terminalBackgroundOpacity = Double(appSettings.twilightOpacityPercent) / 100
-                                    appSettings.terminalBackgroundBlur = false
                                     applyThemeLive()
                                 }
                             ),
                             in: 0...100,
                             step: 1
                         )
+
+                        HStack(spacing: 8) {
+                            Button {
+                                exportWarpTheme()
+                            } label: {
+                                Label(localized("settings.twilight.exportWarp"), systemImage: "square.and.arrow.down")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+
+                            if let twilightExportedWarpFileName {
+                                Text(localizedFormat("settings.twilight.exported", twilightExportedWarpFileName))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Text(localized("settings.twilight.exportHint"))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
 
                     if !appSettings.twilightThemeEnabled {
@@ -1120,14 +1112,7 @@ struct SettingsSheet: View {
             }
             .frame(maxWidth: 420, alignment: .topLeading)
 
-            if appSettings.twilightThemeEnabled {
-                TwilightThemePreviewCard(
-                    theme: TwilightTheme.generate(seed: appSettings.twilightThemeSeedHex),
-                    localized: localized
-                )
-                .id(appSettings.twilightThemeSeedHex)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            } else {
+            if !appSettings.twilightThemeEnabled {
                 TerminalThemePreviewCard(
                     themeName: appSettings.terminalTheme,
                     colors: appSettings.terminalTheme.flatMap {
@@ -1697,8 +1682,6 @@ struct SettingsSheet: View {
                 appSettings.twilightThemeEnabled = enabled
                 if enabled {
                     appSettings.twilightThemeSeedHex = TwilightTheme.migratedSeedHex(appSettings.twilightThemeSeedHex)
-                    appSettings.terminalBackgroundOpacity = Double(appSettings.twilightOpacityPercent) / 100
-                    appSettings.terminalBackgroundBlur = false
                     twilightSeedDraft = appSettings.twilightThemeSeedHex
                     twilightSeedError = nil
                 }
@@ -1724,6 +1707,20 @@ struct SettingsSheet: View {
         )
     }
 
+    private var twilightSeedColorBinding: Binding<Color> {
+        Binding(
+            get: { TwilightTheme.generate(seed: appSettings.twilightThemeSeedHex).amber.color },
+            set: { color in
+                guard let hex = color.twilightHexString else { return }
+                let migrated = TwilightTheme.migratedSeedHex(hex)
+                twilightSeedDraft = migrated
+                twilightSeedError = nil
+                appSettings.twilightThemeSeedHex = migrated
+                applyThemeLive()
+            }
+        )
+    }
+
     private func normalizedTwilightSeedInput(_ value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let hex = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
@@ -1734,10 +1731,23 @@ struct SettingsSheet: View {
         return TwilightTheme.migratedSeedHex(trimmed)
     }
 
+    private func exportWarpTheme() {
+        applyThemeLive()
+        do {
+            let url = try store.exportCurrentTwilightWarpTheme()
+            twilightExportedWarpFileName = url.lastPathComponent
+        } catch {
+            store.presentedError = PresentedError(
+                title: localized("settings.twilight.exportWarp"),
+                message: error.localizedDescription
+            )
+        }
+    }
+
     private var terminalBackgroundOpacityBinding: Binding<Double> {
         Binding(
             get: { appSettings.terminalBackgroundOpacity },
-            set: { appSettings.terminalBackgroundOpacity = min(max($0, 0.5), 1) }
+            set: { appSettings.terminalBackgroundOpacity = min(max($0, 0), 1) }
         )
     }
 
@@ -1857,6 +1867,16 @@ struct SettingsSheet: View {
             get: { Double(appSettings.terminalScrollbackLines ?? 10000) },
             set: { appSettings.terminalScrollbackLines = Int(min(max($0, 1000), 100_000)) }
         )
+    }
+}
+
+private extension Color {
+    var twilightHexString: String? {
+        guard let nsColor = NSColor(self).usingColorSpace(.sRGB) else { return nil }
+        let red = Int((nsColor.redComponent * 255).rounded())
+        let green = Int((nsColor.greenComponent * 255).rounded())
+        let blue = Int((nsColor.blueComponent * 255).rounded())
+        return String(format: "#%02x%02x%02x", red, green, blue)
     }
 }
 
@@ -2000,56 +2020,6 @@ private struct TerminalThemePreviewCard: View {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .strokeBorder(Color.white.opacity(0.08))
                     )
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
-        }
-    }
-}
-
-private struct TwilightThemePreviewCard: View {
-    let theme: TwilightTheme
-    let localized: (String) -> String
-
-    private func color(hex: String) -> Color {
-        TwilightHSLColor.hexToHSL(hex).color
-    }
-
-    var body: some View {
-        GroupBox(localized("settings.twilight.preview")) {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 8) {
-                        Text("❯")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(theme.amber.color)
-                        Text("git status")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundStyle(color(hex: theme.ghostty.foreground))
-                    }
-
-                    Text(" M Argo/UI/Workspace/TerminalPaneView.swift")
-                        .foregroundStyle(theme.amber2.color)
-                    Text("?? twilight-terminal/design-spec.md")
-                        .foregroundStyle(theme.cyan.color)
-                }
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(color(hex: theme.ghostty.background), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(ArgoTheme.hairline, lineWidth: 1)
-                )
-
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(18), spacing: 5), count: 8), spacing: 5) {
-                    ForEach(0..<16, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(color(hex: theme.ghostty.palette[index] ?? theme.ghostty.foreground))
-                            .frame(width: 18, height: 18)
-                            .help("\(index): \(theme.ghostty.palette[index] ?? theme.ghostty.foreground)")
-                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

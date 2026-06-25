@@ -310,18 +310,6 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
         ZStack {
             if usesTwilight {
                 surfacePalette.color(\.term, alpha: opacity.termAlpha)
-                LinearGradient(
-                    stops: [
-                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim1Alpha), location: 0),
-                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim1Alpha), location: 0.14),
-                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim2Alpha), location: 0.46),
-                        .init(color: surfacePalette.scrim.color(alpha: opacity.scrim2Alpha * 0.2), location: 0.74),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .allowsHitTesting(false)
             } else {
                 TerminalWorkspaceSurfaceStyle.background(for: chromeTint)
             }
@@ -331,37 +319,13 @@ private struct TerminalWorkspaceSurface<Content: View>: View {
         }
         .clipShape(shape)
         .overlay(shape.stroke(Color.white.opacity(0.115), lineWidth: 0.9))
-        .overlay(alignment: .bottom) {
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: chromeTint.components.color.opacity(0.50), location: 0.55),
-                    .init(color: ArgoTheme.amber2.opacity(0.65), location: 0.75),
-                    .init(color: .clear, location: 1),
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .frame(height: 2)
-            .allowsHitTesting(false)
-        }
     }
 }
 
 private enum TerminalWorkspaceSurfaceStyle {
     @ViewBuilder
     static func background(for chromeTint: ArgoChromeTint) -> some View {
-        Color.black.opacity(0.14)
-        LinearGradient(
-            colors: [
-                ArgoTheme.panelRaised.opacity(0.34),
-                ArgoTheme.paneBackground.opacity(0.26)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        chromeTint.glowFill.color
-            .opacity(chromeTint.isNeutral ? 0.045 : 0.075)
+        ArgoTheme.paneBackground.opacity(chromeTint.isNeutral ? 0.82 : 0.78)
     }
 
     static func chromeDivider(for chromeTint: ArgoChromeTint) -> some ShapeStyle {

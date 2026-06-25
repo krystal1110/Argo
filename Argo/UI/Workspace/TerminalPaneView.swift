@@ -256,14 +256,7 @@ struct TerminalPaneView: View {
 
 private struct TerminalInactivePaneOverlay: View {
     var body: some View {
-        LinearGradient(
-            colors: [
-                Color(nsColor: NSColor(calibratedRed: 0.027, green: 0.035, blue: 0.059, alpha: 0.42)),
-                Color(nsColor: NSColor(calibratedRed: 0.027, green: 0.035, blue: 0.059, alpha: 0.50))
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        Color(nsColor: NSColor(calibratedRed: 0.027, green: 0.035, blue: 0.059, alpha: 0.46))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

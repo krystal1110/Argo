@@ -17,7 +17,7 @@ final class ArgoGhosttyRuntime: NSObject {
     var app: ghostty_app_t!
     private var appSettingsObserver: NSObjectProtocol?
 
-    /// Current terminal background opacity (0.5...1). Surface views read this
+    /// Current terminal background opacity (0...1). Surface views read this
     /// to decide whether their backing layer should stay opaque or go clear so
     /// Ghostty's `background-opacity` is the sole source of translucency.
     private(set) var terminalBackgroundOpacity: CGFloat = 1

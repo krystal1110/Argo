@@ -21,12 +21,24 @@ struct WorkspaceSidebarView: View {
         CGFloat(store.appSettings.uiScale)
     }
 
+    private var twilightTheme: TwilightTheme? {
+        store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil
+    }
+
+    private var sidebarAccentColor: Color {
+        twilightTheme?.amber.color ?? ArgoTheme.amber
+    }
+
+    private var searchFillOpacity: Double {
+        store.appSettings.twilightThemeEnabled ? store.currentTwilightOpacity.softFillAlpha : 0.20
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Text("❯")
                     .font(.system(size: 14 * uiScale, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(ArgoTheme.amber)
+                    .foregroundStyle(sidebarAccentColor)
 
                 TextField(
                     text: $query,
@@ -51,7 +63,7 @@ struct WorkspaceSidebarView: View {
             }
             .padding(.horizontal, 12 * uiScale)
             .frame(height: 38 * uiScale)
-            .background(Color.black.opacity(0.20), in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
+            .background(Color.black.opacity(searchFillOpacity), in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
                     .strokeBorder(ArgoTheme.hairline, lineWidth: 1)
@@ -248,6 +260,10 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             parts.append("rootOrder:\(rootOrderFingerprint)")
             parts.append(
                 [
+                    settings.uiScale.description,
+                    settings.twilightThemeEnabled.description,
+                    settings.twilightThemeSeedHex,
+                    settings.twilightOpacityPercent.description,
                     settings.sidebarShowsSecondaryLabels.description,
                     settings.sidebarShowsWorkspaceBadges.description,
                     settings.sidebarShowsWorktreeBadges.description,
@@ -1167,7 +1183,11 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
         }
 
         func outlineView(_ outlineView: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
-            SidebarOutlineRowView()
+            let rowView = SidebarOutlineRowView()
+            rowView.selectionColor = store?.appSettings.twilightThemeEnabled == true
+                ? store?.currentTwilightTheme.amber.nsColor ?? TwilightTheme.default.amber.nsColor
+                : TwilightTheme.default.amber.nsColor
+            return rowView
         }
 
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
@@ -1176,8 +1196,7 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             case .group, .archiveGroup:
                 return 22
             case .workspace:
-                // 显示二级标签时为两行文本,需要更高的行以避免文字贴住选中框
-                return (store?.appSettings.sidebarShowsSecondaryLabels ?? true) ? 33 : 24
+                return 52
             case .branch:
                 return 18
             case .worktree:
@@ -1642,23 +1661,27 @@ private final class SidebarOutlineView: NSOutlineView {
 }
 
 private final class SidebarOutlineRowView: NSTableRowView {
+    var selectionColor: NSColor = TwilightTheme.default.amber.nsColor
+
     override func drawBackground(in dirtyRect: NSRect) {}
 
     override func drawSelection(in dirtyRect: NSRect) {
-        let rect = bounds.insetBy(dx: 10, dy: 1.5)
+        let rect = bounds.insetBy(dx: 10, dy: 0)
         let path = NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8)
-        ArgoTheme.sidebarSelectionFill.setFill()
-        path.fill()
-        ArgoTheme.sidebarSelectionStroke.withAlphaComponent(0.55).setStroke()
-        path.lineWidth = 1
-        path.stroke()
 
+        NSGradient(colors: [
+            selectionColor.withAlphaComponent(0.05),
+            selectionColor.withAlphaComponent(0),
+        ])?.draw(in: path, angle: 0)
+
+        let railVerticalInset = min(10, max(3, rect.height * 0.20))
+        let railHeight = max(2, rect.height - railVerticalInset * 2)
         let bar = NSBezierPath(
-            roundedRect: NSRect(x: rect.minX, y: rect.minY + 9, width: 3, height: rect.height - 18),
-            xRadius: 1.5,
-            yRadius: 1.5
+            roundedRect: NSRect(x: rect.minX, y: rect.minY + railVerticalInset, width: 2, height: railHeight),
+            xRadius: 1,
+            yRadius: 1
         )
-        NSColor(TwilightTheme.default.amber.color).setFill()
+        selectionColor.withAlphaComponent(0.65).setFill()
         bar.fill()
     }
 
@@ -1838,6 +1861,17 @@ private struct WorkspaceRowContent: View {
         CGFloat(appSettings.uiScale)
     }
 
+    private var twilightTheme: TwilightTheme? {
+        appSettings.twilightThemeEnabled ? store?.currentTwilightTheme : nil
+    }
+
+    private var hoverFill: Color {
+        if appSettings.twilightThemeEnabled, let store {
+            return Color.white.opacity(store.currentTwilightOpacity.softFillAlpha * 0.08)
+        }
+        return ArgoTheme.subtleFill
+    }
+
     private var iconActivityIndicator: SidebarIconActivityIndicator {
         if workspace.quitConfirmationSessionCount > 0 {
             return .working
@@ -1855,7 +1889,9 @@ private struct WorkspaceRowContent: View {
                 size: 34 * uiScale,
                 activityIndicator: iconActivityIndicator,
                 activityPalette: appSettings.sidebarActivityIndicatorPalette,
-                isEmphasized: isSelected
+                isEmphasized: isSelected,
+                twilightTheme: twilightTheme,
+                usesSecondaryTwilightAccent: workspace.supportsRepositoryFeatures
             )
 
             VStack(alignment: .leading, spacing: 2 * uiScale) {
@@ -1879,7 +1915,7 @@ private struct WorkspaceRowContent: View {
                     if workspace.isPinned {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 9 * uiScale, weight: .bold))
-                            .foregroundStyle(ArgoTheme.accent)
+                            .foregroundStyle(ArgoTheme.textFaint)
                     }
 
                     if workspace.isArchived {
@@ -1889,44 +1925,45 @@ private struct WorkspaceRowContent: View {
                     }
 
                     if workspace.isRemote {
-                        SidebarInfoBadge(text: localized("sidebar.badge.remote"), tone: .accent)
+                        SidebarInfoBadge(text: localized("sidebar.badge.remote"), tone: .accent, theme: twilightTheme)
                     }
 
                     if workspace.activeSessionCount > 1 {
-                        SidebarInfoBadge(text: "\(workspace.activeSessionCount)", tone: .neutral)
+                        SidebarInfoBadge(text: "\(workspace.activeSessionCount)", tone: .neutral, theme: twilightTheme)
                     }
 
                     if workspace.supportsRepositoryFeatures, workspace.hasUncommittedChanges {
-                        SidebarInfoBadge(text: "\(workspace.changedFileCount)", tone: .warning)
+                        SidebarInfoBadge(text: "\(workspace.changedFileCount)", tone: .warning, theme: twilightTheme)
                     }
 
                     if workspace.supportsRepositoryFeatures,
                        workspace.aheadCount > 0 || workspace.behindCount > 0 {
-                        SidebarInfoBadge(text: "↑\(workspace.aheadCount) ↓\(workspace.behindCount)", tone: .accent)
+                        SidebarInfoBadge(text: "↑\(workspace.aheadCount) ↓\(workspace.behindCount)", tone: .accent, theme: twilightTheme)
                     }
 
                     if !workspace.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        SidebarInfoBadge(text: localized("sidebar.badge.run"), tone: .success)
+                        SidebarInfoBadge(text: localized("sidebar.badge.run"), tone: .success, theme: twilightTheme)
                     }
 
                     if !workspace.workflows.isEmpty {
-                        SidebarInfoBadge(text: localized("sidebar.badge.flow"), tone: .accent)
+                        SidebarInfoBadge(text: localized("sidebar.badge.flow"), tone: .accent, theme: twilightTheme)
                     }
 
                     if !workspace.listeningPorts.isEmpty {
                         SidebarInfoBadge(
                             text: argoSidebarListeningPortsBadgeText(workspace.listeningPorts),
-                            tone: .success
+                            tone: .success,
+                            theme: twilightTheme
                         )
                     }
                 }
             }
         }
-        .padding(.vertical, 5 * uiScale)
+        .padding(.vertical, 9 * uiScale)
         .padding(.leading, 11 * uiScale)
         .padding(.trailing, 11 * uiScale)
         .background(
-            ArgoTheme.subtleFill.opacity(isHovering ? 1 : 0),
+            hoverFill.opacity(isHovering ? 1 : 0),
             in: RoundedRectangle(cornerRadius: 8 * uiScale, style: .continuous)
         )
         .onHover { isInside in
@@ -1963,6 +2000,17 @@ private struct WorktreeRowContent: View {
         CGFloat(appSettings.uiScale)
     }
 
+    private var twilightTheme: TwilightTheme? {
+        appSettings.twilightThemeEnabled ? store?.currentTwilightTheme : nil
+    }
+
+    private var hoverFill: Color {
+        if appSettings.twilightThemeEnabled, let store {
+            return Color.white.opacity(store.currentTwilightOpacity.softFillAlpha * 0.08)
+        }
+        return ArgoTheme.subtleFill
+    }
+
     private var iconSize: CGFloat { 13 * uiScale }
     private var leadingInset: CGFloat { 5 * uiScale }
     private var iconColumnWidth: CGFloat { 18 * uiScale }
@@ -1984,7 +2032,9 @@ private struct WorktreeRowContent: View {
                 usesCircularShape: true,
                 activityIndicator: iconActivityIndicator,
                 activityPalette: appSettings.sidebarActivityIndicatorPalette,
-                isEmphasized: isSelected
+                isEmphasized: isSelected,
+                twilightTheme: twilightTheme,
+                usesSecondaryTwilightAccent: true
             )
             .frame(width: iconColumnWidth, alignment: .leading)
             Text(worktree.displayName)
@@ -2004,12 +2054,12 @@ private struct WorktreeRowContent: View {
             if appSettings.sidebarShowsWorktreeBadges {
                 HStack(spacing: 5 * uiScale) {
                     if workspace.activeWorktreePath == worktree.path {
-                        SidebarInfoBadge(text: localized("sidebar.badge.current"), tone: .subtleSuccess)
+                        SidebarInfoBadge(text: localized("sidebar.badge.current"), tone: .subtleSuccess, theme: twilightTheme)
                     }
 
                     if let status = workspace.status(for: worktree.path),
                        status.hasUncommittedChanges {
-                        SidebarInfoBadge(text: "\(status.changedFileCount)", tone: .warning)
+                        SidebarInfoBadge(text: "\(status.changedFileCount)", tone: .warning, theme: twilightTheme)
                     }
                 }
             }
@@ -2019,7 +2069,7 @@ private struct WorktreeRowContent: View {
         .padding(.trailing, 8 * uiScale)
         .frame(maxWidth: .infinity, minHeight: 20 * uiScale, alignment: .leading)
         .background(
-            ArgoTheme.subtleFill.opacity(isHovering ? 1 : 0),
+            hoverFill.opacity(isHovering ? 1 : 0),
             in: RoundedRectangle(cornerRadius: 3, style: .continuous)
         )
         .onHover { isInside in
@@ -2036,9 +2086,18 @@ struct SidebarItemIconView: View {
     var activityIndicator: SidebarIconActivityIndicator = .none
     var activityPalette: SidebarIconPalette = .amber
     var isEmphasized: Bool = false
+    var twilightTheme: TwilightTheme? = nil
+    var usesSecondaryTwilightAccent: Bool = false
 
     private var palette: SidebarIconPaletteDescriptor {
-        icon.palette.descriptor
+        if let twilightTheme {
+            return SidebarIconPaletteDescriptor.twilight(theme: twilightTheme, accent: twilightAccent)
+        }
+        return icon.palette.descriptor
+    }
+
+    private var twilightAccent: TwilightSidebarIconAccent {
+        usesSecondaryTwilightAccent ? .secondary : .primary
     }
 
     private var glyphSize: CGFloat {
@@ -2070,7 +2129,8 @@ struct SidebarItemIconView: View {
                     kind: activityIndicator,
                     size: size,
                     palette: activityPalette,
-                    isEmphasized: isEmphasized
+                    isEmphasized: isEmphasized,
+                    twilightTheme: twilightTheme
                 )
                     .offset(x: 2, y: 2)
             }
@@ -2080,6 +2140,15 @@ struct SidebarItemIconView: View {
 
     @ViewBuilder
     private var background: some View {
+        if twilightTheme != nil {
+            backgroundShape.fill(
+                LinearGradient(
+                    colors: [palette.gradientStart, palette.gradientEnd],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        } else {
         switch icon.fillStyle {
         case .solid:
             backgroundShape.fill(palette.solidBackground)
@@ -2092,7 +2161,13 @@ struct SidebarItemIconView: View {
                 )
             )
         }
+        }
     }
+}
+
+private enum TwilightSidebarIconAccent {
+    case primary
+    case secondary
 }
 
 enum SidebarIconActivityIndicator {
@@ -2106,10 +2181,11 @@ struct SidebarIconActivityBadge: View {
     let size: CGFloat
     let palette: SidebarIconPalette
     let isEmphasized: Bool
+    let twilightTheme: TwilightTheme?
     @State private var isAnimating = false
 
     private var activityColor: Color {
-        palette.descriptor.gradientEnd
+        twilightTheme?.green.color ?? palette.descriptor.gradientEnd
     }
 
     private var badgeSize: CGFloat {
@@ -2202,6 +2278,27 @@ struct SidebarIconPaletteDescriptor {
     let gradientStart: Color
     let gradientEnd: Color
     let border: Color
+
+    fileprivate static func twilight(theme: TwilightTheme, accent: TwilightSidebarIconAccent) -> SidebarIconPaletteDescriptor {
+        switch accent {
+        case .primary:
+            return SidebarIconPaletteDescriptor(
+                foreground: theme.amber2.color,
+                solidBackground: theme.amber.color.opacity(0.08),
+                gradientStart: theme.amber.color.opacity(0.30),
+                gradientEnd: theme.amber.color.opacity(0.08),
+                border: theme.amber.color.opacity(0.35)
+            )
+        case .secondary:
+            return SidebarIconPaletteDescriptor(
+                foreground: theme.cyan.color,
+                solidBackground: theme.cyan.color.opacity(0.06),
+                gradientStart: theme.cyan.color.opacity(0.26),
+                gradientEnd: theme.cyan.color.opacity(0.06),
+                border: theme.cyan.color.opacity(0.30)
+            )
+        }
+    }
 }
 
 extension SidebarIconPalette {
@@ -2542,26 +2639,33 @@ private struct SidebarInfoBadge: View {
 
     let text: String
     let tone: Tone
+    var theme: TwilightTheme? = nil
 
     private var foreground: Color {
         switch tone {
         case .neutral:
             return ArgoTheme.mutedText
         case .accent:
-            return ArgoTheme.accent
+            return theme?.cyan.color ?? ArgoTheme.accent
         case .success:
-            return ArgoTheme.success
+            return theme?.green.color ?? ArgoTheme.success
         case .subtleSuccess:
-            return ArgoTheme.success.opacity(0.82)
+            return (theme?.green.color ?? ArgoTheme.success).opacity(0.82)
         case .warning:
-            return ArgoTheme.warning
+            return theme?.amber2.color ?? ArgoTheme.warning
         }
     }
 
     private var background: Color {
         switch tone {
+        case .accent:
+            return (theme?.cyan.color ?? ArgoTheme.accent).opacity(0.22)
+        case .success:
+            return (theme?.green.color ?? ArgoTheme.success).opacity(0.18)
         case .subtleSuccess:
-            return ArgoTheme.success.opacity(0.08)
+            return (theme?.green.color ?? ArgoTheme.success).opacity(0.08)
+        case .warning:
+            return (theme?.amber2.color ?? ArgoTheme.warning).opacity(0.14)
         default:
             return ArgoTheme.subtleFill
         }

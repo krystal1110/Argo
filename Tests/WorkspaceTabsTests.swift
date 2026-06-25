@@ -44,15 +44,18 @@ final class WorkspaceTabsTests: XCTestCase {
         )
 
         let terminalChromeStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalLocalChrome(")?.lowerBound)
-        let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {")?.lowerBound)
+        let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(")?.lowerBound)
         let terminalSurfaceEnd = try XCTUnwrap(workspaceDetailSource.range(of: "private var terminalChromeTargetPaneID")?.lowerBound)
         let terminalSurfaceBlock = String(workspaceDetailSource[terminalSurfaceStart..<terminalSurfaceEnd])
 
         XCTAssertLessThan(terminalChromeStart, terminalSurfaceStart)
         XCTAssertFalse(terminalSurfaceBlock.contains("TerminalLocalChrome("))
         XCTAssertTrue(terminalSurfaceBlock.contains("SplitNodeView("))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint) {"))
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface("))
+        XCTAssertTrue(workspaceDetailSource.contains("chromeTint: activeTerminalChromeTint"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground("))
+        XCTAssertTrue(workspaceDetailSource.contains("surfacePalette: surfacePalette"))
+        XCTAssertTrue(workspaceDetailSource.contains("opacity: opacity"))
         XCTAssertFalse(
             mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
             "Workspace mode should not paint a fixed-height chrome backing behind the content; it shows up as a horizontal band."
@@ -96,6 +99,12 @@ final class WorkspaceTabsTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/App/ArgoDesktopApplication.swift"),
             encoding: .utf8
         )
+        let terminalSurfaceTypeStart = try XCTUnwrap(workspaceDetailSource.range(of: "private struct TerminalWorkspaceSurface")?.lowerBound)
+        let terminalSurfaceTypeEnd = try XCTUnwrap(workspaceDetailSource.range(of: "private enum TerminalWorkspaceSurfaceStyle")?.lowerBound)
+        let terminalSurfaceTypeBlock = String(workspaceDetailSource[terminalSurfaceTypeStart..<terminalSurfaceTypeEnd])
+        let usesTwilightStart = try XCTUnwrap(terminalSurfaceTypeBlock.range(of: "if usesTwilight {")?.lowerBound)
+        let nonTwilightStart = try XCTUnwrap(terminalSurfaceTypeBlock.range(of: "} else {")?.lowerBound)
+        let twilightSurfaceBlock = String(terminalSurfaceTypeBlock[usesTwilightStart..<nonTwilightStart])
 
         XCTAssertTrue(mainWindowSource.contains("private var terminalIsTranslucent: Bool"))
         XCTAssertTrue(mainWindowSource.contains(".background(windowContentBackground)"))
@@ -105,20 +114,22 @@ final class WorkspaceTabsTests: XCTestCase {
             if store.isCommandPalettePresented {
 """))
 
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98)"))
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)"))
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(0.98)"))
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(0.98)"))
-        XCTAssertFalse(workspaceDetailSource.contains("Color.black.opacity(0.14)"))
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.panelRaised.opacity(0.34)"))
-        XCTAssertFalse(workspaceDetailSource.contains("ArgoTheme.paneBackground.opacity(0.26)"))
-        XCTAssertFalse(workspaceDetailSource.contains("isTranslucent ? 0.24 : 0.58"))
-        XCTAssertTrue(workspaceDetailSource.contains("if !isTranslucent {"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.panelRaised.opacity(isTranslucent ? 0.70 : 0.98)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.paneBackground.opacity(isTranslucent ? 0.64 : 0.98)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.panelRaised.opacity(0.98)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.paneBackground.opacity(0.98)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("Color.black.opacity(0.14)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.panelRaised.opacity(0.34)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("ArgoTheme.paneBackground.opacity(0.26)"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("isTranslucent ? 0.24 : 0.58"))
+        XCTAssertTrue(workspaceDetailSource.contains("if !terminalIsTranslucent {"))
         XCTAssertFalse(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TwilightTerminalScrim()"))
-        XCTAssertTrue(workspaceDetailSource.contains("private var translucentGlowOpacity: Double"))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalBackgroundBlurView()"))
-        XCTAssertTrue(workspaceDetailSource.contains("store.appSettings.terminalBackgroundBlur"))
+        XCTAssertTrue(workspaceDetailSource.contains("surfacePalette.color(\\.term"))
+        XCTAssertTrue(workspaceDetailSource.contains("opacity.termAlpha"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("opacity.scrim1Alpha"))
+        XCTAssertFalse(twilightSurfaceBlock.contains("opacity.scrim2Alpha"))
+        XCTAssertFalse(workspaceDetailSource.contains("TerminalBackgroundBlurView()"))
+        XCTAssertFalse(workspaceDetailSource.contains("NSVisualEffectView"))
 
         XCTAssertFalse(desktopApplicationSource.contains("updateBackgroundBlur(enabled: transparent && settings.terminalBackgroundBlur)"))
         XCTAssertTrue(desktopApplicationSource.contains("window.backgroundColor = .clear"))
@@ -148,15 +159,19 @@ final class WorkspaceTabsTests: XCTestCase {
             mainWindowSource.contains("WorkspaceChromeMetrics.continuousBandHeight"),
             "Terminal chrome should own its local background instead of relying on a window-wide horizontal backing strip."
         )
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground("))
+        XCTAssertTrue(workspaceDetailSource.contains("usesTwilight: usesTwilight"))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint)"))
         XCTAssertFalse(workspaceDetailSource.contains("static func topChromeBackground"))
         XCTAssertFalse(workspaceDetailSource.contains(".background(TerminalWorkspaceSurfaceStyle.integratedChromeFill"))
         XCTAssertFalse(workspaceDetailSource.contains(".fill(Color.white.opacity(0.105))"))
         XCTAssertTrue(terminalChromeSource.contains("let chromeTint: ArgoChromeTint"))
+        XCTAssertTrue(terminalChromeSource.contains("let surfacePalette: TwilightSurfacePalette"))
+        XCTAssertTrue(terminalChromeSource.contains("let opacity: TwilightOpacityModel"))
         XCTAssertTrue(terminalChromeSource.contains("chromeTint.components.color"))
         XCTAssertTrue(terminalChromeSource.contains("private var backgroundFill: Color"))
-        XCTAssertTrue(terminalChromeSource.contains("ArgoTheme.glassCardH"))
+        XCTAssertTrue(terminalChromeSource.contains("surfacePalette.color(\\.glassCardH"))
+        XCTAssertTrue(terminalChromeSource.contains("surfacePalette.color(\\.glassCard"))
         XCTAssertTrue(terminalChromeSource.contains("return isHovered ? ArgoTheme.glassCard : .clear"))
         XCTAssertFalse(terminalChromeSource.contains("chromeTint.topFill.color.opacity(category.isSelected"))
         XCTAssertFalse(terminalChromeSource.contains("LinearGradient("))
@@ -379,6 +394,12 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(terminalPaneSource.contains("let dimsWhenInactive: Bool"))
         XCTAssertTrue(terminalPaneSource.contains("private var shouldDimInactivePane: Bool"))
         XCTAssertTrue(terminalPaneSource.contains("TerminalInactivePaneOverlay()"))
+        let inactiveOverlaySource = try extract(
+            "private struct TerminalInactivePaneOverlay",
+            from: terminalPaneSource,
+            endingBefore: "private struct PaneTag"
+        )
+        XCTAssertFalse(inactiveOverlaySource.contains("LinearGradient("))
         XCTAssertTrue(terminalPaneSource.contains(".allowsHitTesting(false)"))
         XCTAssertTrue(splitNodeSource.contains("let dimsInactivePanes: Bool"))
         XCTAssertTrue(workspaceDetailSource.contains("dimsInactivePanes: shouldDimInactiveTerminalPanes"))
@@ -521,16 +542,14 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertNil(state.tabID(at: 8))
     }
 
-    func testWorkspaceModePaintsTwilightWallpaperBehindChrome() throws {
+    func testWorkspaceModeDoesNotPaintTwilightWallpaperBehindChrome() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
-        let wallpaperSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/TwilightWallpaperView.swift"), encoding: .utf8)
 
-        XCTAssertTrue(mainWindowSource.contains("TwilightWallpaperView(theme: store.currentTwilightTheme)"))
+        XCTAssertFalse(mainWindowSource.contains("TwilightWallpaperView("))
+        XCTAssertFalse(mainWindowSource.contains("twilightWallpaperPreset"))
+        XCTAssertFalse(mainWindowSource.contains("twilightCustomWallpaperPath"))
         XCTAssertTrue(mainWindowSource.contains("ArgoChromeTint.resolved(for: store.currentTwilightTheme)"))
-        XCTAssertTrue(wallpaperSource.contains("RadialGradient"))
-        XCTAssertTrue(wallpaperSource.contains("LinearGradient"))
-        XCTAssertTrue(wallpaperSource.contains("center: UnitPoint(x: 0.82, y: 0.64)"))
     }
 
     func testSidebarUsesTwilightPromptAndSingleOuterSurface() throws {
@@ -554,17 +573,20 @@ final class WorkspaceTabsTests: XCTestCase {
         XCTAssertTrue(sidebarSource.contains(".font(.system(size: 11.5 * uiScale, weight: .regular, design: .monospaced))"))
     }
 
-    func testTerminalSurfaceUsesTwilightScrimAndHorizonGlow() throws {
+    func testTerminalSurfaceUsesUniformTwilightBackground() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let workspaceDetailSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"), encoding: .utf8)
+        let terminalSurfaceSource = try extract(
+            "private struct TerminalWorkspaceSurface<Content: View>: View",
+            from: workspaceDetailSource,
+            endingBefore: "private enum TerminalWorkspaceSurfaceStyle"
+        )
 
-        XCTAssertTrue(workspaceDetailSource.contains("TwilightTerminalScrim()"))
-        XCTAssertTrue(workspaceDetailSource.contains("TwilightHorizonGlow("))
-        XCTAssertTrue(workspaceDetailSource.contains("store.currentTwilightTheme.amber.color"))
-        XCTAssertTrue(workspaceDetailSource.contains("store.currentTwilightTheme.amber2.color"))
-        XCTAssertTrue(workspaceDetailSource.contains("LinearGradient("))
-        XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimStrong"))
-        XCTAssertTrue(workspaceDetailSource.contains("ArgoTheme.scrimSoft"))
+        XCTAssertTrue(workspaceDetailSource.contains("surfacePalette.color(\\.term"))
+        XCTAssertFalse(terminalSurfaceSource.contains("surfacePalette.scrim.color"))
+        XCTAssertFalse(terminalSurfaceSource.contains("LinearGradient("))
+        XCTAssertFalse(terminalSurfaceSource.contains("chromeTint.components.color.opacity(0.50)"))
+        XCTAssertFalse(terminalSurfaceSource.contains("ArgoTheme.amber2.opacity(0.65)"))
         XCTAssertFalse(workspaceDetailSource.contains("Rectangle().fill(.ultraThinMaterial)\n                    Color.black.opacity(opaqueSurfaceScrimOpacity)"))
     }
 
@@ -584,7 +606,17 @@ final class WorkspaceTabsTests: XCTestCase {
 
         XCTAssertTrue(settingsSource.contains("Toggle(localized(\"settings.twilight.enabled\")"))
         XCTAssertTrue(settingsSource.contains("ForEach(TwilightTheme.presets)"))
-        XCTAssertTrue(settingsSource.contains("TwilightThemePreviewCard("))
+        XCTAssertFalse(settingsSource.contains("TwilightThemePreviewCard("))
+        XCTAssertFalse(settingsSource.contains("settings.twilight.preview"))
         XCTAssertTrue(settingsSource.contains("if !appSettings.twilightThemeEnabled"))
+    }
+
+    private func extract(_ marker: String, from source: String, endingBefore endMarker: String) throws -> String {
+        guard let startRange = source.range(of: marker),
+              let endRange = source.range(of: endMarker, range: startRange.upperBound..<source.endIndex) else {
+            XCTFail("Could not extract source block from \(marker) to \(endMarker)")
+            return ""
+        }
+        return String(source[startRange.lowerBound..<endRange.lowerBound])
     }
 }

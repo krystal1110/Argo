@@ -232,7 +232,8 @@ struct MainWindowView: View {
             } label: {
                 TimeCommandPaletteButtonLabel(
                     date: commandPaletteClockDate,
-                    commandText: TimeCommandPaletteCommandDisplay.commandText(in: store.appSettings)
+                    commandText: TimeCommandPaletteCommandDisplay.commandText(in: store.appSettings),
+                    theme: store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil
                 )
             }
             .buttonStyle(.plain)
@@ -283,7 +284,10 @@ struct MainWindowView: View {
             }
             .scaleEffect(uiScale)
 
-            TerminalProfilePill(uiScale: uiScale)
+            TerminalProfilePill(
+                uiScale: uiScale,
+                theme: store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil
+            )
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
@@ -307,14 +311,6 @@ struct MainWindowView: View {
 
     var body: some View {
         ZStack {
-            if store.mainWindowMode == .workspace, store.appSettings.twilightThemeEnabled {
-                TwilightWallpaperView(
-                    preset: store.appSettings.twilightWallpaperPreset ?? .desk,
-                    customImagePath: store.appSettings.twilightCustomWallpaperPath
-                )
-                    .transition(.opacity)
-            }
-
             VStack(spacing: 0) {
                 topGlassChrome
 
@@ -380,6 +376,7 @@ struct MainWindowView: View {
 
                 TwilightStatusBar(
                     chromeTint: activeChromeTint,
+                    theme: store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil,
                     surfacePalette: twilightSurfacePalette,
                     opacity: twilightOpacity,
                     usesTwilight: store.appSettings.twilightThemeEnabled,
@@ -409,23 +406,6 @@ struct MainWindowView: View {
                 Spacer()
             }
             .zIndex(2)
-
-            if store.mainWindowMode == .workspace, store.appSettings.twilightThemeEnabled {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        TwilightThemeDockView(
-                            surfacePalette: twilightSurfacePalette,
-                            opacity: twilightOpacity
-                        )
-                        .environmentObject(store)
-                        .padding(.trailing, 26)
-                        .padding(.bottom, 26)
-                    }
-                }
-                .zIndex(2.5)
-            }
         }
         .ignoresSafeArea(.container, edges: .top)
         .task {
@@ -878,13 +858,18 @@ private struct TrafficLightAnchor: View {
 
 private struct TerminalProfilePill: View {
     let uiScale: CGFloat
+    let theme: TwilightTheme?
+
+    private var statusColor: Color {
+        theme?.green.color ?? ArgoTheme.green
+    }
 
     var body: some View {
         HStack(spacing: 7) {
             Circle()
-                .fill(ArgoTheme.green)
+                .fill(statusColor)
                 .frame(width: 7, height: 7)
-                .shadow(color: ArgoTheme.green.opacity(0.5), radius: 6)
+                .shadow(color: statusColor.opacity(0.5), radius: 6)
             Text("Ghostty")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(ArgoTheme.tertiaryText)
@@ -958,6 +943,7 @@ private struct HTMLTopActionAnchorView: NSViewRepresentable {
 
 private struct TwilightStatusBar: View {
     let chromeTint: ArgoChromeTint
+    let theme: TwilightTheme?
     let surfacePalette: TwilightSurfacePalette
     let opacity: TwilightOpacityModel
     let usesTwilight: Bool
@@ -968,13 +954,21 @@ private struct TwilightStatusBar: View {
     let terminalSize: String
     let isRunning: Bool
 
+    private var statusSuccessColor: Color {
+        theme?.green.color ?? ArgoTheme.green
+    }
+
+    private var branchAccentColor: Color {
+        theme?.amber.color ?? ArgoTheme.amber
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             HStack(spacing: 7) {
                 Circle()
-                    .fill(isRunning ? ArgoTheme.green : ArgoTheme.textFaint)
+                    .fill(isRunning ? statusSuccessColor : ArgoTheme.textFaint)
                     .frame(width: 7, height: 7)
-                    .shadow(color: (isRunning ? ArgoTheme.green : Color.clear).opacity(0.45), radius: 6)
+                    .shadow(color: (isRunning ? statusSuccessColor : Color.clear).opacity(0.45), radius: 6)
                 Text(backendLabel)
             }
 
@@ -986,7 +980,7 @@ private struct TwilightStatusBar: View {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.triangle.branch")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(ArgoTheme.amber)
+                    .foregroundStyle(branchAccentColor)
                 Text(branch)
             }
             Text(encoding)
@@ -1141,6 +1135,7 @@ private struct WorkspaceSidebarResizeHandle: NSViewRepresentable {
 private struct TimeCommandPaletteButtonLabel: View {
     let date: Date
     let commandText: String
+    let theme: TwilightTheme?
 
     private var phase: TimeCommandPalettePhase {
         TimeCommandPaletteClock.phase(for: date)
@@ -1185,10 +1180,22 @@ private struct TimeCommandPaletteButtonLabel: View {
     private var iconColor: Color {
         switch phase {
         case .morning, .afternoon, .sunset:
-            return ArgoTheme.amber
+            return commandAccentColor
         case .night:
-            return ArgoTheme.cyan
+            return commandAlternateColor
         }
+    }
+
+    private var commandAccentColor: Color {
+        theme?.amber.color ?? ArgoTheme.amber
+    }
+
+    private var commandHighlightColor: Color {
+        theme?.amber2.color ?? ArgoTheme.amber2
+    }
+
+    private var commandAlternateColor: Color {
+        theme?.cyan.color ?? ArgoTheme.cyan
     }
 
     var body: some View {
@@ -1200,12 +1207,12 @@ private struct TimeCommandPaletteButtonLabel: View {
 
             Text(timeText)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(ArgoTheme.amber2)
+                .foregroundStyle(commandHighlightColor)
                 .monospacedDigit()
                 .frame(minWidth: 42, alignment: .leading)
 
             Rectangle()
-                .fill(ArgoTheme.hairlineSoft)
+                .fill(commandAccentColor.opacity(0.40))
                 .frame(width: 1, height: 16)
 
             Text(commandTitle)
@@ -1232,14 +1239,14 @@ private struct TimeCommandPaletteButtonLabel: View {
         .frame(maxWidth: .infinity)
         .frame(height: 34)
         .background {
-            Capsule()
-                .fill(ArgoTheme.amber.opacity(0.12))
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(commandAccentColor.opacity(0.12))
         }
         .overlay {
-            Capsule()
-                .stroke(ArgoTheme.amber.opacity(0.32), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(commandAccentColor.opacity(0.32), lineWidth: 1)
         }
-        .contentShape(Capsule())
+        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 

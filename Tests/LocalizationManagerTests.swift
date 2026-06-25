@@ -176,11 +176,15 @@ final class LocalizationManagerTests: XCTestCase {
         XCTAssertEqual(L10nTable.string(for: "settings.twilight.preset.rosePine", language: .simplifiedChinese), "Rosé Pine")
     }
 
-    func testTwilightWallpaperAndOpacityLocalization() {
-        XCTAssertEqual(L10nTable.string(for: "settings.twilight.wallpaper", language: .english), "Wallpaper")
+    func testTwilightOpacityLocalization() {
         XCTAssertEqual(L10nTable.string(for: "settings.twilight.opacity", language: .english), "Opacity")
-        XCTAssertEqual(L10nTable.string(for: "settings.twilight.wallpaper", language: .simplifiedChinese), "背景图片")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.color", language: .english), "Color")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.exportWarp", language: .english), "Export Warp")
+        XCTAssertTrue(L10nTable.string(for: "settings.general.terminal.backgroundOpacityHint", language: .english).contains("Default is 50%"))
         XCTAssertEqual(L10nTable.string(for: "settings.twilight.opacity", language: .simplifiedChinese), "透明度")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.color", language: .simplifiedChinese), "颜色")
+        XCTAssertEqual(L10nTable.string(for: "settings.twilight.exportWarp", language: .simplifiedChinese), "导出 Warp")
+        XCTAssertTrue(L10nTable.string(for: "settings.general.terminal.backgroundOpacityHint", language: .simplifiedChinese).contains("默认 50%"))
     }
 
     func testUpdateSelectedLanguagePostsChangeNotification() {

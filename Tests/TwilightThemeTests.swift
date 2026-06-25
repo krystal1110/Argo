@@ -8,23 +8,23 @@ import XCTest
 
 final class TwilightThemeTests: XCTestCase {
     func testDefaultSeedMatchesCurrentPreview() {
-        XCTAssertEqual(TwilightTheme.defaultSeedHex, "#cba6f7")
+        XCTAssertEqual(TwilightTheme.defaultSeedHex, "#7aa2f7")
 
         let theme = TwilightTheme.default
 
-        XCTAssertEqual(theme.seedHex, "#cba6f7")
-        XCTAssertEqual(theme.ghostty.accent, "#ad73f2")
-        XCTAssertEqual(theme.ghostty.background, "#0e1320")
-        XCTAssertEqual(theme.ghostty.foreground, "#f0eef2")
-        XCTAssertEqual(theme.ghostty.palette[0], "#1f283d")
-        XCTAssertEqual(theme.ghostty.palette[1], "#ea5c7b")
-        XCTAssertEqual(theme.ghostty.palette[2], "#38e699")
-        XCTAssertEqual(theme.ghostty.palette[3], "#ad73f2")
-        XCTAssertEqual(theme.ghostty.palette[4], "#5c93ea")
-        XCTAssertEqual(theme.ghostty.palette[5], "#ed6eec")
-        XCTAssertEqual(theme.ghostty.palette[6], "#53cbe9")
-        XCTAssertEqual(theme.ghostty.palette[7], "#d1cdd6")
-        XCTAssertEqual(theme.ghostty.palette[15], "#f5f4f6")
+        XCTAssertEqual(theme.seedHex, "#7aa2f7")
+        XCTAssertEqual(theme.ghostty.accent, "#6f9af6")
+        XCTAssertEqual(theme.ghostty.background, "#0e1420")
+        XCTAssertEqual(theme.ghostty.foreground, "#eeeff2")
+        XCTAssertEqual(theme.ghostty.palette[0], "#1e2b3e")
+        XCTAssertEqual(theme.ghostty.palette[1], "#eb5c88")
+        XCTAssertEqual(theme.ghostty.palette[2], "#37e689")
+        XCTAssertEqual(theme.ghostty.palette[3], "#6f9af6")
+        XCTAssertEqual(theme.ghostty.palette[4], "#5ca0eb")
+        XCTAssertEqual(theme.ghostty.palette[5], "#e26eed")
+        XCTAssertEqual(theme.ghostty.palette[6], "#53d9ea")
+        XCTAssertEqual(theme.ghostty.palette[7], "#cdcfd6")
+        XCTAssertEqual(theme.ghostty.palette[15], "#f4f5f6")
     }
 
     func testPresetsMatchPreviewOrderAndSeeds() {
@@ -65,7 +65,7 @@ final class TwilightThemeTests: XCTestCase {
         XCTAssertEqual(TwilightTheme.migratedSeedHex("#ff9ec4"), "#ebbcba")
         XCTAssertEqual(TwilightTheme.migratedSeedHex("#ff7a59"), "#bd93f9")
         XCTAssertEqual(TwilightTheme.migratedSeedHex("abc"), "#aabbcc")
-        XCTAssertEqual(TwilightTheme.migratedSeedHex("not-a-color"), "#cba6f7")
+        XCTAssertEqual(TwilightTheme.migratedSeedHex("not-a-color"), "#7aa2f7")
     }
 
     func testSeedNormalizationSupportsShortHexAndFallback() {
@@ -101,28 +101,19 @@ final class TwilightThemeTests: XCTestCase {
         XCTAssertEqual(transparent.termAlpha, 0)
         XCTAssertEqual(transparent.scrim2Alpha, 0)
 
-        let defaults = TwilightTheme.opacityModel(percent: 40)
-        XCTAssertEqual(defaults.percent, 40)
-        XCTAssertEqual(defaults.appAlpha, 0.14, accuracy: 0.0001)
-        XCTAssertEqual(defaults.glassSideAlpha, 0.40, accuracy: 0.0001)
-        XCTAssertEqual(defaults.termAlpha, 0.26, accuracy: 0.0001)
-        XCTAssertEqual(defaults.scrim2Alpha, 0.18, accuracy: 0.0001)
-        XCTAssertEqual(defaults.softFillAlpha, 0.18, accuracy: 0.0001)
+        let defaults = TwilightTheme.opacityModel(percent: 90)
+        XCTAssertEqual(defaults.percent, 90)
+        XCTAssertEqual(defaults.appAlpha, 0.315, accuracy: 0.0001)
+        XCTAssertEqual(defaults.glassSideAlpha, 0.90, accuracy: 0.0001)
+        XCTAssertEqual(defaults.termAlpha, 0.585, accuracy: 0.0001)
+        XCTAssertEqual(defaults.scrim2Alpha, 0.405, accuracy: 0.0001)
+        XCTAssertEqual(defaults.softFillAlpha, 0.405, accuracy: 0.0001)
 
         let opaque = TwilightTheme.opacityModel(percent: 100)
         XCTAssertEqual(opaque.appAlpha, 0.35, accuracy: 0.0001)
         XCTAssertEqual(opaque.glassRailAlpha, 1, accuracy: 0.0001)
         XCTAssertEqual(opaque.termAlpha, 0.65, accuracy: 0.0001)
         XCTAssertEqual(opaque.toastAlpha, 1, accuracy: 0.0001)
-    }
-
-    func testWallpaperPresetsMatchPreview() {
-        XCTAssertEqual(TwilightWallpaperPreset.allCases.map(\.rawValue), ["desk", "mountain", "forest", "night"])
-        XCTAssertEqual(TwilightWallpaperPreset.desk.label, "Desk")
-        XCTAssertEqual(TwilightWallpaperPreset.desk.remoteURL.absoluteString, "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2400&q=82")
-        XCTAssertEqual(TwilightWallpaperPreset.mountain.remoteURL.absoluteString, "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=82")
-        XCTAssertEqual(TwilightWallpaperPreset.forest.remoteURL.absoluteString, "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&q=82")
-        XCTAssertEqual(TwilightWallpaperPreset.night.remoteURL.absoluteString, "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&q=82")
     }
 
     func testAnsiSemanticHuesStayRecognizableAcrossExtremeSeeds() {

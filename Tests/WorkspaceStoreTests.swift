@@ -94,12 +94,23 @@ final class WorkspaceStoreTests: XCTestCase {
         let settings = AppSettings()
 
         XCTAssertTrue(settings.twilightThemeEnabled)
-        XCTAssertEqual(settings.twilightThemeSeedHex, "#cba6f7")
-        XCTAssertEqual(settings.twilightWallpaperPreset, .desk)
-        XCTAssertNil(settings.twilightCustomWallpaperPath)
-        XCTAssertEqual(settings.twilightOpacityPercent, 40)
-        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.40, accuracy: 0.0001)
+        XCTAssertEqual(settings.twilightThemeSeedHex, "#7aa2f7")
+        XCTAssertEqual(settings.twilightOpacityPercent, 90)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.0001)
         XCTAssertFalse(settings.terminalBackgroundBlur)
+    }
+
+    func testAppSettingsKeepGhosttyOpacitySeparateWhenTwilightIsEnabled() {
+        let settings = AppSettings(
+            terminalBackgroundOpacity: 0.55,
+            terminalBackgroundBlur: true,
+            twilightThemeEnabled: true,
+            twilightOpacityPercent: 72
+        )
+
+        XCTAssertEqual(settings.twilightOpacityPercent, 72)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.55, accuracy: 0.0001)
+        XCTAssertTrue(settings.terminalBackgroundBlur)
     }
 
     func testAppSettingsNormalizeInvalidTwilightSeed() {
@@ -131,12 +142,12 @@ final class WorkspaceStoreTests: XCTestCase {
         let settings = try JSONDecoder().decode(AppSettings.self, from: json)
 
         XCTAssertEqual(settings.twilightThemeSeedHex, "#fabd2f")
-        XCTAssertEqual(settings.twilightOpacityPercent, 40)
-        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.40, accuracy: 0.0001)
+        XCTAssertEqual(settings.twilightOpacityPercent, 90)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.0001)
         XCTAssertFalse(settings.terminalBackgroundBlur)
     }
 
-    func testAppSettingsMigrateLegacyOpacityDefaultToFortyPercent() throws {
+    func testAppSettingsMigrateLegacyOpacityDefaultToCurrentDefaultPercent() throws {
         let json = """
         {
           "terminalBackgroundOpacity": 0.82,
@@ -147,8 +158,62 @@ final class WorkspaceStoreTests: XCTestCase {
 
         let settings = try JSONDecoder().decode(AppSettings.self, from: json)
 
-        XCTAssertEqual(settings.twilightOpacityPercent, 40)
-        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.40, accuracy: 0.0001)
+        XCTAssertEqual(settings.twilightOpacityPercent, 90)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.0001)
+        XCTAssertFalse(settings.terminalBackgroundBlur)
+    }
+
+    func testAppSettingsMigrateOldExplicitHundredPercentTwilightDefaultToCurrentDefaultPercent() throws {
+        let json = """
+        {
+          "twilightThemeEnabled": true,
+          "twilightOpacityPercent": 100,
+          "terminalBackgroundOpacity": 1,
+          "terminalBackgroundBlur": true,
+          "terminalBackgroundAppearanceVersion": 1
+        }
+        """.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: json)
+
+        XCTAssertEqual(settings.twilightOpacityPercent, 90)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.0001)
+        XCTAssertFalse(settings.terminalBackgroundBlur)
+    }
+
+    func testAppSettingsMigrateVersionTwoExplicitHundredPercentTwilightDefaultToCurrentDefaultPercent() throws {
+        let json = """
+        {
+          "twilightThemeEnabled": true,
+          "twilightOpacityPercent": 100,
+          "terminalBackgroundOpacity": 1,
+          "terminalBackgroundBlur": false,
+          "terminalBackgroundAppearanceVersion": 2
+        }
+        """.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: json)
+
+        XCTAssertEqual(settings.twilightOpacityPercent, 90)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.0001)
+        XCTAssertFalse(settings.terminalBackgroundBlur)
+    }
+
+    func testAppSettingsPreserveCurrentExplicitHundredPercentTwilightOpacity() throws {
+        let json = """
+        {
+          "twilightThemeEnabled": true,
+          "twilightOpacityPercent": 100,
+          "terminalBackgroundOpacity": 1,
+          "terminalBackgroundBlur": false,
+          "terminalBackgroundAppearanceVersion": 3
+        }
+        """.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: json)
+
+        XCTAssertEqual(settings.twilightOpacityPercent, 100)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 1, accuracy: 0.0001)
         XCTAssertFalse(settings.terminalBackgroundBlur)
     }
 
@@ -168,6 +233,24 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertFalse(settings.terminalBackgroundBlur)
     }
 
+    func testDecodedCurrentSettingsKeepGhosttyOpacitySeparateFromTwilightOpacity() throws {
+        let json = """
+        {
+          "twilightThemeEnabled": true,
+          "twilightOpacityPercent": 72,
+          "terminalBackgroundOpacity": 0.55,
+          "terminalBackgroundBlur": true,
+          "terminalBackgroundAppearanceVersion": 3
+        }
+        """.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: json)
+
+        XCTAssertEqual(settings.twilightOpacityPercent, 72)
+        XCTAssertEqual(settings.terminalBackgroundOpacity, 0.55, accuracy: 0.0001)
+        XCTAssertTrue(settings.terminalBackgroundBlur)
+    }
+
     func testUpdateAppSettingsPreservesTwilightSettings() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
 
@@ -175,16 +258,12 @@ final class WorkspaceStoreTests: XCTestCase {
             AppSettings(
                 twilightThemeEnabled: false,
                 twilightThemeSeedHex: "#5cc8ff",
-                twilightWallpaperPreset: .forest,
-                twilightCustomWallpaperPath: "/tmp/custom.png",
                 twilightOpacityPercent: 72
             )
         )
 
         XCTAssertFalse(store.appSettings.twilightThemeEnabled)
         XCTAssertEqual(store.appSettings.twilightThemeSeedHex, "#7aa2f7")
-        XCTAssertEqual(store.appSettings.twilightWallpaperPreset, .forest)
-        XCTAssertEqual(store.appSettings.twilightCustomWallpaperPath, "/tmp/custom.png")
         XCTAssertEqual(store.appSettings.twilightOpacityPercent, 72)
         XCTAssertEqual(store.currentTwilightTheme.seedHex, "#7aa2f7")
         XCTAssertEqual(store.currentTwilightOpacity.termAlpha, 0.468, accuracy: 0.0001)

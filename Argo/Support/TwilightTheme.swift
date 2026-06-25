@@ -14,7 +14,7 @@ struct TwilightTheme: Equatable {
         let seedHex: String
     }
 
-    static let defaultSeedHex = "#cba6f7"
+    static let defaultSeedHex = "#7aa2f7"
 
     static let presets: [Preset] = [
         Preset(id: "catppuccinMocha", nameKey: "settings.twilight.preset.catppuccinMocha", seedHex: "#cba6f7"),
@@ -39,7 +39,6 @@ struct TwilightTheme: Equatable {
     let cyan: TwilightHSLColor
     let green: TwilightHSLColor
     let magenta: TwilightHSLColor
-    let wallpaper: TwilightWallpaper
     let ghostty: TwilightGhosttyTheme
 
     static var `default`: TwilightTheme {
@@ -60,40 +59,7 @@ struct TwilightTheme: Equatable {
         let green = TwilightHSLColor(hue: h + 96, saturation: clamp(S - 12, 40, 76), lightness: 69)
         let magenta = TwilightHSLColor(hue: h - 46, saturation: clamp(S - 4, 46, 82), lightness: 72)
 
-        let skyH = lerpHue(h, 250, 0.72)
         let waterH = lerpHue(h, 214, 0.86)
-        let sunS = clamp(S + 4, 55, 98)
-
-        let wallpaper = TwilightWallpaper(
-            sunCore: TwilightRadialStop(
-                widthPercent: 28,
-                heightPercent: 36,
-                centerXPercent: 82,
-                centerYPercent: 64,
-                color: TwilightHSLColor(hue: h, saturation: clamp(S - 18, 30, 70), lightness: 92),
-                alpha: 0.95,
-                transparentStop: 0.62
-            ),
-            sunGlow: TwilightRadialStop(
-                widthPercent: 72,
-                heightPercent: 58,
-                centerXPercent: 84,
-                centerYPercent: 66,
-                color: TwilightHSLColor(hue: h, saturation: sunS, lightness: 62),
-                alpha: 0.72,
-                transparentStop: 0.68
-            ),
-            skyWaterStops: [
-                TwilightLinearStop(color: TwilightHSLColor(hue: skyH, saturation: clamp(S * 0.5, 18, 55), lightness: 16), location: 0),
-                TwilightLinearStop(color: TwilightHSLColor(hue: skyH - 12, saturation: clamp(S * 0.55, 20, 58), lightness: 24), location: 0.20),
-                TwilightLinearStop(color: TwilightHSLColor(hue: lerpHue(h, skyH, 0.5), saturation: clamp(S * 0.6, 28, 66), lightness: 40), location: 0.40),
-                TwilightLinearStop(color: TwilightHSLColor(hue: h, saturation: clamp(sunS * 0.82, 45, 92), lightness: 54), location: 0.56),
-                TwilightLinearStop(color: TwilightHSLColor(hue: lerpHue(h, waterH, 0.5), saturation: clamp(S * 0.55, 26, 64), lightness: 38), location: 0.64),
-                TwilightLinearStop(color: TwilightHSLColor(hue: waterH, saturation: clamp(S * 0.5, 24, 58), lightness: 26), location: 0.76),
-                TwilightLinearStop(color: TwilightHSLColor(hue: waterH + 4, saturation: clamp(S * 0.52, 24, 60), lightness: 18), location: 0.88),
-                TwilightLinearStop(color: TwilightHSLColor(hue: waterH + 6, saturation: clamp(S * 0.5, 22, 58), lightness: 12), location: 1),
-            ]
-        )
 
         let semanticSaturation = clamp(S - 6, 48, 78)
         let normal = TwilightGhosttyTheme.SemanticColors(
@@ -124,7 +90,6 @@ struct TwilightTheme: Equatable {
             cyan: cyan,
             green: green,
             magenta: magenta,
-            wallpaper: wallpaper,
             ghostty: TwilightGhosttyTheme(
                 accentColor: amber,
                 backgroundColor: TwilightHSLColor(hue: waterH + 4, saturation: clamp(S * 0.45, 18, 46), lightness: 9),
@@ -336,27 +301,6 @@ struct TwilightHSLColor: Equatable {
     }
 }
 
-struct TwilightLinearStop: Equatable {
-    let color: TwilightHSLColor
-    let location: Double
-}
-
-struct TwilightRadialStop: Equatable {
-    let widthPercent: Double
-    let heightPercent: Double
-    let centerXPercent: Double
-    let centerYPercent: Double
-    let color: TwilightHSLColor
-    let alpha: Double
-    let transparentStop: Double
-}
-
-struct TwilightWallpaper: Equatable {
-    let sunCore: TwilightRadialStop
-    let sunGlow: TwilightRadialStop
-    let skyWaterStops: [TwilightLinearStop]
-}
-
 struct TwilightGhosttyTheme: Equatable {
     struct SemanticColors: Equatable {
         let black: TwilightHSLColor
@@ -450,35 +394,4 @@ struct TwilightOpacityModel: Equatable {
     var softFillAlpha: Double
     var dockAlpha: Double
     var toastAlpha: Double
-}
-
-enum TwilightWallpaperPreset: String, Codable, CaseIterable, Identifiable {
-    case desk
-    case mountain
-    case forest
-    case night
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .desk: return "Desk"
-        case .mountain: return "Mountain"
-        case .forest: return "Forest"
-        case .night: return "Night"
-        }
-    }
-
-    var remoteURL: URL {
-        switch self {
-        case .desk:
-            return URL(string: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2400&q=82")!
-        case .mountain:
-            return URL(string: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=82")!
-        case .forest:
-            return URL(string: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&q=82")!
-        case .night:
-            return URL(string: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&q=82")!
-        }
-    }
 }

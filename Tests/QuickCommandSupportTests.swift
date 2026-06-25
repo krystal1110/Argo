@@ -57,7 +57,7 @@ final class QuickCommandSupportTests: XCTestCase {
         )
     }
 
-    func testLegacySettingsDecodeMigratesOldOpaqueTerminalDefault() throws {
+    func testLegacySettingsDecodeMigratesOldOpaqueTerminalDefaultToCurrentTwilightDefault() throws {
         let legacyPayloads = [
             """
             {
@@ -81,21 +81,30 @@ final class QuickCommandSupportTests: XCTestCase {
               "terminalBackgroundOpacity": 0.82,
               "terminalBackgroundBlur": true
             }
+            """,
+            """
+            {
+              "terminalBackgroundAppearanceVersion": 2,
+              "terminalBackgroundOpacity": 1,
+              "terminalBackgroundBlur": false
+            }
             """
         ]
 
         for payload in legacyPayloads {
             let settings = try JSONDecoder().decode(AppSettings.self, from: Data(payload.utf8))
 
-            XCTAssertEqual(settings.terminalBackgroundOpacity, 0.76, accuracy: 0.001)
-            XCTAssertTrue(settings.terminalBackgroundBlur)
+            XCTAssertEqual(settings.twilightOpacityPercent, 90)
+            XCTAssertEqual(settings.terminalBackgroundOpacity, 0.50, accuracy: 0.001)
+            XCTAssertFalse(settings.terminalBackgroundBlur)
         }
     }
 
     func testCurrentSettingsDecodePreservesIntentionalOpaqueTerminalBackground() throws {
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data("""
         {
-          "terminalBackgroundAppearanceVersion": 2,
+          "terminalBackgroundAppearanceVersion": 3,
+          "twilightOpacityPercent": 100,
           "terminalBackgroundOpacity": 1,
           "terminalBackgroundBlur": false
         }
@@ -449,7 +458,13 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(mainWindowSource.contains("let chromeTint = activeChromeTint"))
         XCTAssertTrue(mainWindowSource.contains("struct TopChromeSurfaceBackground: View"))
         XCTAssertTrue(mainWindowSource.contains("ArgoTheme.topGlass"))
-        XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
+        XCTAssertTrue(mainWindowSource.contains("""
+            TopChromeSurfaceBackground(
+                surfacePalette: twilightSurfacePalette,
+                opacity: twilightOpacity,
+                usesTwilight: store.appSettings.twilightThemeEnabled
+            )
+"""))
         let topChromeSurfaceStart = try XCTUnwrap(mainWindowSource.range(of: "struct TopChromeSurfaceBackground: View")?.lowerBound)
         let topChromeSurfaceEnd = try XCTUnwrap(mainWindowSource.range(of: "private struct WorkspaceSidebarResizeHandle")?.lowerBound)
         let topChromeSurfaceSource = String(mainWindowSource[topChromeSurfaceStart..<topChromeSurfaceEnd])
@@ -490,7 +505,14 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(mainWindowSource.contains("chromeTint.components.color.opacity(chromeTint.isNeutral ? 0.13 : 0.26)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(maxWidth: .infinity)"))
         XCTAssertTrue(mainWindowSource.contains(".frame(height: WorkspaceChromeMetrics.topHeight)"))
-        XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)\n                .ignoresSafeArea(.container, edges: .top)"))
+        XCTAssertTrue(mainWindowSource.contains("""
+            TopChromeSurfaceBackground(
+                surfacePalette: twilightSurfacePalette,
+                opacity: twilightOpacity,
+                usesTwilight: store.appSettings.twilightThemeEnabled
+            )
+                .ignoresSafeArea(.container, edges: .top)
+"""))
         XCTAssertFalse(mainWindowSource.contains("if store.mainWindowMode != .workspace {\n                TopChromeSurfaceBackground(chromeTint: chromeTint)\n            }"))
         XCTAssertFalse(mainWindowSource.contains("""
                 .background {
@@ -556,7 +578,7 @@ final class QuickCommandSupportTests: XCTestCase {
             contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
             encoding: .utf8
         )
-        let flushSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*WorkspaceSidebarView\(\)\s*\.frame\(width: workspaceSidebarWidth\)\s*\.background\(ArgoTheme\.glassSide\)"#
+        let flushSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*WorkspaceSidebarView\(\)\s*\.frame\(width: workspaceSidebarWidth\)\s*\.background\(\s*store\.appSettings\.twilightThemeEnabled\s*\?\s*twilightSurfacePalette\.color\(\\\.glassSide, alpha: twilightOpacity\.glassSideAlpha\)\s*:\s*ArgoTheme\.glassSide\s*\)"#
 
         XCTAssertNotNil(
             mainWindowSource.range(of: flushSidebarPattern, options: .regularExpression),
@@ -632,7 +654,12 @@ final class QuickCommandSupportTests: XCTestCase {
         )
 
         XCTAssertTrue(mainWindowSource.contains("HTMLReferenceTopActionButton("))
-        XCTAssertTrue(mainWindowSource.contains("TerminalProfilePill(uiScale: uiScale)"))
+        XCTAssertTrue(mainWindowSource.contains("""
+            TerminalProfilePill(
+                uiScale: uiScale,
+                theme: store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil
+            )
+"""))
         XCTAssertFalse(mainWindowSource.contains("GlassToolbarSplitButton("))
         XCTAssertFalse(mainWindowSource.contains("HTMLReferenceExternalEditorMenu("))
         XCTAssertFalse(mainWindowSource.contains("effectiveExternalEditorDisplayName"))
@@ -648,7 +675,7 @@ final class QuickCommandSupportTests: XCTestCase {
 
         let topActionsRange = try XCTUnwrap(
             mainWindowSource.range(
-                of: #"HStack\(spacing: 2\) \{[\s\S]*?\n\s*\}\n\s*\.scaleEffect\(uiScale\)\n\n\s*TerminalProfilePill"#,
+                of: #"HStack\(spacing: 2\) \{[\s\S]*?\n\s*\}\n\s*\.scaleEffect\(uiScale\)\n\n\s*TerminalProfilePill\("#,
                 options: .regularExpression
             )
         )
@@ -690,10 +717,28 @@ final class QuickCommandSupportTests: XCTestCase {
 
         XCTAssertTrue(workspaceDetailSource.contains("private var activeTerminalChromeTint: ArgoChromeTint"))
         XCTAssertTrue(workspaceDetailSource.contains("ArgoChromeTint.resolved(for: store.currentTwilightTheme)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurface(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(workspaceDetailSource.contains("""
+                TerminalWorkspaceSurface(
+                    chromeTint: activeTerminalChromeTint,
+                    surfacePalette: surfacePalette,
+                    opacity: opacity,
+                    usesTwilight: usesTwilight
+"""))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome(\n                    chromeTint: activeTerminalChromeTint"))
-        XCTAssertTrue(mainWindowSource.contains("TopChromeSurfaceBackground(chromeTint: chromeTint)"))
-        XCTAssertTrue(workspaceDetailSource.contains("TopChromeSurfaceBackground(chromeTint: activeTerminalChromeTint)"))
+        XCTAssertTrue(mainWindowSource.contains("""
+            TopChromeSurfaceBackground(
+                surfacePalette: twilightSurfacePalette,
+                opacity: twilightOpacity,
+                usesTwilight: store.appSettings.twilightThemeEnabled
+            )
+"""))
+        XCTAssertTrue(workspaceDetailSource.contains("""
+                    TopChromeSurfaceBackground(
+                        surfacePalette: surfacePalette,
+                        opacity: opacity,
+                        usesTwilight: usesTwilight
+                    )
+"""))
         XCTAssertTrue(workspaceDetailSource.contains(".frame(height: WorkspaceChromeMetrics.terminalHeight)"))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalWorkspaceSurfaceStyle.chromeDivider(for: activeTerminalChromeTint)"))
         XCTAssertTrue(mainWindowSource.contains("let chromeTint = activeChromeTint"))

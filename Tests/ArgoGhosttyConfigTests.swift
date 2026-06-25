@@ -24,18 +24,18 @@ final class ArgoGhosttyConfigTests: XCTestCase {
     func testManagedConfigContentsIncludesDefaultTwilightOpacityWithoutBlur() {
         let contents = ArgoGhosttyConfigManager.managedConfigContents(settings: AppSettings())
 
-        XCTAssertTrue(contents.contains("background-opacity = 0.40"))
+        XCTAssertTrue(contents.contains("background-opacity = 0.50"))
         XCTAssertFalse(contents.contains("background-blur = true"))
     }
 
     func testManagedConfigContentsUseCurrentTwilightThemeByDefault() {
         let contents = ArgoGhosttyConfigManager.managedConfigContents(settings: AppSettings())
 
-        XCTAssertTrue(contents.contains("# theme: Twilight #cba6f7"))
-        XCTAssertTrue(contents.contains("background = #0e1320"))
-        XCTAssertTrue(contents.contains("foreground = #f0eef2"))
-        XCTAssertTrue(contents.contains("palette = 0=#1f283d"))
-        XCTAssertTrue(contents.contains("palette = 15=#f5f4f6"))
+        XCTAssertTrue(contents.contains("# theme: Twilight #7aa2f7"))
+        XCTAssertTrue(contents.contains("background = #0e1420"))
+        XCTAssertTrue(contents.contains("foreground = #eeeff2"))
+        XCTAssertTrue(contents.contains("palette = 0=#1e2b3e"))
+        XCTAssertTrue(contents.contains("palette = 15=#f4f5f6"))
         XCTAssertFalse(contents.contains("theme = "))
     }
 
@@ -64,18 +64,27 @@ final class ArgoGhosttyConfigTests: XCTestCase {
         XCTAssertTrue(contents.contains("Catppuccin Mocha"))
     }
 
-    func testManagedConfigContentsIgnoreBlurWhenTwilightIsEnabled() {
+    func testManagedConfigContentsUseGhosttyOpacitySeparatelyFromTwilightOpacity() {
         let contents = ArgoGhosttyConfigManager.managedConfigContents(
             settings: AppSettings(
-                terminalBackgroundOpacity: 0.65,
+                terminalBackgroundOpacity: 0.55,
                 terminalBackgroundBlur: true,
                 twilightThemeEnabled: true,
                 twilightOpacityPercent: 65
             )
         )
 
-        XCTAssertTrue(contents.contains("background-opacity = 0.65"))
+        XCTAssertTrue(contents.contains("background-opacity = 0.55"))
+        XCTAssertFalse(contents.contains("background-opacity = 0.65"))
         XCTAssertFalse(contents.contains("background-blur = true"))
+    }
+
+    func testManagedConfigContentsAllowFullyTransparentGhosttyBackground() {
+        let contents = ArgoGhosttyConfigManager.managedConfigContents(
+            settings: AppSettings(terminalBackgroundOpacity: 0)
+        )
+
+        XCTAssertTrue(contents.contains("background-opacity = 0.00"))
     }
 
     func testManagedConfigContentsAllowBlurOnlyOutsideTwilight() {

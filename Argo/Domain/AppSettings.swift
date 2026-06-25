@@ -345,8 +345,6 @@ struct AppSettings: Codable, Hashable {
     var terminalBackgroundAppearanceVersion: Int
     var twilightThemeEnabled: Bool
     var twilightThemeSeedHex: String
-    var twilightWallpaperPreset: TwilightWallpaperPreset?
-    var twilightCustomWallpaperPath: String?
     var twilightOpacityPercent: Int
     var sidebarShowsSecondaryLabels: Bool
     var sidebarShowsWorkspaceBadges: Bool
@@ -376,10 +374,12 @@ struct AppSettings: Codable, Hashable {
     private static let legacyDefaultHotKeyWindowShortcut = StoredShortcut(key: " ", command: true, shift: true, option: false, control: false)
     private static let legacyTerminalBackgroundOpacityDefault = 0.82
     private static let previousTerminalBackgroundOpacityDefault = 0.76
-    static let defaultTerminalBackgroundOpacity = 0.40
+    private static let previousTwilightTerminalBackgroundOpacityDefault = 0.40
+    static let defaultTerminalBackgroundOpacity = 0.50
     static let defaultTerminalBackgroundBlur = false
-    static let defaultTwilightOpacityPercent = 40
-    static let currentTerminalBackgroundAppearanceVersion = 2
+    static let defaultTwilightOpacityPercent = 90
+    static let currentTerminalBackgroundAppearanceVersion = 3
+    private static let terminalBackgroundDefaultMigrationVersion = 2
 
     init(
         appLanguage: AppLanguage = .automatic,
@@ -411,8 +411,6 @@ struct AppSettings: Codable, Hashable {
         terminalBackgroundAppearanceVersion: Int = AppSettings.currentTerminalBackgroundAppearanceVersion,
         twilightThemeEnabled: Bool = true,
         twilightThemeSeedHex: String = TwilightTheme.defaultSeedHex,
-        twilightWallpaperPreset: TwilightWallpaperPreset? = .desk,
-        twilightCustomWallpaperPath: String? = nil,
         twilightOpacityPercent: Int = AppSettings.defaultTwilightOpacityPercent,
         sidebarShowsSecondaryLabels: Bool = true,
         sidebarShowsWorkspaceBadges: Bool = true,
@@ -476,15 +474,7 @@ struct AppSettings: Codable, Hashable {
         self.terminalBackgroundAppearanceVersion = terminalBackgroundAppearanceVersion
         self.twilightThemeEnabled = twilightThemeEnabled
         self.twilightThemeSeedHex = TwilightTheme.migratedSeedHex(twilightThemeSeedHex)
-        self.twilightWallpaperPreset = twilightWallpaperPreset ?? .desk
-        self.twilightCustomWallpaperPath = twilightCustomWallpaperPath?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .nilIfEmpty
         self.twilightOpacityPercent = clampedTwilightOpacityPercent
-        if twilightThemeEnabled {
-            self.terminalBackgroundOpacity = Double(clampedTwilightOpacityPercent) / 100
-            self.terminalBackgroundBlur = false
-        }
         self.sidebarShowsSecondaryLabels = sidebarShowsSecondaryLabels
         self.sidebarShowsWorkspaceBadges = sidebarShowsWorkspaceBadges
         self.sidebarShowsWorktreeBadges = sidebarShowsWorktreeBadges
@@ -559,8 +549,6 @@ extension AppSettings {
         case terminalBackgroundAppearanceVersion
         case twilightThemeEnabled
         case twilightThemeSeedHex
-        case twilightWallpaperPreset
-        case twilightCustomWallpaperPath
         case twilightOpacityPercent
         case sidebarShowsSecondaryLabels
         case sidebarShowsWorkspaceBadges
@@ -611,15 +599,19 @@ extension AppSettings {
         ) ?? 0
         let decodedTerminalBackgroundOpacityWasOldDefault = decodedTerminalBackgroundOpacity.map {
             abs($0 - Self.legacyTerminalBackgroundOpacityDefault) < 0.0001 ||
-                abs($0 - Self.previousTerminalBackgroundOpacityDefault) < 0.0001 ||
-                abs($0 - Self.defaultTerminalBackgroundOpacity) < 0.0001
+            abs($0 - Self.previousTerminalBackgroundOpacityDefault) < 0.0001 ||
+            abs($0 - Self.previousTwilightTerminalBackgroundOpacityDefault) < 0.0001 ||
+            abs($0 - Self.defaultTerminalBackgroundOpacity) < 0.0001
         } ?? true
-        let migratesOldTerminalBackgroundDefault = decodedTerminalBackgroundAppearanceVersion < Self.currentTerminalBackgroundAppearanceVersion
+        let migratesOldTerminalBackgroundDefault = decodedTerminalBackgroundAppearanceVersion < Self.terminalBackgroundDefaultMigrationVersion
             && ((decodedTerminalBackgroundOpacity ?? 1) >= 1 || decodedTerminalBackgroundOpacityWasOldDefault)
+        let decodedTwilightOpacityPercentWasOldDefault = decodedTerminalBackgroundAppearanceVersion < Self.currentTerminalBackgroundAppearanceVersion
+            && (decodedTwilightOpacityPercent == 100 || decodedTwilightOpacityPercent == nil)
+            && (decodedTerminalBackgroundOpacity ?? 1) >= 1
         let migratedTwilightOpacityPercent: Int
-        if let decodedTwilightOpacityPercent {
+        if let decodedTwilightOpacityPercent, !decodedTwilightOpacityPercentWasOldDefault {
             migratedTwilightOpacityPercent = decodedTwilightOpacityPercent
-        } else if decodedTerminalBackgroundOpacityWasOldDefault || migratesOldTerminalBackgroundDefault {
+        } else if decodedTwilightOpacityPercentWasOldDefault || decodedTerminalBackgroundOpacityWasOldDefault || migratesOldTerminalBackgroundDefault {
             migratedTwilightOpacityPercent = Self.defaultTwilightOpacityPercent
         } else {
             migratedTwilightOpacityPercent = decodedTerminalBackgroundOpacity
@@ -627,10 +619,12 @@ extension AppSettings {
                 ?? Self.defaultTwilightOpacityPercent
         }
         let clampedTwilightOpacityPercent = min(max(migratedTwilightOpacityPercent, 0), 100)
-        let terminalBackgroundOpacity = decodedTwilightThemeEnabled
-            ? Double(clampedTwilightOpacityPercent) / 100
+        let migratesTerminalBackgroundOpacity = decodedTerminalBackgroundAppearanceVersion < Self.currentTerminalBackgroundAppearanceVersion
+            && (decodedTerminalBackgroundOpacityWasOldDefault || migratesOldTerminalBackgroundDefault || decodedTwilightOpacityPercentWasOldDefault)
+        let terminalBackgroundOpacity = migratesTerminalBackgroundOpacity
+            ? Self.defaultTerminalBackgroundOpacity
             : (decodedTerminalBackgroundOpacity ?? Self.defaultTerminalBackgroundOpacity)
-        let terminalBackgroundBlur = decodedTwilightThemeEnabled
+        let terminalBackgroundBlur = decodedTerminalBackgroundAppearanceVersion < Self.currentTerminalBackgroundAppearanceVersion && decodedTwilightThemeEnabled
             ? false
             : (decodedTerminalBackgroundBlur ?? Self.defaultTerminalBackgroundBlur)
         self.init(
@@ -663,8 +657,6 @@ extension AppSettings {
             terminalBackgroundAppearanceVersion: Self.currentTerminalBackgroundAppearanceVersion,
             twilightThemeEnabled: decodedTwilightThemeEnabled,
             twilightThemeSeedHex: decodedTwilightSeedHex,
-            twilightWallpaperPreset: try container.decodeIfPresent(TwilightWallpaperPreset.self, forKey: .twilightWallpaperPreset) ?? .desk,
-            twilightCustomWallpaperPath: try container.decodeIfPresent(String.self, forKey: .twilightCustomWallpaperPath),
             twilightOpacityPercent: clampedTwilightOpacityPercent,
             sidebarShowsSecondaryLabels: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsSecondaryLabels) ?? true,
             sidebarShowsWorkspaceBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorkspaceBadges) ?? true,

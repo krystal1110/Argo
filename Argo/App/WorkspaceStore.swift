@@ -966,8 +966,6 @@ final class WorkspaceStore: ObservableObject {
             terminalBackgroundBlur: settings.terminalBackgroundBlur,
             twilightThemeEnabled: settings.twilightThemeEnabled,
             twilightThemeSeedHex: settings.twilightThemeSeedHex,
-            twilightWallpaperPreset: settings.twilightWallpaperPreset,
-            twilightCustomWallpaperPath: settings.twilightCustomWallpaperPath,
             twilightOpacityPercent: settings.twilightOpacityPercent,
             sidebarShowsSecondaryLabels: settings.sidebarShowsSecondaryLabels,
             sidebarShowsWorkspaceBadges: settings.sidebarShowsWorkspaceBadges,
@@ -1020,38 +1018,9 @@ final class WorkspaceStore: ObservableObject {
         updateAppSettings(settings)
     }
 
-    func setTwilightWallpaperPreset(_ preset: TwilightWallpaperPreset) {
-        var settings = appSettings
-        settings.twilightWallpaperPreset = preset
-        settings.twilightCustomWallpaperPath = nil
-        updateAppSettings(settings)
-    }
-
     func setTwilightOpacityPercent(_ percent: Int) {
         var settings = appSettings
         settings.twilightOpacityPercent = min(max(percent, 0), 100)
-        settings.terminalBackgroundOpacity = Double(settings.twilightOpacityPercent) / 100
-        settings.terminalBackgroundBlur = false
-        updateAppSettings(settings)
-    }
-
-    func setTwilightCustomWallpaper(url: URL) throws {
-        let fileExtension = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "png"
-        let destination = argoStateDirectoryURL()
-            .appendingPathComponent("twilight-wallpapers", isDirectory: true)
-            .appendingPathComponent("custom.\(fileExtension.lowercased())")
-        try FileManager.default.createDirectory(
-            at: destination.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        if FileManager.default.fileExists(atPath: destination.path) {
-            try FileManager.default.removeItem(at: destination)
-        }
-        try FileManager.default.copyItem(at: url, to: destination)
-
-        var settings = appSettings
-        settings.twilightWallpaperPreset = nil
-        settings.twilightCustomWallpaperPath = destination.path
         updateAppSettings(settings)
     }
 

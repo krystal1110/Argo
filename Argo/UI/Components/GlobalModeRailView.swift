@@ -13,6 +13,9 @@ struct GlobalModeRailView: View {
     let selectedMode: MainWindowMode
     let chromeTint: ArgoChromeTint
     let uiScale: CGFloat
+    let surfacePalette: TwilightSurfacePalette
+    let opacity: TwilightOpacityModel
+    let usesTwilight: Bool
     let onSelectMode: (MainWindowMode) -> Void
     let onOpenSettings: () -> Void
 
@@ -48,12 +51,18 @@ struct GlobalModeRailView: View {
         .padding(.vertical, 14 * uiScale)
         .frame(width: 64 * uiScale)
         .frame(maxHeight: .infinity)
-        .background(ArgoTheme.glassRail)
+        .background(railBackground)
         .overlay(alignment: .trailing) {
             Rectangle()
                 .fill(Color.white.opacity(0.075))
                 .frame(width: 1)
         }
+    }
+
+    private var railBackground: Color {
+        usesTwilight
+            ? surfacePalette.color(\.glassRail, alpha: opacity.glassRailAlpha)
+            : ArgoTheme.glassRail
     }
 }
 

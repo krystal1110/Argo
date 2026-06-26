@@ -13,7 +13,7 @@ grep -q 'href="#features"' "$html"
 grep -q 'href="./releases/"' "$html"
 grep -q 'href="#download"' "$html"
 grep -q 'href="https://github.com/krystal1110/Argo"' "$html"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg"' "$html"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg"' "$html"
 grep -q '>GitHub</a>' "$html"
 grep -q '>Download</a>' "$html"
 grep -q '>Details</a>' "$html"
@@ -35,12 +35,12 @@ grep -q 'Website-krystal1110.github.io%2FArgo' "$readme"
 grep -q '<main class="releases-page"' "$releases"
 grep -q '<h1 id="releases-title">Release Notes</h1>' "$releases"
 grep -q 'Latest' "$releases"
-grep -q 'Argo 1.0.7' "$releases"
-grep -q 'June 25, 2026' "$releases"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.7"' "$releases"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg"' "$releases"
+grep -q 'Argo 1.0.8' "$releases"
+grep -q 'June 26, 2026' "$releases"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.8"' "$releases"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg"' "$releases"
 grep -q 'brew install --cask krystal1110/argo/argo' "$releases"
-grep -q 'Argo 1.0.7 adds the prowl tint spec and dynamic tint updates from the latest release branch.' "$releases"
+grep -q 'Argo 1.0.8 makes top chrome double-click zoom and restore reliable across the full-size titlebar.' "$releases"
 
 release_summary="$(awk -F '<p class="release-summary">|</p>' '/release-summary/ { print $2; exit }' "$releases")"
 summary_words="$(awk '{ print NF }' <<< "$release_summary")"
@@ -54,8 +54,8 @@ if grep -Eq '<li>|<ul>|release-groups' "$releases"; then
   exit 1
 fi
 
-if grep -Eq 'href="https://github.com/krystal1110/Argo/releases/(tag|download)/v1\.0\.6' "$html" "$releases"; then
-  echo "website should not link to Argo 1.0.6 as the current release" >&2
+if grep -Eq 'href="https://github.com/krystal1110/Argo/releases/(tag|download)/v1\.0\.[67]' "$html" "$releases"; then
+  echo "website should not link to Argo 1.0.6 or 1.0.7 as the current release" >&2
   exit 1
 fi
 

@@ -293,6 +293,9 @@ struct MainWindowView: View {
         .frame(maxWidth: .infinity)
         .frame(height: WorkspaceChromeMetrics.topHeight)
         .background {
+            TopChromeDoubleClickZoomLayer()
+        }
+        .background {
             TopChromeSurfaceBackground(
                 surfacePalette: twilightSurfacePalette,
                 opacity: twilightOpacity,
@@ -1017,6 +1020,60 @@ struct TopChromeSurfaceBackground: View {
         } else {
             ArgoTheme.topGlass
         }
+    }
+}
+
+struct TopChromeDoubleClickZoomLayer: NSViewRepresentable {
+    func makeNSView(context: Context) -> TopChromeDoubleClickZoomEventView {
+        TopChromeDoubleClickZoomEventView { window in
+            window.performZoom(nil)
+        }
+    }
+
+    func updateNSView(_ nsView: TopChromeDoubleClickZoomEventView, context: Context) {
+        nsView.onDoubleClick = { window in
+            window.performZoom(nil)
+        }
+    }
+}
+
+final class TopChromeDoubleClickZoomEventView: NSView {
+    var onDoubleClick: (NSWindow) -> Void
+
+    init(onDoubleClick: @escaping (NSWindow) -> Void) {
+        self.onDoubleClick = onDoubleClick
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var mouseDownCanMoveWindow: Bool {
+        false
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard bounds.contains(point),
+              let event = NSApp.currentEvent,
+              event.type == .leftMouseDown,
+              event.clickCount == 2 else {
+            return nil
+        }
+        return self
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard event.type == .leftMouseDown,
+              event.buttonNumber == 0,
+              event.clickCount == 2,
+              let window else { return }
+        onDoubleClick(window)
     }
 }
 

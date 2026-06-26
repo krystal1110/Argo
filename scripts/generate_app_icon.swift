@@ -106,15 +106,12 @@ func strokePrompt(in rect: NSRect, scale: CGFloat) {
     roundedRect(cursorRect, radius: cursorRect.height / 2).fill()
 }
 
-func drawIcon(pixels: Int, in context: NSGraphicsContext) {
-    let canvas = CGFloat(pixels)
-    let scale = canvas / 1024
+func drawIconArtwork(in context: NSGraphicsContext) {
+    let canvas: CGFloat = 1024
+    let scale: CGFloat = 1
 
     context.imageInterpolation = .high
     context.shouldAntialias = true
-
-    NSColor.clear.setFill()
-    NSRect(x: 0, y: 0, width: canvas, height: canvas).fill()
 
     let iconRect = NSRect(x: 0, y: 0, width: canvas, height: canvas)
     let iconPath = roundedRect(iconRect, radius: 224 * scale)
@@ -195,6 +192,26 @@ func drawIcon(pixels: Int, in context: NSGraphicsContext) {
     let border = roundedRect(iconRect.insetBy(dx: 2 * scale, dy: 2 * scale), radius: 222 * scale)
     border.lineWidth = max(1, 2 * scale)
     border.stroke()
+}
+
+func drawIcon(pixels: Int, in context: NSGraphicsContext) {
+    let canvas = CGFloat(pixels)
+    let safeInset = canvas * 100 / 1024
+    let artworkScale = (canvas - safeInset * 2) / 1024
+
+    context.imageInterpolation = .high
+    context.shouldAntialias = true
+
+    NSColor.clear.setFill()
+    NSRect(x: 0, y: 0, width: canvas, height: canvas).fill()
+
+    NSGraphicsContext.saveGraphicsState()
+    let transform = NSAffineTransform()
+    transform.translateX(by: safeInset, yBy: safeInset)
+    transform.scale(by: artworkScale)
+    transform.concat()
+    drawIconArtwork(in: context)
+    NSGraphicsContext.restoreGraphicsState()
 }
 
 func renderIcon(pixels: Int) -> NSBitmapImageRep {

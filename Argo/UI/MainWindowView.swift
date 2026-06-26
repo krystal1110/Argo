@@ -293,15 +293,15 @@ struct MainWindowView: View {
         .frame(maxWidth: .infinity)
         .frame(height: WorkspaceChromeMetrics.topHeight)
         .background {
-            TopChromeDoubleClickZoomLayer()
-        }
-        .background {
             TopChromeSurfaceBackground(
                 surfacePalette: twilightSurfacePalette,
                 opacity: twilightOpacity,
                 usesTwilight: store.appSettings.twilightThemeEnabled
             )
                 .ignoresSafeArea(.container, edges: .top)
+        }
+        .overlay {
+            TopChromeDoubleClickZoomLayer()
         }
         .overlay(alignment: .bottom) {
             if store.mainWindowMode != .workspace {

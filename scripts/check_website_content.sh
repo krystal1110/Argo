@@ -13,7 +13,7 @@ grep -q 'href="#features"' "$html"
 grep -q 'href="./releases/"' "$html"
 grep -q 'href="#download"' "$html"
 grep -q 'href="https://github.com/krystal1110/Argo"' "$html"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.6/Argo-1.0.6.dmg"' "$html"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg"' "$html"
 grep -q '>GitHub</a>' "$html"
 grep -q '>Download</a>' "$html"
 grep -q '>Details</a>' "$html"
@@ -21,20 +21,26 @@ grep -q '>Releases</a>' "$html"
 grep -q 'Command every repo.' "$html"
 grep -q 'Keep every agent in view.' "$html"
 grep -q 'brew install --cask krystal1110/argo/argo' "$html"
+grep -q '<picture>' "$html"
+grep -q 'type="image/webp"' "$html"
+grep -q 'srcset="./assets/hero-workspace-960.webp 960w, ./assets/hero-workspace-1440.webp 1440w, ./assets/hero-workspace-2160.webp 2160w, ./assets/hero-workspace-2880.webp 2880w"' "$html"
 grep -q 'src="./assets/hero-workspace.png"' "$html"
-grep -q 'src="./assets/app-icon.png"' "$html"
+grep -q 'fetchpriority="high"' "$html"
+grep -q 'decoding="async"' "$html"
+grep -q 'src="./assets/app-icon-64.png"' "$html"
+grep -q 'srcset="./assets/app-icon-64.png 1x, ./assets/app-icon-128.png 2x"' "$html"
 grep -q '<figure class="app-window">' "$html"
 grep -q 'href="https://krystal1110.github.io/Argo/"' "$readme"
 grep -q 'Website-krystal1110.github.io%2FArgo' "$readme"
 grep -q '<main class="releases-page"' "$releases"
 grep -q '<h1 id="releases-title">Release Notes</h1>' "$releases"
 grep -q 'Latest' "$releases"
-grep -q 'Argo 1.0.6' "$releases"
-grep -q 'June 22, 2026' "$releases"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.6"' "$releases"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.6/Argo-1.0.6.dmg"' "$releases"
+grep -q 'Argo 1.0.7' "$releases"
+grep -q 'June 25, 2026' "$releases"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/tag/v1.0.7"' "$releases"
+grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg"' "$releases"
 grep -q 'brew install --cask krystal1110/argo/argo' "$releases"
-grep -q 'Argo 1.0.6 adds the Dynamic Island session center, Claude hook bridge, public website, GitHub Pages deployment, updated Homebrew cask path, and refreshed Sparkle packaging.' "$releases"
+grep -q 'Argo 1.0.7 adds the prowl tint spec and dynamic tint updates from the latest release branch.' "$releases"
 
 release_summary="$(awk -F '<p class="release-summary">|</p>' '/release-summary/ { print $2; exit }' "$releases")"
 summary_words="$(awk '{ print NF }' <<< "$release_summary")"
@@ -48,8 +54,8 @@ if grep -Eq '<li>|<ul>|release-groups' "$releases"; then
   exit 1
 fi
 
-if grep -Eq 'Argo 1\.0\.[0-5]' "$releases"; then
-  echo "Release notes page should start at Argo 1.0.6" >&2
+if grep -Eq 'href="https://github.com/krystal1110/Argo/releases/(tag|download)/v1\.0\.6' "$html" "$releases"; then
+  echo "website should not link to Argo 1.0.6 as the current release" >&2
   exit 1
 fi
 

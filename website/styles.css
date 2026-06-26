@@ -260,6 +260,10 @@ main {
   box-shadow: var(--shadow), 0 0 0 1px rgba(95, 215, 202, 0.035);
 }
 
+.app-window picture {
+  display: block;
+}
+
 .app-window img {
   width: 100%;
   aspect-ratio: 2880 / 1778;

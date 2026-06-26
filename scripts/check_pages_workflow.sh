@@ -37,4 +37,9 @@ if grep -Eq 'path:[[:space:]]*docs|docs/' "$workflow"; then
   exit 1
 fi
 
+if [[ -e scripts/check_website_docs.sh ]] || rg -n 'docs/' scripts/check_website_*.sh >/dev/null; then
+  echo "Website checks must not depend on docs/ because Pages only uploads website/" >&2
+  exit 1
+fi
+
 echo "pages workflow ok"

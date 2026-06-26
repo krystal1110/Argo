@@ -59,6 +59,10 @@ final class TerminalViewContainer: NSView {
     var onNeedsSurfaceRefresh: (() -> Void)?
     var desiredHostedViewProvider: (() -> NSView?)?
 
+    override var mouseDownCanMoveWindow: Bool {
+        false
+    }
+
     private weak var desiredHostedView: NSView?
     private weak var hostedView: NSView?
     private var hostedConstraints: [NSLayoutConstraint] = []

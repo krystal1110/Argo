@@ -11,6 +11,12 @@ import XCTest
 
 @MainActor
 final class TerminalViewContainerTests: XCTestCase {
+    func testContainerDoesNotAllowMouseDownToDragWindow() {
+        let container = TerminalViewContainer(frame: NSRect(x: 0, y: 0, width: 320, height: 200))
+
+        XCTAssertFalse(container.mouseDownCanMoveWindow)
+    }
+
     func testAttachReportsWhetherHostedViewChanged() {
         let container = TerminalViewContainer(frame: NSRect(x: 0, y: 0, width: 320, height: 200))
         let hostedView = NSView(frame: .zero)

@@ -540,6 +540,7 @@ private final class ArgoGhosttySurfaceView: NSView {
     private let imeDebugLogger = ArgoGhosttyIMEDebugLogger.shared
 
     override var acceptsFirstResponder: Bool { true }
+    override var mouseDownCanMoveWindow: Bool { false }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)

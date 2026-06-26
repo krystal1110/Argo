@@ -53,9 +53,11 @@ final class MainWindowChromeInteractionTests: XCTestCase {
             source.contains("""
         .overlay {
             TopChromeDoubleClickZoomLayer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(.container, edges: .top)
         }
 """),
-            "The double-click layer must be in the interactive overlay stack so it receives top-chrome hit tests."
+            "The double-click layer must fill the interactive overlay and extend into the top safe area."
         )
         XCTAssertFalse(
             source.contains("""

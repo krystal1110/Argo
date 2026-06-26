@@ -10,6 +10,23 @@ import GhosttyKit
 @testable import Argo
 
 final class ArgoGhosttyControllerTests: XCTestCase {
+    func testGhosttySurfaceDoesNotAllowMouseDownToDragWindow() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/Services/Terminal/Ghostty/ArgoGhosttyController.swift"),
+            encoding: .utf8
+        )
+        let surfaceStart = try XCTUnwrap(source.range(of: "private final class ArgoGhosttySurfaceView: NSView")?.lowerBound)
+        let mouseDownStart = try XCTUnwrap(
+            source.range(of: "override func mouseDown(with event: NSEvent)", range: surfaceStart..<source.endIndex)?.lowerBound
+        )
+        let surfaceHeader = source[surfaceStart..<mouseDownStart]
+
+        XCTAssertTrue(surfaceHeader.contains("override var mouseDownCanMoveWindow: Bool { false }"))
+    }
+
     func testCommandFinishedDoesNotReportProcessExit() {
         XCTAssertFalse(
             argoGhosttyShouldReportProcessExitForCommandFinished(

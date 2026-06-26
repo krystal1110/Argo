@@ -40,7 +40,7 @@ final class MainWindowChromeInteractionTests: XCTestCase {
         XCTAssertEqual(zoomCount, 1)
     }
 
-    func testTopChromeInstallsDoubleClickZoomLayerBehindToolbarContent() throws {
+    func testTopChromeInstallsDoubleClickZoomLayerInInteractiveOverlay() throws {
         let source = try String(
             contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
             encoding: .utf8
@@ -49,6 +49,22 @@ final class MainWindowChromeInteractionTests: XCTestCase {
         XCTAssertTrue(source.contains("TopChromeDoubleClickZoomLayer()"))
         XCTAssertTrue(source.contains("TopChromeDoubleClickZoomEventView"))
         XCTAssertTrue(source.contains("window.performZoom(nil)"))
+        XCTAssertTrue(
+            source.contains("""
+        .overlay {
+            TopChromeDoubleClickZoomLayer()
+        }
+"""),
+            "The double-click layer must be in the interactive overlay stack so it receives top-chrome hit tests."
+        )
+        XCTAssertFalse(
+            source.contains("""
+        .background {
+            TopChromeDoubleClickZoomLayer()
+        }
+"""),
+            "A SwiftUI background layer sits behind top chrome content and can miss mouse hit testing."
+        )
     }
 
     private func mouseEvent(clickCount: Int, windowNumber: Int) throws -> NSEvent {

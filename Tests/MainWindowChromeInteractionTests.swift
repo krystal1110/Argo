@@ -11,77 +11,122 @@ import XCTest
 
 @MainActor
 final class MainWindowChromeInteractionTests: XCTestCase {
-    private let rootURL = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-
-    func testTopChromeDoubleClickZoomEventViewOnlyZoomsOnDoubleClick() throws {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 420),
+    func testArgoMainWindowZoomsWhenDoubleClickingTopChromeArea() throws {
+        let window = TestArgoMainWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.titled, .resizable],
             backing: .buffered,
             defer: false
         )
-        var zoomCount = 0
-        let eventView = TopChromeDoubleClickZoomEventView { eventWindow in
-            XCTAssertTrue(eventWindow === window)
-            zoomCount += 1
-        }
+        window.setContentSize(NSSize(width: 800, height: 600))
 
-        eventView.frame = NSRect(x: 0, y: 0, width: 640, height: 52)
-        window.contentView?.addSubview(eventView)
+        window.sendEvent(try mouseEvent(
+            clickCount: 1,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 400, y: 580)
+        ))
+        XCTAssertEqual(window.zoomCount, 0)
 
-        XCTAssertFalse(eventView.mouseDownCanMoveWindow)
-
-        eventView.mouseDown(with: try mouseEvent(clickCount: 1, windowNumber: window.windowNumber))
-        XCTAssertEqual(zoomCount, 0)
-
-        eventView.mouseDown(with: try mouseEvent(clickCount: 2, windowNumber: window.windowNumber))
-        XCTAssertEqual(zoomCount, 1)
+        window.sendEvent(try mouseEvent(
+            clickCount: 2,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 400, y: 580)
+        ))
+        XCTAssertEqual(window.zoomCount, 1)
     }
 
-    func testTopChromeInstallsDoubleClickZoomLayerInInteractiveOverlay() throws {
-        let source = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
+    func testArgoMainWindowZoomsWhenTopChromeReceivesTwoFastSingleClicks() throws {
+        let window = TestArgoMainWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .resizable],
+            backing: .buffered,
+            defer: false
         )
+        window.setContentSize(NSSize(width: 800, height: 600))
 
-        XCTAssertTrue(source.contains("TopChromeDoubleClickZoomLayer()"))
-        XCTAssertTrue(source.contains("TopChromeDoubleClickZoomEventView"))
-        XCTAssertTrue(source.contains("window.performZoom(nil)"))
-        XCTAssertTrue(
-            source.contains("""
-        .overlay {
-            TopChromeDoubleClickZoomLayer()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(.container, edges: .top)
-        }
-"""),
-            "The double-click layer must fill the interactive overlay and extend into the top safe area."
-        )
-        XCTAssertFalse(
-            source.contains("""
-        .background {
-            TopChromeDoubleClickZoomLayer()
-        }
-"""),
-            "A SwiftUI background layer sits behind top chrome content and can miss mouse hit testing."
-        )
+        let timestamp = ProcessInfo.processInfo.systemUptime
+        window.sendEvent(try mouseEvent(
+            clickCount: 1,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 400, y: 580),
+            timestamp: timestamp,
+            eventNumber: 10
+        ))
+        XCTAssertEqual(window.zoomCount, 0)
+
+        window.sendEvent(try mouseEvent(
+            clickCount: 1,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 403, y: 578),
+            timestamp: timestamp + 0.05,
+            eventNumber: 11
+        ))
+        XCTAssertEqual(window.zoomCount, 1)
     }
 
-    private func mouseEvent(clickCount: Int, windowNumber: Int) throws -> NSEvent {
+    func testArgoMainWindowZoomsInFullSizeTitlebarSafeArea() throws {
+        let window = TestArgoMainWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 760),
+            styleMask: [.titled, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.setContentSize(NSSize(width: 1200, height: 760))
+
+        window.sendEvent(try mouseEvent(
+            clickCount: 2,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 300, y: window.frame.height - 24)
+        ))
+        XCTAssertEqual(window.zoomCount, 1)
+    }
+
+    func testArgoMainWindowIgnoresContentAreaDoubleClick() throws {
+        let window = TestArgoMainWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.setContentSize(NSSize(width: 800, height: 600))
+
+        window.sendEvent(try mouseEvent(
+            clickCount: 2,
+            windowNumber: window.windowNumber,
+            location: NSPoint(x: 400, y: 320)
+        ))
+        XCTAssertEqual(window.zoomCount, 0)
+    }
+
+    private func mouseEvent(
+        clickCount: Int,
+        windowNumber: Int,
+        location: NSPoint = NSPoint(x: 24, y: 24),
+        timestamp: TimeInterval = ProcessInfo.processInfo.systemUptime,
+        eventNumber: Int? = nil
+    ) throws -> NSEvent {
         try XCTUnwrap(
             NSEvent.mouseEvent(
                 with: .leftMouseDown,
-                location: NSPoint(x: 24, y: 24),
+                location: location,
                 modifierFlags: [],
-                timestamp: ProcessInfo.processInfo.systemUptime,
+                timestamp: timestamp,
                 windowNumber: windowNumber,
                 context: nil,
-                eventNumber: clickCount,
+                eventNumber: eventNumber ?? clickCount,
                 clickCount: clickCount,
                 pressure: 1
             )
         )
+    }
+}
+
+private final class TestArgoMainWindow: ArgoMainWindow {
+    var zoomCount = 0
+
+    override func performZoom(_ sender: Any?) {
+        zoomCount += 1
     }
 }

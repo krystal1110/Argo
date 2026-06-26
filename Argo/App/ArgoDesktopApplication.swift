@@ -44,7 +44,7 @@ public final class ArgoDesktopApplication: NSObject {
                     .preferredColorScheme(.dark)
             )
 
-            let window = NSWindow(contentViewController: host)
+            let window = ArgoMainWindow(contentViewController: host)
             window.title = ""
             window.setContentSize(NSSize(width: 1440, height: 920))
             window.minSize = NSSize(width: 1120, height: 720)

@@ -302,6 +302,8 @@ struct MainWindowView: View {
         }
         .overlay {
             TopChromeDoubleClickZoomLayer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(.container, edges: .top)
         }
         .overlay(alignment: .bottom) {
             if store.mainWindowMode != .workspace {

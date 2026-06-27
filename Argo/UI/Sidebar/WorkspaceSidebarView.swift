@@ -2185,7 +2185,10 @@ struct SidebarIconActivityBadge: View {
     @State private var isAnimating = false
 
     private var activityColor: Color {
-        twilightTheme?.green.color ?? palette.descriptor.gradientEnd
+        SidebarIconActivityColorResolver.activityColor(
+            twilightTheme: twilightTheme,
+            fallbackPalette: palette
+        )
     }
 
     private var badgeSize: CGFloat {

@@ -558,6 +558,28 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertTrue(railSource.contains(".offset(x: -14 * uiScale)"))
     }
 
+    func testTopChromeUsesArgoBrandPillInsteadOfTerminalLabel() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+        let topChromeRange = try XCTUnwrap(
+            mainWindowSource.range(
+                of: #"private var topGlassChrome: some View \{[\s\S]*?\n    var body: some View"#,
+                options: .regularExpression
+            )
+        )
+        let topChromeSource = String(mainWindowSource[topChromeRange])
+
+        XCTAssertTrue(topChromeSource.contains("Image(nsImage: NSApplication.shared.applicationIconImage)"))
+        XCTAssertTrue(topChromeSource.contains("Text(\"Argo\")"))
+        XCTAssertFalse(topChromeSource.contains("Image(systemName: \"terminal.fill\")"))
+        XCTAssertFalse(topChromeSource.contains("Text(\"Terminal\")"))
+    }
+
     func testMainWindowKeepsSidebarFlushWithRailLikeHTMLReference() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

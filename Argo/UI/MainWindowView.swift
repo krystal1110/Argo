@@ -210,19 +210,21 @@ struct MainWindowView: View {
     }
 
     private var topGlassChrome: some View {
-        let chromeTint = activeChromeTint
-
-        return HStack(spacing: 16) {
+        HStack(spacing: 16) {
             TrafficLightAnchor()
 
             GlassToolbarGroup(minHeight: 34, horizontalPadding: 12, spacing: 8) {
-                Image(systemName: "terminal.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(chromeTint.components.color)
-                Text("Terminal")
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                    .shadow(color: activeChromeTint.components.color.opacity(0.28), radius: 5)
+                Text("Argo")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(ArgoTheme.tertiaryText)
             }
+            .accessibilityLabel("Argo")
             .help(selectedWorkspaceDisplayName)
 
             Spacer(minLength: 16)

@@ -336,6 +336,10 @@ final class ShellSession: ObservableObject, Identifiable {
         return surfaceController.sendProgrammaticText(text)
     }
 
+    func readScreenText(scrollback: Bool) -> String? {
+        surfaceController.readScreenText(scrollback: scrollback)
+    }
+
     func sendShellCommand(_ command: String) {
         surfaceController.sendText(command)
         surfaceController.sendReturn()

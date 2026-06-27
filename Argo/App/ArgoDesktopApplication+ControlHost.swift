@@ -20,8 +20,14 @@ extension ArgoDesktopApplication: ArgoControlHost {
     }
 
     func handleStatus(_ request: ArgoStatusRequest) {
-        // Full routing lands with the app-host task; the dispatcher can now
-        // accept status frames without requiring auth.
+        let state = AgentReportedState(cliValue: request.state) ?? .running
+        let paneID = request.pane.flatMap { UUID(uuidString: $0) }
+        routeAgentStatus(
+            state: state,
+            paneID: paneID,
+            title: request.title,
+            agentName: request.agentName
+        )
     }
 
     func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse {
@@ -98,7 +104,8 @@ extension ArgoDesktopApplication: ArgoControlHost {
                             paneID: paneID.uuidString.lowercased(),
                             cwd: session.effectiveWorkingDirectory,
                             branch: workspace.supportsRepositoryFeatures ? workspace.currentBranch : nil,
-                            listeningPorts: workspace.listeningPorts
+                            listeningPorts: workspace.listeningPorts,
+                            status: AgentStatusStore.shared.state(for: paneID)?.rawValue
                         )
                     )
                 }
@@ -108,10 +115,42 @@ extension ArgoDesktopApplication: ArgoControlHost {
     }
 
     func handleRead(_ request: ArgoReadRequest) -> ArgoControlResponse {
-        .failure("read-unavailable")
+        let resolvedPane: UUID?
+        if let paneIDString = request.pane, let paneID = UUID(uuidString: paneIDString) {
+            resolvedPane = paneID
+        } else {
+            resolvedPane = activeWorkspaceStore?.selectedWorkspace?.sessionController.focusedPaneID
+        }
+        guard let resolvedPane else {
+            return .failure("no-pane")
+        }
+
+        for store in allWorkspaceStores {
+            for workspace in store.workspaces {
+                guard let session = workspace.sessionController.session(for: resolvedPane) else { continue }
+                guard let raw = session.readScreenText(scrollback: request.scrollback ?? false) else {
+                    return .failure("read-unavailable")
+                }
+                let text = Self.trimScreenText(raw, lastLines: request.lines)
+                let lineCount = text.isEmpty ? 0 : text.split(separator: "\n", omittingEmptySubsequences: false).count
+                return ArgoControlResponse(ok: true, text: text, lineCount: lineCount)
+            }
+        }
+        return .failure("pane-not-found")
     }
 
     func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse {
         ArgoControlResponse(ok: true, agents: [])
+    }
+
+    static func trimScreenText(_ raw: String, lastLines: Int?) -> String {
+        var lines = raw.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeLast()
+        }
+        if let lastLines, lastLines > 0, lines.count > lastLines {
+            lines = Array(lines.suffix(lastLines))
+        }
+        return lines.joined(separator: "\n")
     }
 }

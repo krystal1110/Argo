@@ -523,6 +523,8 @@ final class WorkspaceModel: ObservableObject, Identifiable {
     }
 
     func closePane(_ paneID: UUID) {
+        AgentStatusStore.shared.clear(pane: paneID)
+
         guard var layout else {
             sessionController.closePane(paneID)
             return
@@ -1271,6 +1273,61 @@ final class WorkspaceModel: ObservableObject, Identifiable {
         )
         IslandNotificationState.shared.post(item: item)
         IslandPanelController.shared.show()
+    }
+
+    func postAgentStatus(
+        state: AgentReportedState,
+        title: String?,
+        paneID: UUID?,
+        agentName: String?
+    ) {
+        if let paneID {
+            AgentStatusStore.shared.update(
+                pane: paneID,
+                state: state,
+                title: title,
+                agentName: agentName
+            )
+        }
+
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle = (trimmedTitle?.isEmpty == false)
+            ? trimmedTitle!
+            : Self.defaultStatusTitle(for: state)
+        let item = IslandNotificationItem(
+            id: UUID(),
+            workspaceID: id,
+            worktreePath: activeWorktreePath,
+            paneID: paneID,
+            sourceID: paneID.map { "pane:\($0.uuidString.lowercased())" },
+            title: resolvedTitle,
+            agentName: agentName,
+            terminalTag: paneID.map(Self.shortPaneTag(for:)),
+            status: state.islandStatus,
+            startedAt: Date(),
+            updatedAt: Date(),
+            body: nil,
+            prompt: nil,
+            action: nil,
+            lastError: nil
+        )
+        IslandNotificationState.shared.post(item: item)
+        if state != .running {
+            IslandPanelController.shared.show()
+        }
+    }
+
+    private static func defaultStatusTitle(for state: AgentReportedState) -> String {
+        switch state {
+        case .running:
+            return "Working..."
+        case .waiting:
+            return "Waiting for input"
+        case .done:
+            return "Done"
+        case .error:
+            return "Error"
+        }
     }
 
     func postAgentNotification(request: AgentNotifyRequest, paneID: UUID?) {

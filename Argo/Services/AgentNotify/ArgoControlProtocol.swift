@@ -14,18 +14,30 @@ import Foundation
 /// `notify` so already-released `argo notify` clients keep working without
 /// modification.
 ///
-/// All commands other than `notify` require a token that matches the value
-/// stored under `ArgoURLScheme` (Settings → URL Scheme). This piggybacks on
-/// the existing trust boundary the user already configured for the
-/// `argo://` URL handler — no second password to manage.
+/// Mutating commands require a token that matches the value stored under
+/// `ArgoURLScheme` (Settings → URL Scheme). Read-only commands stay open to
+/// local callers so scripts and agent hooks can report or inspect status
+/// without learning the user's URL-scheme secret.
 nonisolated enum ArgoControlCommand: String, Codable {
     case notify
     case ping
+    case status
     case open
     case split
     case sendKeys = "send-keys"
     case sessionList = "session-list"
+    case read
+    case agents
     case claudeHook = "claude-hook"
+
+    var requiresControlToken: Bool {
+        switch self {
+        case .notify, .ping, .status, .sessionList, .read, .agents, .claudeHook:
+            return false
+        case .open, .split, .sendKeys:
+            return true
+        }
+    }
 }
 
 /// Light envelope that decodes only the discriminator + auth fields. The
@@ -64,9 +76,92 @@ struct ArgoSendKeysRequest: Decodable {
     var text: String
 }
 
+enum AgentReportedState: String, Codable, Equatable {
+    case running
+    case waiting
+    case done
+    case error
+
+    var islandStatus: IslandSessionStatus {
+        switch self {
+        case .running:
+            return .running
+        case .waiting:
+            return .waitingForInput
+        case .done:
+            return .done
+        case .error:
+            return .error
+        }
+    }
+
+    init?(cliValue raw: String) {
+        switch raw.lowercased() {
+        case "running", "busy", "working", "start", "started":
+            self = .running
+        case "waiting", "wait", "blocked", "input", "needs-input":
+            self = .waiting
+        case "done", "complete", "completed", "finished", "success", "ok":
+            self = .done
+        case "error", "failed", "fail":
+            self = .error
+        default:
+            return nil
+        }
+    }
+}
+
+struct ArgoStatusRequest: Decodable {
+    var state: String
+    var pane: String?
+    var title: String?
+    var agentName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case state
+        case pane
+        case title
+        case agentName = "agent"
+    }
+}
+
+struct ArgoReadRequest: Decodable {
+    var pane: String?
+    var lines: Int?
+    var scrollback: Bool?
+}
+
+struct ArgoAgentsRequest: Decodable {}
+
 /// Request a JSON snapshot of every running pane across all workspaces.
 struct ArgoSessionListRequest: Decodable {
     // Reserved for filtering options; intentionally empty for v1.
+}
+
+struct ArgoAgentInfo: Codable, Equatable {
+    var workspaceID: String
+    var workspaceName: String
+    var paneID: String
+    var type: String?
+    var name: String?
+    var status: String
+    var reported: Bool
+    var cwd: String
+    var branch: String?
+    var focused: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case workspaceID = "workspace"
+        case workspaceName
+        case paneID = "pane"
+        case type
+        case name
+        case status
+        case reported
+        case cwd
+        case branch
+        case focused
+    }
 }
 
 /// Response shape for a single pane in `session-list`.
@@ -77,6 +172,7 @@ struct ArgoControlSession: Codable, Equatable {
     var cwd: String
     var branch: String?
     var listeningPorts: [Int]
+    var status: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case workspaceID = "workspace"
@@ -85,15 +181,19 @@ struct ArgoControlSession: Codable, Equatable {
         case cwd
         case branch
         case listeningPorts = "ports"
+        case status
     }
 }
 
 /// Generic response written back to the CLI client.
 struct ArgoControlResponse: Codable, Equatable {
     var ok: Bool
-    var error: String?
-    var sessions: [ArgoControlSession]?
-    var executablePath: String?
+    var error: String? = nil
+    var sessions: [ArgoControlSession]? = nil
+    var text: String? = nil
+    var lineCount: Int? = nil
+    var agents: [ArgoAgentInfo]? = nil
+    var executablePath: String? = nil
 
     static let success = ArgoControlResponse(ok: true)
 

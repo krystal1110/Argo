@@ -518,15 +518,20 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
 
         private func makeWorkspaceBatchMenu(nodes: [SidebarNodeItem]) -> NSMenu {
             let menu = NSMenu()
+            let workspaces = nodes.compactMap(\.workspace)
             let workspaceIDs = nodes.compactMap(\.workspace?.id)
             let paths = nodes.compactMap(\.workspace?.activeWorktreePath)
 
             addMenuItem(to: menu, title: localized("sidebar.menu.refreshSelectedWorkspaces"), action: #selector(refreshSelectedWorkspaces(_:)), representedObject: workspaceIDs)
-            addMenuItem(to: menu, title: localized("sidebar.menu.fetchSelectedWorkspaces"), action: #selector(fetchSelectedWorkspaces(_:)), representedObject: workspaceIDs)
+            if SidebarContextMenuPolicy.canFetchRepositories(for: workspaces) {
+                addMenuItem(to: menu, title: localized("sidebar.menu.fetchSelectedWorkspaces"), action: #selector(fetchSelectedWorkspaces(_:)), representedObject: workspaceIDs)
+            }
 
             menu.addItem(.separator())
             addMenuItem(to: menu, title: localized("sidebar.menu.copySelectedPaths"), action: #selector(copySelectedPaths(_:)), representedObject: paths)
-            addMenuItem(to: menu, title: localized("sidebar.menu.revealSelectedInFinder"), action: #selector(revealSelectedPaths(_:)), representedObject: paths)
+            if SidebarContextMenuPolicy.canRevealInFinder(for: workspaces) {
+                addMenuItem(to: menu, title: localized("sidebar.menu.revealSelectedInFinder"), action: #selector(revealSelectedPaths(_:)), representedObject: paths)
+            }
 
             menu.addItem(.separator())
 
@@ -549,9 +554,12 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
 
         private func makeGroupMenu(group: WorkspaceGroup) -> NSMenu {
             let menu = NSMenu()
+            let groupWorkspaces = store?.workspaces.filter { group.workspaceIDs.contains($0.id) } ?? []
 
             addMenuItem(to: menu, title: localized("sidebar.menu.group.refresh"), action: #selector(refreshGroup(_:)), representedObject: group.id)
-            addMenuItem(to: menu, title: localized("sidebar.menu.group.fetch"), action: #selector(fetchGroup(_:)), representedObject: group.id)
+            if SidebarContextMenuPolicy.canFetchRepositories(for: groupWorkspaces) {
+                addMenuItem(to: menu, title: localized("sidebar.menu.group.fetch"), action: #selector(fetchGroup(_:)), representedObject: group.id)
+            }
 
             menu.addItem(.separator())
             addMenuItem(to: menu, title: localized("sidebar.menu.group.rename"), action: #selector(renameGroup(_:)), representedObject: group)
@@ -612,8 +620,7 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             let menu = NSMenu()
 
             // Dynamic actions at the top for quick access
-            let hasRunScript = !workspace.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            if hasRunScript {
+            if SidebarContextMenuPolicy.canRunWorkspaceScript(in: workspace) {
                 addMenuItem(
                     to: menu,
                     title: localized("sidebar.menu.runWorkspaceScript"),
@@ -675,12 +682,14 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 menu.addItem(.separator())
             }
 
-            addMenuItem(
-                to: menu,
-                title: localized("sidebar.menu.revealInFinder"),
-                action: #selector(revealPath(_:)),
-                representedObject: workspace.activeWorktreePath
-            )
+            if SidebarContextMenuPolicy.canRevealInFinder(for: [workspace]) {
+                addMenuItem(
+                    to: menu,
+                    title: localized("sidebar.menu.revealInFinder"),
+                    action: #selector(revealPath(_:)),
+                    representedObject: workspace.activeWorktreePath
+                )
+            }
             addMenuItem(
                 to: menu,
                 title: localized("sidebar.menu.copyPath"),
@@ -789,7 +798,9 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
 
             menu.addItem(.separator())
             addMenuItem(to: menu, title: localized("sidebar.menu.copySelectedPaths"), action: #selector(copySelectedPaths(_:)), representedObject: paths)
-            addMenuItem(to: menu, title: localized("sidebar.menu.revealSelectedInFinder"), action: #selector(revealSelectedPaths(_:)), representedObject: paths)
+            if SidebarContextMenuPolicy.canRevealInFinder(for: [workspace]) {
+                addMenuItem(to: menu, title: localized("sidebar.menu.revealSelectedInFinder"), action: #selector(revealSelectedPaths(_:)), representedObject: paths)
+            }
 
             let removablePaths = worktrees.filter { !$0.isMainWorktree }.map(\.path)
             if !removablePaths.isEmpty {
@@ -898,12 +909,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             store?.copyPath(path)
         }
 
-        @objc private func newSession(_ sender: NSMenuItem) {
-            guard let workspaceID = sender.representedObject as? UUID,
-                  let workspace = store?.workspaces.first(where: { $0.id == workspaceID }) else { return }
-            store?.createSession(in: workspace)
-        }
-
         @objc private func createWorktree(_ sender: NSMenuItem) {
             guard let workspaceID = sender.representedObject as? UUID,
                   let workspace = store?.workspaces.first(where: { $0.id == workspaceID }) else { return }
@@ -940,12 +945,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             store?.openWorkspaceAsRepository(workspace)
         }
 
-        @objc private func equalizeSplits(_ sender: NSMenuItem) {
-            guard let workspaceID = sender.representedObject as? UUID,
-                  let workspace = store?.workspaces.first(where: { $0.id == workspaceID }) else { return }
-            store?.equalizeSplits(in: workspace)
-        }
-
         @objc private func renameWorkspace(_ sender: NSMenuItem) {
             guard let workspaceID = sender.representedObject as? UUID,
                   let workspace = store?.workspaces.first(where: { $0.id == workspaceID }) else { return }
@@ -977,11 +976,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
         @objc private func runWorkspaceScript(_ sender: NSMenuItem) {
             guard let workspaceID = sender.representedObject as? UUID else { return }
             store?.dispatch(.runWorkspaceScript(workspaceID))
-        }
-
-        @objc private func runWorkflow(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorkflow else { return }
-            store?.dispatch(.runWorkflow(payload.workspaceID, payload.workflowID))
         }
 
         @objc private func openWorkspaceSettings(_ sender: NSMenuItem) {
@@ -1035,41 +1029,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
         @objc private func splitDownForWorktree(_ sender: NSMenuItem) {
             guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
             openWorktree(payload, action: .splitHorizontal)
-        }
-
-        @objc private func openPullRequest(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.openPullRequest(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func markPullRequestReady(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.markPullRequestReady(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func openLatestRun(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.openLatestRun(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func openFailingCheckDetails(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.openFailingCheckDetails(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func copyFailingCheckURL(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.copyFailingCheckURL(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func rerunLatestRun(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.rerunLatestFailedJobs(payload.workspaceID, payload.worktreePath))
-        }
-
-        @objc private func copyLatestRunLogs(_ sender: NSMenuItem) {
-            guard let payload = sender.representedObject as? SidebarActionWorktree else { return }
-            store?.dispatch(.copyLatestRunLogs(payload.workspaceID, payload.worktreePath))
         }
 
         private func openWorktree(_ payload: SidebarActionWorktree, action: PendingWorktreeAction) {
@@ -2759,11 +2718,6 @@ private struct SidebarActionWorktree {
 private struct SidebarActionWorktreeBatch {
     let workspaceID: UUID
     let worktreePaths: [String]
-}
-
-private struct SidebarActionWorkflow {
-    let workspaceID: UUID
-    let workflowID: UUID
 }
 
 private struct SidebarActionMoveToGroup {

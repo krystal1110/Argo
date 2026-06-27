@@ -30,7 +30,8 @@ struct TerminalLaunchConfiguration: Hashable {
 extension SessionBackendConfiguration {
     func makeLaunchConfiguration(
         preferredWorkingDirectory: String,
-        baseEnvironment: [String: String]
+        baseEnvironment: [String: String],
+        inlineImageFilter: (TerminalCommandDefinition) -> TerminalCommandDefinition = TerminalInlineImageFilter.applyIfEnabled(to:)
     ) -> TerminalLaunchConfiguration {
         switch kind {
         case .localShell:
@@ -47,7 +48,7 @@ extension SessionBackendConfiguration {
             return TerminalLaunchConfiguration(
                 workingDirectory: preferredWorkingDirectory,
                 environment: prepared.environment,
-                command: prepared.command,
+                command: inlineImageFilter(prepared.command),
                 backendConfiguration: self,
                 initialInput: nil
             )
@@ -97,7 +98,7 @@ extension SessionBackendConfiguration {
             return TerminalLaunchConfiguration(
                 workingDirectory: configuration.workingDirectory ?? preferredWorkingDirectory,
                 environment: prepared.environment,
-                command: prepared.command,
+                command: inlineImageFilter(prepared.command),
                 backendConfiguration: self,
                 initialInput: nil
             )

@@ -422,6 +422,7 @@ struct SettingsSheet: View {
     @State private var urlSchemeToken: String = ArgoURLScheme.storedToken() ?? ""
     @State private var urlSchemeEnabled: Bool = ArgoURLScheme.isEnabled()
     @State private var urlSchemeSkipConfirm: Bool = ArgoURLScheme.skipConfirmation()
+    @AppStorage(TerminalInlineImageFilter.defaultsKey) private var inlineImagesEnabled = true
 
     private var availableExternalEditors: [ExternalEditorDescriptor] {
         store.availableExternalEditors
@@ -941,6 +942,14 @@ struct SettingsSheet: View {
                     }
 
                     Text(localized("settings.general.terminal.backgroundOpacityHint"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    Toggle(localized("settings.general.terminal.inlineImages"), isOn: $inlineImagesEnabled)
+
+                    Text(localized("settings.general.terminal.inlineImagesHint"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }

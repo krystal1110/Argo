@@ -13,6 +13,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/dist}"
 APPCAST_FILE="${APPCAST_FILE:-$ROOT_DIR/appcast.xml}"
 WEBSITE_RELEASES_FILE="${WEBSITE_RELEASES_FILE:-$ROOT_DIR/website/releases/releases.json}"
 WEBSITE_RELEASES_HTML_FILE="${WEBSITE_RELEASES_HTML_FILE:-$ROOT_DIR/website/releases/index.html}"
+WEBSITE_HOME_HTML_FILE="${WEBSITE_HOME_HTML_FILE:-$ROOT_DIR/website/index.html}"
 SIGN_SCRIPT="${SIGN_SCRIPT:-$ROOT_DIR/scripts/sign_macos.sh}"
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 TAP_PROJECT_PATH="${TAP_PROJECT_PATH:-${TAP_REPO:-}}"
@@ -285,10 +286,10 @@ cleanup() {
         echo "Release aborted with exit code $exit_code." >&2
       fi
     fi
-    if ! git diff --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" 2>/dev/null \
-        || ! git diff --cached --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" 2>/dev/null; then
+    if ! git diff --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE" 2>/dev/null \
+        || ! git diff --cached --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE" 2>/dev/null; then
       echo "Reverting uncommitted release metadata changes." >&2
-      git restore --source=HEAD --staged --worktree -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" >/dev/null 2>&1 || true
+      git restore --source=HEAD --staged --worktree -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE" >/dev/null 2>&1 || true
     fi
   fi
   if [[ -n "$RELEASE_NOTES_FILE" && -f "$RELEASE_NOTES_FILE" ]]; then
@@ -428,7 +429,7 @@ if [[ "$RESUMING" != "1" ]]; then
   WEBSITE_BREW_INSTALL_REF="$(brew_install_target)" \
     website_release_notes_update "$VERSION" "$TAG" "$PREVIOUS_TAG" "$DIST_DMG_PATH" "$RELEASE_NOTES_FILE"
 
-  git add -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE"
+  git add -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE"
   if ! git diff --cached --quiet; then
     git commit -m "fix(release): bump $VERSION"
     git push origin "$(git branch --show-current)"

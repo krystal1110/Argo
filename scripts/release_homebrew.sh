@@ -11,6 +11,8 @@ SCHEME="${SCHEME:-Argo}"
 RELEASE_ARCHS="${RELEASE_ARCHS:-arm64 x86_64}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/dist}"
 APPCAST_FILE="${APPCAST_FILE:-$ROOT_DIR/appcast.xml}"
+WEBSITE_RELEASES_FILE="${WEBSITE_RELEASES_FILE:-$ROOT_DIR/website/releases/releases.json}"
+WEBSITE_RELEASES_HTML_FILE="${WEBSITE_RELEASES_HTML_FILE:-$ROOT_DIR/website/releases/index.html}"
 SIGN_SCRIPT="${SIGN_SCRIPT:-$ROOT_DIR/scripts/sign_macos.sh}"
 ARCHIVE_DSYM_SCRIPT="${ARCHIVE_DSYM_SCRIPT:-$ROOT_DIR/scripts/archive_dsym.sh}"
 TAP_PROJECT_PATH="${TAP_PROJECT_PATH:-${TAP_REPO:-}}"
@@ -43,6 +45,7 @@ CLONED_DEFAULT_TAP_DIR=0
 source "$ROOT_DIR/scripts/sparkle_tools.sh"
 source "$ROOT_DIR/scripts/github_release_tools.sh"
 source "$ROOT_DIR/scripts/release_notes.sh"
+source "$ROOT_DIR/scripts/website_release_notes.sh"
 
 usage() {
   cat <<EOF
@@ -282,10 +285,10 @@ cleanup() {
         echo "Release aborted with exit code $exit_code." >&2
       fi
     fi
-    if ! git diff --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" 2>/dev/null \
-        || ! git diff --cached --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" 2>/dev/null; then
-      echo "Reverting uncommitted changes to $(basename "$PROJECT_FILE") and $(basename "$APPCAST_FILE")." >&2
-      git restore --source=HEAD --staged --worktree -- "$PROJECT_FILE" "$APPCAST_FILE" >/dev/null 2>&1 || true
+    if ! git diff --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" 2>/dev/null \
+        || ! git diff --cached --quiet -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" 2>/dev/null; then
+      echo "Reverting uncommitted release metadata changes." >&2
+      git restore --source=HEAD --staged --worktree -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" >/dev/null 2>&1 || true
     fi
   fi
   if [[ -n "$RELEASE_NOTES_FILE" && -f "$RELEASE_NOTES_FILE" ]]; then
@@ -422,7 +425,10 @@ if [[ "$RESUMING" != "1" ]]; then
   cp "$APPCAST_STAGING_DIR/appcast.xml" "$APPCAST_FILE"
   rm -rf "$APPCAST_STAGING_DIR"
 
-  git add -- "$PROJECT_FILE" "$APPCAST_FILE"
+  WEBSITE_BREW_INSTALL_REF="$(brew_install_target)" \
+    website_release_notes_update "$VERSION" "$TAG" "$PREVIOUS_TAG" "$DIST_DMG_PATH" "$RELEASE_NOTES_FILE"
+
+  git add -- "$PROJECT_FILE" "$APPCAST_FILE" "$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE"
   if ! git diff --cached --quiet; then
     git commit -m "fix(release): bump $VERSION"
     git push origin "$(git branch --show-current)"

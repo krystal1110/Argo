@@ -137,6 +137,7 @@ export GH_TOKEN=<token-with-release-access>
 - 为 Sparkle 打包 `Argo-<version>.app.zip`
 - 除非设置 `SKIP_NOTARIZE=1`，否则执行公证
 - 更新仓库中的 `appcast.xml`
+- 更新官网 Release Notes 页面，保留最近 4 个版本
 - 将 DMG、Sparkle app zip、dSYM zip 和 appcast 上传到 GitHub Releases
 - 创建或更新 GitHub Release，并上传这些 release assets
 - 除非设置 `SKIP_CASK_UPDATE=1`，否则更新 Homebrew tap
@@ -158,6 +159,8 @@ export GH_TOKEN=<token-with-release-access>
 当 `origin` 是 `git@github.com:owner/repo.git` 或 `https://github.com/owner/repo.git` 时，脚本会自动推断 `GITHUB_REPOSITORY`。如果 GitHub 项目是私有项目，请确认 Sparkle feed 和 package 下载地址对已安装客户端可访问；Sparkle 检查更新时不会自动附加 GitHub 认证 header。
 
 当没有设置 `TAP_PROJECT_PATH` 和 `TAP_REMOTE_URL` 时，Homebrew cask 发布会使用 `GITHUB_REPOSITORY` 的 owner，并更新 `owner/homebrew-argo`。对于 `krystal1110/Argo`，生成的安装命令是 `brew install --cask krystal1110/argo/argo`。
+
+官网 Release Notes 页面会在 release bump commit 阶段自动重新生成。它通过 `website/releases/releases.json` 保留最近四个版本；如果想让官网摘要优先使用人工撰写的发布文案，可以传入 `RELEASE_NOTES_SOURCE_FILE`。
 
 如果你仍在使用旧路径，`scripts/deploy.sh` 依然保留为兼容包装脚本。
 

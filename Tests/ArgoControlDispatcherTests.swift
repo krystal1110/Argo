@@ -263,6 +263,30 @@ final class ArgoControlDispatcherTests: XCTestCase {
         XCTAssertEqual(decoded.sessions?.first?.listeningPorts, [3000])
     }
 
+    func testSessionListResponseIncludesStatus() throws {
+        let session = ArgoControlSession(
+            workspaceID: "w",
+            workspaceName: "demo",
+            paneID: "p",
+            cwd: "/tmp",
+            branch: nil,
+            listeningPorts: [],
+            status: "waiting"
+        )
+        let data = ArgoControlEncoder.encodeResponse(ArgoControlResponse(ok: true, sessions: [session]))
+        let decoded = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let sessions = decoded?["sessions"] as? [[String: Any]]
+        XCTAssertEqual(sessions?.first?["status"] as? String, "waiting")
+    }
+
+    // MARK: - Read text trimming
+
+    func testTrimScreenTextDropsTrailingBlankLinesAndKeepsLastLines() {
+        let raw = "one\n\ntwo\nthree\n\n"
+        let trimmed = ArgoDesktopApplication.trimScreenText(raw, lastLines: 2)
+        XCTAssertEqual(trimmed, "two\nthree")
+    }
+
     // MARK: - Trailing newline tolerance
 
     func testTrailingNewlineIsStrippedBeforeDecoding() throws {

@@ -10,6 +10,11 @@ import XCTest
 
 @MainActor
 final class WorkspaceSessionControllerTests: XCTestCase {
+    override func tearDown() {
+        AgentStatusStore.shared.clearAll()
+        super.tearDown()
+    }
+
     func testSendProgrammaticTextFocusesTargetPane() {
         let firstPaneID = UUID()
         let secondPaneID = UUID()
@@ -43,5 +48,29 @@ final class WorkspaceSessionControllerTests: XCTestCase {
 
         XCTAssertFalse(sent)
         XCTAssertEqual(controller.focusedPaneID, paneID)
+    }
+
+    func testClosingPaneClearsAgentStatus() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argo-agent-status-close-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let workspace = WorkspaceModel(localDirectoryPath: directoryURL.path, name: "demo")
+        let firstPaneID = try XCTUnwrap(workspace.paneOrder.first)
+        workspace.createPane(splitAxis: .vertical)
+        XCTAssertGreaterThan(workspace.paneOrder.count, 1)
+
+        AgentStatusStore.shared.update(
+            pane: firstPaneID,
+            state: .waiting,
+            title: "Approve command",
+            agentName: "Codex"
+        )
+        XCTAssertEqual(AgentStatusStore.shared.state(for: firstPaneID), .waiting)
+
+        workspace.closePane(firstPaneID)
+
+        XCTAssertNil(AgentStatusStore.shared.state(for: firstPaneID))
     }
 }

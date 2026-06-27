@@ -284,6 +284,37 @@ public final class ArgoDesktopApplication: NSObject {
         }
     }
 
+    func routeAgentStatus(
+        state: AgentReportedState,
+        paneID: UUID?,
+        title: String?,
+        agentName: String?
+    ) {
+        if let paneID {
+            for context in windowContexts {
+                for workspace in context.store.workspaces
+                where workspace.sessionController.session(for: paneID) != nil {
+                    workspace.postAgentStatus(
+                        state: state,
+                        title: title,
+                        paneID: paneID,
+                        agentName: agentName
+                    )
+                    return
+                }
+            }
+        }
+
+        if let workspace = activeWorkspaceStore?.selectedWorkspace {
+            workspace.postAgentStatus(
+                state: state,
+                title: title,
+                paneID: paneID,
+                agentName: agentName
+            )
+        }
+    }
+
     public func createNewWindow() {
         let context = makeWindowContext(
             persistsWorkspaceState: windowContexts.isEmpty,

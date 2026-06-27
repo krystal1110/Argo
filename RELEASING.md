@@ -137,6 +137,7 @@ Default behavior:
 - packages `Argo-<version>.app.zip` for Sparkle
 - notarizes unless `SKIP_NOTARIZE=1`
 - updates the repository `appcast.xml`
+- updates the website Release Notes page with the latest 4 releases
 - pushes the Sparkle feed branch, `stable` by default
 - uploads the DMG, Sparkle app zip, dSYM zip, and appcast to GitHub Releases
 - creates or updates the GitHub release and attaches release assets for those files
@@ -160,6 +161,8 @@ Useful overrides:
 `GITHUB_REPOSITORY` is inferred from `origin` when the remote is `git@github.com:owner/repo.git` or `https://github.com/owner/repo.git`. If the project is private, make sure the Sparkle feed and package download URLs are reachable by installed clients; Sparkle cannot attach GitHub authentication headers during update checks.
 
 When `TAP_PROJECT_PATH` and `TAP_REMOTE_URL` are omitted, Homebrew cask publishing uses the GitHub owner from `GITHUB_REPOSITORY` and updates `owner/homebrew-argo`. For `krystal1110/Argo`, the generated install command is `brew install --cask krystal1110/argo/argo`.
+
+The website Release Notes page is regenerated during the release bump commit. It keeps the latest four releases in `website/releases/releases.json`; pass `RELEASE_NOTES_SOURCE_FILE` when you want the website summary to start from human-written release copy.
 
 If you prefer the old path, `scripts/deploy.sh` remains available as a compatibility wrapper.
 

@@ -1,0 +1,24 @@
+{
+  "releases": [
+    {
+      "version": "1.0.8",
+      "date": "June 26, 2026",
+      "summary": "Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way."
+    },
+    {
+      "version": "1.0.7",
+      "date": "June 25, 2026",
+      "summary": "Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging."
+    },
+    {
+      "version": "1.0.6",
+      "date": "June 22, 2026",
+      "summary": "The public website launches alongside Dynamic Island session flow updates and Claude hook synchronization."
+    },
+    {
+      "version": "1.0.5",
+      "date": "June 22, 2026",
+      "summary": "Settings are trimmed down while the Dynamic Island stable path lands, with release packaging hiding notarization credential details."
+    }
+  ]
+}

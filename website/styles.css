@@ -469,6 +469,27 @@ main {
   line-height: 27px;
 }
 
+.release-history {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.release-card {
+  padding: 24px 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.036), rgba(255, 255, 255, 0.014)),
+    var(--panel);
+}
+
+.release-card .button {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 13.2px;
+}
+
 @media (max-width: 1040px) {
   .hero {
     grid-template-columns: 1fr;

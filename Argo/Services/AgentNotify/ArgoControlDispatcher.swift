@@ -97,6 +97,8 @@ nonisolated final class ArgoControlDispatcher {
         case .ping:
             // Already handled above.
             return ArgoControlEncoder.encodeResponse(.failure("invalid-ping-state"))
+        case .status, .read, .agents:
+            response = .failure("unsupported-command")
         case .open:
             guard let req = try? JSONDecoder().decode(ArgoOpenRequest.self, from: trim(frame)) else {
                 response = .failure("invalid-open-payload")

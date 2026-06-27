@@ -50,10 +50,15 @@ protocol TerminalSurfaceController: AnyObject {
     func searchPrevious()
     func endSearch()
     func selectedText() -> String?
+    func readScreenText(scrollback: Bool) -> String?
     func toggleReadOnly()
     func scrollByLines(_ delta: Int)
     func resetTerminal()
     func surfaceHostDidAttach()
+}
+
+extension TerminalSurfaceController {
+    func readScreenText(scrollback: Bool) -> String? { nil }
 }
 
 @MainActor

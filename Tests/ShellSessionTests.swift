@@ -431,6 +431,20 @@ final class ShellSessionTests: XCTestCase {
         }
     }
 
+    func testReadScreenTextDelegatesToSurface() async {
+        await MainActor.run {
+            let surface = FakeManagedTerminalSurfaceController()
+            surface.screenText = "line 1\nline 2\n"
+            let session = ShellSession(
+                snapshot: PaneSnapshot.makeDefault(cwd: "/tmp/argo-shell-session-read-screen"),
+                surfaceController: surface
+            )
+
+            XCTAssertEqual(session.readScreenText(scrollback: false), "line 1\nline 2\n")
+            XCTAssertEqual(surface.readScrollbackFlags, [false])
+        }
+    }
+
     func testSurfaceHostAttachNotificationForwardsToSurfaceController() async {
         await MainActor.run {
             let surface = FakeManagedTerminalSurfaceController()
@@ -596,6 +610,8 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     private(set) var hostAttachCallCount = 0
     private(set) var events: [FakeTerminalSurfaceEvent] = []
     private(set) var focusCallCount = 0
+    var screenText: String?
+    private(set) var readScrollbackFlags: [Bool] = []
 
     func updateLaunchConfiguration(_ configuration: TerminalLaunchConfiguration) {}
 
@@ -643,6 +659,10 @@ private final class FakeManagedTerminalSurfaceController: ManagedTerminalSession
     func searchPrevious() {}
     func endSearch() {}
     func selectedText() -> String? { nil }
+    func readScreenText(scrollback: Bool) -> String? {
+        readScrollbackFlags.append(scrollback)
+        return screenText
+    }
     func toggleReadOnly() {}
     func scrollByLines(_ delta: Int) {}
     func resetTerminal() {}

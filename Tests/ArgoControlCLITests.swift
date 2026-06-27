@@ -189,16 +189,29 @@ final class ArgoControlCLITests: XCTestCase {
 
     // MARK: - session list
 
-    func testSessionListRequiresToken() {
-        let stderr = StreamCollector()
+    func testSessionListNoLongerRequiresTokenAndPrintsStatus() {
+        let stdout = StreamCollector()
         let exit = ArgoControlCLI.runSessionList(
             arguments: [],
-            send: { _ in nil },
+            send: { _ in
+                ArgoControlResponse(ok: true, sessions: [
+                    ArgoControlSession(
+                        workspaceID: "w1",
+                        workspaceName: "demo",
+                        paneID: "p-1",
+                        cwd: "/tmp/x",
+                        branch: "main",
+                        listeningPorts: [],
+                        status: "waiting"
+                    )
+                ])
+            },
             environment: [:],
-            stdoutWriter: { _ in },
-            stderrWriter: stderr.write
+            stdoutWriter: stdout.write,
+            stderrWriter: { _ in }
         )
-        XCTAssertEqual(exit, .authRequired)
+        XCTAssertEqual(exit, .ok)
+        XCTAssertTrue(stdout.text.contains("demo [main] <waiting> p-1 /tmp/x"))
     }
 
     func testSessionListPrintsHumanLines() {
@@ -258,6 +271,95 @@ final class ArgoControlCLITests: XCTestCase {
         let parsed = try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         XCTAssertEqual(parsed?.first?["workspace"] as? String, "w1")
         XCTAssertEqual(parsed?.first?["pane"] as? String, "p-1")
+    }
+
+    // MARK: - status
+
+    func testStatusEncodesFrameWithoutTokenAndUsesEnvPane() throws {
+        let captured = FrameCollector()
+        let exit = ArgoControlCLI.runStatus(
+            arguments: ["needs-input", "--title", "Approve command", "--agent", "Codex"],
+            send: captured.capture,
+            environment: [ArgoAgentNotifyEnvironment.paneIDKey: "pane-from-env"],
+            stdoutWriter: { _ in },
+            stderrWriter: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        let json = try captured.decodedJSON()
+        XCTAssertEqual(json["cmd"] as? String, "status")
+        XCTAssertEqual(json["state"] as? String, "waiting")
+        XCTAssertEqual(json["pane"] as? String, "pane-from-env")
+        XCTAssertEqual(json["title"] as? String, "Approve command")
+        XCTAssertEqual(json["agent"] as? String, "Codex")
+        XCTAssertNil(json["token"])
+    }
+
+    // MARK: - read
+
+    func testReadEncodesFrameWithoutToken() throws {
+        let captured = FrameCollector(response: ArgoControlResponse(ok: true, text: "hello\n", lineCount: 1))
+        let exit = ArgoControlCLI.runRead(
+            arguments: ["--pane", "p1", "--last", "40", "--scrollback"],
+            send: captured.capture,
+            environment: [:],
+            stdoutWriter: { _ in },
+            stderrWriter: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        let json = try captured.decodedJSON()
+        XCTAssertEqual(json["cmd"] as? String, "read")
+        XCTAssertEqual(json["pane"] as? String, "p1")
+        XCTAssertEqual(json["lines"] as? Int, 40)
+        XCTAssertEqual(json["scrollback"] as? Bool, true)
+        XCTAssertNil(json["token"])
+    }
+
+    func testReadWaitStablePollsUntilTextRepeats() {
+        var calls = 0
+        let exit = ArgoControlCLI.runRead(
+            arguments: ["--wait-stable"],
+            send: { _ in
+                defer { calls += 1 }
+                return ArgoControlResponse(ok: true, text: calls == 0 ? "a" : "ab", lineCount: 1)
+            },
+            environment: [:],
+            stdoutWriter: { _ in },
+            stderrWriter: { _ in },
+            sleeper: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        XCTAssertEqual(calls, 3)
+    }
+
+    // MARK: - agents
+
+    func testAgentsPrintsJSON() throws {
+        let stdout = StreamCollector()
+        let agents = [
+            ArgoAgentInfo(
+                workspaceID: "w",
+                workspaceName: "demo",
+                paneID: "p",
+                type: "codex",
+                name: "Codex",
+                status: "running",
+                reported: false,
+                cwd: "/tmp",
+                branch: "main",
+                focused: true
+            )
+        ]
+        let exit = ArgoControlCLI.runAgents(
+            arguments: ["--json"],
+            send: { _ in ArgoControlResponse(ok: true, agents: agents) },
+            environment: [:],
+            stdoutWriter: stdout.write,
+            stderrWriter: { _ in }
+        )
+        XCTAssertEqual(exit, .ok)
+        let data = Data(stdout.text.utf8)
+        let parsed = try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+        XCTAssertEqual(parsed?.first?["type"] as? String, "codex")
     }
 
     // MARK: - ping

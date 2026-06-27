@@ -30,6 +30,12 @@ if let firstArgument = cliArguments.first {
         exit(ArgoControlCLI.runSplit(arguments: rest).rawValue)
     case "send-keys":
         exit(ArgoControlCLI.runSendKeys(arguments: rest).rawValue)
+    case "status":
+        exit(ArgoControlCLI.runStatus(arguments: rest).rawValue)
+    case "read":
+        exit(ArgoControlCLI.runRead(arguments: rest).rawValue)
+    case "agents":
+        exit(ArgoControlCLI.runAgents(arguments: rest).rawValue)
     case "session":
         // `argo session list ...` — second token routes to the subcommand.
         let session = Array(rest.dropFirst())

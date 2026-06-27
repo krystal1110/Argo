@@ -6,14 +6,27 @@ cd "$ROOT_DIR"
 
 html="website/index.html"
 releases="website/releases/index.html"
+release_data="website/releases/releases.json"
 readme="README.md"
+latest_version="$(python3 - "$release_data" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+releases = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["releases"]
+print(releases[0]["version"])
+PY
+)"
 
 grep -q '<nav class="site-nav"' "$html"
 grep -q 'href="#features"' "$html"
 grep -q 'href="./releases/"' "$html"
 grep -q 'href="#download"' "$html"
 grep -q 'href="https://github.com/krystal1110/Argo"' "$html"
-grep -q 'href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg"' "$html"
+if ! grep -q "href=\"https://github.com/krystal1110/Argo/releases/download/v$latest_version/Argo-$latest_version.dmg\"" "$html"; then
+  echo "homepage missing latest download link for Argo $latest_version" >&2
+  exit 1
+fi
 grep -q '>GitHub</a>' "$html"
 grep -q '>Download</a>' "$html"
 grep -q '>Details</a>' "$html"
@@ -35,7 +48,7 @@ grep -q 'Website-krystal1110.github.io%2FArgo' "$readme"
 grep -q '<main class="releases-page"' "$releases"
 grep -q '<h1 id="releases-title">Release Notes</h1>' "$releases"
 grep -q 'Latest' "$releases"
-for version in 1.0.8 1.0.7 1.0.6 1.0.5; do
+while IFS=$'\t' read -r version date summary; do
   if ! grep -q "Argo $version" "$releases"; then
     echo "Release page missing Argo $version" >&2
     exit 1
@@ -48,12 +61,24 @@ for version in 1.0.8 1.0.7 1.0.6 1.0.5; do
     echo "Release page missing DMG link for Argo $version" >&2
     exit 1
   fi
-done
-grep -q 'June 26, 2026' "$releases"
-grep -q 'June 25, 2026' "$releases"
-grep -q 'June 22, 2026' "$releases"
+  if ! grep -q "$date" "$releases"; then
+    echo "Release page missing date for Argo $version: $date" >&2
+    exit 1
+  fi
+  if ! grep -Fq "$summary" "$releases"; then
+    echo "Release page missing summary for Argo $version" >&2
+    exit 1
+  fi
+done < <(python3 - "$release_data" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+for release in json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["releases"]:
+    print("\t".join([release["version"], release["date"], release["summary"]]))
+PY
+)
 grep -q 'brew install --cask krystal1110/argo/argo' "$releases"
-grep -qi 'top chrome double-click zoom and restore reliable' "$releases"
 
 release_summary_count="$(grep -c '<p class="release-summary">' "$releases" || true)"
 if [[ "$release_summary_count" != "4" ]]; then
@@ -80,8 +105,13 @@ if grep -Eq '<li>|<ul>|release-groups' "$releases"; then
   exit 1
 fi
 
-if grep -Eq 'href="https://github.com/krystal1110/Argo/releases/(tag|download)/v1\.0\.[567]' "$html"; then
+old_homepage_release_link="$(
+  grep -Eo 'https://github.com/krystal1110/Argo/releases/(tag|download)/v[0-9]+\.[0-9]+\.[0-9]+' "$html" |
+    grep -v "/v$latest_version$" || true
+)"
+if [[ -n "$old_homepage_release_link" ]]; then
   echo "homepage should not link old releases as current downloads" >&2
+  echo "$old_homepage_release_link" >&2
   exit 1
 fi
 

@@ -10,6 +10,7 @@ website_release_notes_defaults() {
 
   WEBSITE_RELEASES_FILE="${WEBSITE_RELEASES_FILE:-$root_dir/website/releases/releases.json}"
   WEBSITE_RELEASES_HTML_FILE="${WEBSITE_RELEASES_HTML_FILE:-$root_dir/website/releases/index.html}"
+  WEBSITE_HOME_HTML_FILE="${WEBSITE_HOME_HTML_FILE:-$root_dir/website/index.html}"
   WEBSITE_APPCAST_FILE="${WEBSITE_APPCAST_FILE:-${APPCAST_FILE:-$root_dir/appcast.xml}}"
   WEBSITE_GITHUB_REPOSITORY="${WEBSITE_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-krystal1110/Argo}}"
   WEBSITE_APP_NAME="${WEBSITE_APP_NAME:-${APP_NAME:-Argo}}"
@@ -140,6 +141,35 @@ output_path.write_text("\n".join(parts), encoding="utf-8")
 PY
 }
 
+website_release_notes_update_homepage_downloads() {
+  local version="$1"
+
+  website_release_notes_defaults
+
+  python3 - "$WEBSITE_HOME_HTML_FILE" "$WEBSITE_GITHUB_REPOSITORY" "$WEBSITE_APP_NAME" "$version" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+html_path = Path(sys.argv[1])
+repository = re.escape(sys.argv[2])
+app_name = re.escape(sys.argv[3])
+version = sys.argv[4]
+
+if not html_path.is_file():
+    raise SystemExit(f"Missing website homepage: {html_path}")
+
+text = html_path.read_text(encoding="utf-8")
+pattern = rf"https://github\.com/{repository}/releases/download/v[0-9]+\.[0-9]+\.[0-9]+/{app_name}-[0-9]+\.[0-9]+\.[0-9]+\.dmg"
+replacement = f"https://github.com/{sys.argv[2]}/releases/download/v{version}/{sys.argv[3]}-{version}.dmg"
+updated, count = re.subn(pattern, replacement, text)
+if count == 0:
+    raise SystemExit(f"No homepage release download links found in {html_path}")
+
+html_path.write_text(updated, encoding="utf-8")
+PY
+}
+
 website_release_notes_update() {
   local version="$1"
   local tag="$2"
@@ -264,4 +294,5 @@ data_path.write_text(
 PY
 
   website_release_notes_generate
+  website_release_notes_update_homepage_downloads "$version"
 }

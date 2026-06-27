@@ -66,10 +66,21 @@ Adds website release automation. Keeps the public release history fresh.
 - DMG: `Argo-1.0.9.dmg`
 MD
 
+cat > "$tmp_dir/home.html" <<'HTML'
+<!doctype html>
+<html>
+  <body>
+    <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
+    <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
+  </body>
+</html>
+HTML
+
 touch "$tmp_dir/Argo-1.0.9.dmg"
 
 WEBSITE_RELEASES_FILE="$tmp_dir/releases.json" \
 WEBSITE_RELEASES_HTML_FILE="$tmp_dir/index.html" \
+WEBSITE_HOME_HTML_FILE="$tmp_dir/home.html" \
 WEBSITE_APPCAST_FILE="$tmp_dir/appcast.xml" \
 WEBSITE_GITHUB_REPOSITORY="krystal1110/Argo" \
 WEBSITE_APP_NAME="Argo" \
@@ -98,6 +109,11 @@ grep -Fq 'Latest' "$tmp_dir/index.html"
 grep -Fq 'June 27, 2026' "$tmp_dir/index.html"
 grep -Fq 'Argo-1.0.9.dmg' "$tmp_dir/index.html"
 grep -Fq 'Adds website release automation. Keeps the public release history fresh.' "$tmp_dir/index.html"
+grep -Fq 'https://github.com/krystal1110/Argo/releases/download/v1.0.9/Argo-1.0.9.dmg' "$tmp_dir/home.html"
+if grep -Fq 'https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg' "$tmp_dir/home.html"; then
+  echo "Homepage release links should be updated to the latest release" >&2
+  exit 1
+fi
 if grep -Fq 'Argo 1.0.5' "$tmp_dir/index.html"; then
   echo "Generated website release page should keep only the latest 4 releases" >&2
   exit 1
@@ -107,6 +123,7 @@ grep -Fq 'source "$ROOT_DIR/scripts/website_release_notes.sh"' scripts/release_h
 grep -Fq 'website_release_notes_update' scripts/release_homebrew.sh
 grep -Fq 'WEBSITE_RELEASES_FILE' scripts/release_homebrew.sh
 grep -Fq 'WEBSITE_RELEASES_HTML_FILE' scripts/release_homebrew.sh
-grep -Fq '"$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE"' scripts/release_homebrew.sh
+grep -Fq 'WEBSITE_HOME_HTML_FILE' scripts/release_homebrew.sh
+grep -Fq '"$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE"' scripts/release_homebrew.sh
 
 echo "website release notes support ok"

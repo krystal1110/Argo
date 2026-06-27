@@ -140,7 +140,42 @@ extension ArgoDesktopApplication: ArgoControlHost {
     }
 
     func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse {
-        ArgoControlResponse(ok: true, agents: [])
+        var agents: [ArgoAgentInfo] = []
+        for store in allWorkspaceStores {
+            for workspace in store.workspaces where workspace.isActive {
+                let focusedPaneID = workspace.sessionController.focusedPaneID
+                for (paneID, session) in workspace.sessionController.sessions {
+                    let entry = AgentStatusStore.shared.entries[paneID]
+                    var type: String?
+                    var name = entry?.agentName
+                    var detectedAlive = false
+
+                    if let pid = session.pid,
+                       let detected = AgentProcessDetector.detect(rootPID: pid) {
+                        type = detected.type
+                        name = name ?? detected.displayName
+                        detectedAlive = true
+                    }
+
+                    guard entry != nil || detectedAlive else { continue }
+                    agents.append(
+                        ArgoAgentInfo(
+                            workspaceID: workspace.id.uuidString.lowercased(),
+                            workspaceName: workspace.name,
+                            paneID: paneID.uuidString.lowercased(),
+                            type: type,
+                            name: name,
+                            status: entry?.state.rawValue ?? AgentReportedState.running.rawValue,
+                            reported: entry != nil,
+                            cwd: session.effectiveWorkingDirectory,
+                            branch: workspace.supportsRepositoryFeatures ? workspace.currentBranch : nil,
+                            focused: paneID == focusedPaneID
+                        )
+                    )
+                }
+            }
+        }
+        return ArgoControlResponse(ok: true, agents: agents)
     }
 
     static func trimScreenText(_ raw: String, lastLines: Int?) -> String {

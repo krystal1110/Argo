@@ -303,6 +303,32 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertTrue(items.contains(where: { $0.id == "check-updates" && $0.title == "检查 Argo 更新" }))
     }
 
+    func testCommandPaletteOmitsLocalScriptCommandsForRemoteWorkspace() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        let remote = makeRemoteWorkspace(path: "/srv/app", setupScript: "mise install", runScript: "make deploy")
+        store.workspaces = [remote]
+        store.selectedWorkspaceID = remote.id
+
+        let itemIDs = Set(store.commandPaletteItems.map(\.id))
+
+        XCTAssertFalse(itemIDs.contains("workspace-selected-setup:\(remote.id.uuidString)"))
+        XCTAssertFalse(itemIDs.contains("workspace-setup:\(remote.id.uuidString)"))
+        XCTAssertFalse(itemIDs.contains("workspace-run:\(remote.id.uuidString)"))
+    }
+
+    func testCommandPaletteKeepsLocalScriptCommandsForRepositoryWorkspace() {
+        let store = WorkspaceStore(persistsWorkspaceState: false)
+        let repository = makeRepositoryWorkspace(path: "/tmp/repo", setupScript: "mise install", runScript: "make test")
+        store.workspaces = [repository]
+        store.selectedWorkspaceID = repository.id
+
+        let itemIDs = Set(store.commandPaletteItems.map(\.id))
+
+        XCTAssertTrue(itemIDs.contains("workspace-selected-setup:\(repository.id.uuidString)"))
+        XCTAssertTrue(itemIDs.contains("workspace-setup:\(repository.id.uuidString)"))
+        XCTAssertTrue(itemIDs.contains("workspace-run:\(repository.id.uuidString)"))
+    }
+
     func testMainWindowModeDefaultsToWorkspace() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
 
@@ -712,6 +738,49 @@ final class WorkspaceStoreTests: XCTestCase {
         let directoryURL = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         return directoryURL
+    }
+
+    private func makeRepositoryWorkspace(
+        path: String,
+        setupScript: String = "",
+        runScript: String = ""
+    ) -> WorkspaceModel {
+        WorkspaceModel(record: WorkspaceRecord(
+            id: UUID(),
+            kind: .repository,
+            name: URL(fileURLWithPath: path).lastPathComponent,
+            repositoryRoot: path,
+            activeWorktreePath: path,
+            worktreeStates: [WorktreeSessionStateRecord.makeDefault(for: path)],
+            isSidebarExpanded: false,
+            settings: WorkspaceSettings(runScript: runScript, setupScript: setupScript)
+        ))
+    }
+
+    private func makeRemoteWorkspace(
+        path: String,
+        setupScript: String = "",
+        runScript: String = ""
+    ) -> WorkspaceModel {
+        let sshConfig = SSHSessionConfiguration(
+            host: "example.com",
+            user: "deploy",
+            port: nil,
+            identityFilePath: nil,
+            remoteWorkingDirectory: path,
+            remoteCommand: nil
+        )
+        return WorkspaceModel(record: WorkspaceRecord(
+            id: UUID(),
+            kind: .remoteServer,
+            name: "Remote",
+            repositoryRoot: path,
+            activeWorktreePath: path,
+            worktreeStates: [WorktreeSessionStateRecord.makeDefault(for: path)],
+            isSidebarExpanded: false,
+            settings: WorkspaceSettings(runScript: runScript, setupScript: setupScript),
+            sshTarget: sshConfig
+        ))
     }
 
 

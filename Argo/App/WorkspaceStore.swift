@@ -430,7 +430,7 @@ final class WorkspaceStore: ObservableObject {
                     kind: .command(.splitFocusedPane(selectedWorkspace.id, .horizontal))
                 )
             )
-            if !selectedWorkspace.setupScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if SidebarContextMenuPolicy.canRunSetupScript(in: selectedWorkspace) {
                 items.append(
                     CommandPaletteItem(
                         id: "workspace-selected-setup:\(selectedWorkspace.id.uuidString)",
@@ -661,7 +661,7 @@ final class WorkspaceStore: ObservableObject {
                     )
                 )
             }
-            if !workspace.setupScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if SidebarContextMenuPolicy.canRunSetupScript(in: workspace) {
                 items.append(
                     CommandPaletteItem(
                         id: "workspace-setup:\(workspace.id.uuidString)",
@@ -674,7 +674,7 @@ final class WorkspaceStore: ObservableObject {
                     )
                 )
             }
-            if !workspace.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if SidebarContextMenuPolicy.canRunWorkspaceScript(in: workspace) {
                 items.append(
                     CommandPaletteItem(
                         id: "workspace-run:\(workspace.id.uuidString)",

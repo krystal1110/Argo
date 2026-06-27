@@ -312,6 +312,8 @@ struct MainWindowView: View {
     }
 
     var body: some View {
+        let chromeTint = activeChromeTint
+
         ZStack {
             VStack(spacing: 0) {
                 topGlassChrome
@@ -319,7 +321,7 @@ struct MainWindowView: View {
                 HStack(spacing: 0) {
                     GlobalModeRailView(
                         selectedMode: store.mainWindowMode,
-                        chromeTint: activeChromeTint,
+                        chromeTint: chromeTint,
                         uiScale: uiScale,
                         surfacePalette: twilightSurfacePalette,
                         opacity: twilightOpacity,
@@ -377,7 +379,7 @@ struct MainWindowView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 TwilightStatusBar(
-                    chromeTint: activeChromeTint,
+                    chromeTint: chromeTint,
                     theme: store.appSettings.twilightThemeEnabled ? store.currentTwilightTheme : nil,
                     surfacePalette: twilightSurfacePalette,
                     opacity: twilightOpacity,

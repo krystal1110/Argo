@@ -346,6 +346,9 @@ nonisolated final class ClaudeHookRecordingHost: ArgoControlHost, @unchecked Sen
     }
 
     @MainActor
+    func handleStatus(_ request: ArgoStatusRequest) {}
+
+    @MainActor
     func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse {
         ArgoControlResponse(ok: true)
     }
@@ -363,5 +366,15 @@ nonisolated final class ClaudeHookRecordingHost: ArgoControlHost, @unchecked Sen
     @MainActor
     func handleSessionList(_ request: ArgoSessionListRequest) -> ArgoControlResponse {
         ArgoControlResponse(ok: true)
+    }
+
+    @MainActor
+    func handleRead(_ request: ArgoReadRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true, text: "", lineCount: 0)
+    }
+
+    @MainActor
+    func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true, agents: [])
     }
 }

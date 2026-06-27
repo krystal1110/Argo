@@ -17,10 +17,13 @@ import Foundation
 @MainActor
 protocol ArgoControlHost: AnyObject {
     func handleNotify(_ request: AgentNotifyRequest)
+    func handleStatus(_ request: ArgoStatusRequest)
     func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse
     func handleSplit(_ request: ArgoSplitRequest) -> ArgoControlResponse
     func handleSendKeys(_ request: ArgoSendKeysRequest) -> ArgoControlResponse
     func handleSessionList(_ request: ArgoSessionListRequest) -> ArgoControlResponse
+    func handleRead(_ request: ArgoReadRequest) -> ArgoControlResponse
+    func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse
 }
 
 /// Note: this class is explicitly `nonisolated`. The project enables
@@ -78,12 +81,20 @@ nonisolated final class ArgoControlDispatcher {
             return ClaudeHookNotifyBridge.encodeControlResponse(.failure("claude-hook-unavailable"))
         }
 
-        // All other commands require auth.
-        guard let expected = tokenResolver(), !expected.isEmpty else {
-            return ArgoControlEncoder.encodeResponse(.failure("control-disabled"))
+        if cmd == .status {
+            if let request = try? JSONDecoder().decode(ArgoStatusRequest.self, from: trim(frame)) {
+                host?.handleStatus(request)
+            }
+            return nil
         }
-        guard let provided = envelope.token, provided == expected else {
-            return ArgoControlEncoder.encodeResponse(.failure("token-mismatch"))
+
+        if cmd.requiresControlToken {
+            guard let expected = tokenResolver(), !expected.isEmpty else {
+                return ArgoControlEncoder.encodeResponse(.failure("control-disabled"))
+            }
+            guard let provided = envelope.token, provided == expected else {
+                return ArgoControlEncoder.encodeResponse(.failure("token-mismatch"))
+            }
         }
         guard let host else {
             return ArgoControlEncoder.encodeResponse(.failure("app-not-ready"))
@@ -97,8 +108,9 @@ nonisolated final class ArgoControlDispatcher {
         case .ping:
             // Already handled above.
             return ArgoControlEncoder.encodeResponse(.failure("invalid-ping-state"))
-        case .status, .read, .agents:
-            response = .failure("unsupported-command")
+        case .status:
+            // Already handled above.
+            return nil
         case .open:
             guard let req = try? JSONDecoder().decode(ArgoOpenRequest.self, from: trim(frame)) else {
                 response = .failure("invalid-open-payload")
@@ -117,6 +129,12 @@ nonisolated final class ArgoControlDispatcher {
         case .sessionList:
             let req = (try? JSONDecoder().decode(ArgoSessionListRequest.self, from: trim(frame))) ?? ArgoSessionListRequest()
             response = host.handleSessionList(req)
+        case .read:
+            let req = (try? JSONDecoder().decode(ArgoReadRequest.self, from: trim(frame))) ?? ArgoReadRequest()
+            response = host.handleRead(req)
+        case .agents:
+            let req = (try? JSONDecoder().decode(ArgoAgentsRequest.self, from: trim(frame))) ?? ArgoAgentsRequest()
+            response = host.handleAgents(req)
         case .claudeHook:
             return ClaudeHookNotifyBridge.encodeControlResponse(.failure("invalid-claude-hook-state"))
         }

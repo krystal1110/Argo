@@ -195,6 +195,52 @@ final class ArgoControlDispatcherTests: XCTestCase {
         XCTAssertEqual(host.sendKeysCalls.first?.pane, "p1")
     }
 
+    func testMutatingCommandsStillRequireTokenAfterReadOnlyCommandsAdded() throws {
+        dispatcher = ArgoControlDispatcher(host: host, tokenResolver: { "secret" })
+        let frame = makeFrame(["cmd": "send-keys", "pane": "p1", "text": "ls\n"])
+        let response = try XCTUnwrap(dispatcher.dispatch(frame: frame))
+        let decoded = try JSONDecoder().decode(ArgoControlResponse.self, from: response)
+        XCTAssertEqual(decoded.error, "token-mismatch")
+        XCTAssertTrue(host.sendKeysCalls.isEmpty)
+    }
+
+    // MARK: - Status
+
+    func testStatusRoutesWithoutTokenAndReturnsNoResponse() {
+        dispatcher = ArgoControlDispatcher(host: host, tokenResolver: { nil })
+        let frame = makeFrame(["cmd": "status", "state": "waiting", "pane": "p1", "title": "Needs approval"])
+        let response = dispatcher.dispatch(frame: frame)
+        XCTAssertNil(response)
+        XCTAssertEqual(host.statusCalls.count, 1)
+        XCTAssertEqual(host.statusCalls.first?.state, "waiting")
+        XCTAssertEqual(host.statusCalls.first?.pane, "p1")
+    }
+
+    // MARK: - Read
+
+    func testReadRoutesWithoutToken() throws {
+        dispatcher = ArgoControlDispatcher(host: host, tokenResolver: { nil })
+        let frame = makeFrame(["cmd": "read", "pane": "p1", "lines": 20, "scrollback": true])
+        let response = try XCTUnwrap(dispatcher.dispatch(frame: frame))
+        let decoded = try JSONDecoder().decode(ArgoControlResponse.self, from: response)
+        XCTAssertTrue(decoded.ok)
+        XCTAssertEqual(host.readCalls.count, 1)
+        XCTAssertEqual(host.readCalls.first?.pane, "p1")
+        XCTAssertEqual(host.readCalls.first?.lines, 20)
+        XCTAssertEqual(host.readCalls.first?.scrollback, true)
+    }
+
+    // MARK: - Agents
+
+    func testAgentsRoutesWithoutToken() throws {
+        dispatcher = ArgoControlDispatcher(host: host, tokenResolver: { nil })
+        let frame = makeFrame(["cmd": "agents"])
+        let response = try XCTUnwrap(dispatcher.dispatch(frame: frame))
+        let decoded = try JSONDecoder().decode(ArgoControlResponse.self, from: response)
+        XCTAssertTrue(decoded.ok)
+        XCTAssertEqual(host.agentsCalls, 1)
+    }
+
     // MARK: - Session list
 
     func testSessionListReturnsHostsSessions() throws {
@@ -242,11 +288,18 @@ private final class RecordingHost: ArgoControlHost {
     var openCalls: [ArgoOpenRequest] = []
     var splitCalls: [ArgoSplitRequest] = []
     var sendKeysCalls: [ArgoSendKeysRequest] = []
+    var statusCalls: [ArgoStatusRequest] = []
+    var readCalls: [ArgoReadRequest] = []
+    var agentsCalls = 0
     var sessionListCalls = 0
     var stubbedSessions: [ArgoControlSession] = []
 
     func handleNotify(_ request: AgentNotifyRequest) {
         notifyCalls.append(request)
+    }
+
+    func handleStatus(_ request: ArgoStatusRequest) {
+        statusCalls.append(request)
     }
 
     func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse {
@@ -267,5 +320,15 @@ private final class RecordingHost: ArgoControlHost {
     func handleSessionList(_ request: ArgoSessionListRequest) -> ArgoControlResponse {
         sessionListCalls += 1
         return ArgoControlResponse(ok: true, error: nil, sessions: stubbedSessions)
+    }
+
+    func handleRead(_ request: ArgoReadRequest) -> ArgoControlResponse {
+        readCalls.append(request)
+        return ArgoControlResponse(ok: true, text: "screen", lineCount: 1)
+    }
+
+    func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse {
+        agentsCalls += 1
+        return ArgoControlResponse(ok: true, agents: [])
     }
 }

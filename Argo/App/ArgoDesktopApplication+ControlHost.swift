@@ -19,6 +19,11 @@ extension ArgoDesktopApplication: ArgoControlHost {
         routeAgentNotification(request)
     }
 
+    func handleStatus(_ request: ArgoStatusRequest) {
+        // Full routing lands with the app-host task; the dispatcher can now
+        // accept status frames without requiring auth.
+    }
+
     func handleOpen(_ request: ArgoOpenRequest) -> ArgoControlResponse {
         guard let store = activeWorkspaceStore else {
             return .failure("no-active-window")
@@ -100,5 +105,13 @@ extension ArgoDesktopApplication: ArgoControlHost {
             }
         }
         return ArgoControlResponse(ok: true, error: nil, sessions: sessions)
+    }
+
+    func handleRead(_ request: ArgoReadRequest) -> ArgoControlResponse {
+        .failure("read-unavailable")
+    }
+
+    func handleAgents(_ request: ArgoAgentsRequest) -> ArgoControlResponse {
+        ArgoControlResponse(ok: true, agents: [])
     }
 }

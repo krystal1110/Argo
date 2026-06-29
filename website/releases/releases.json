@@ -1,6 +1,11 @@
 {
   "releases": [
     {
+      "version": "1.0.10",
+      "date": "June 29, 2026",
+      "summary": "Adds website updates, add states, and add cli."
+    },
+    {
       "version": "1.0.9",
       "date": "June 27, 2026",
       "summary": "Adds shrink app icon, theme activity dot, and argo brand pill."
@@ -14,11 +19,6 @@
       "version": "1.0.7",
       "date": "June 25, 2026",
       "summary": "Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging."
-    },
-    {
-      "version": "1.0.6",
-      "date": "June 22, 2026",
-      "summary": "The public website launches alongside Dynamic Island session flow updates and Claude hook synchronization."
     }
   ]
 }

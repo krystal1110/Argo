@@ -704,11 +704,13 @@ final class QuickCommandSupportTests: XCTestCase {
         let topActionsSource = String(mainWindowSource[topActionsRange])
         XCTAssertEqual(
             topActionsSource.components(separatedBy: "HTMLReferenceTopActionButton(").count - 1,
-            4,
-            "The HTML reference top-actions group has four neutral icon buttons before the Ghostty profile."
+            5,
+            "The HTML reference top-actions group has five neutral icon buttons before the Ghostty profile."
         )
         XCTAssertTrue(topActionsSource.contains("systemName: \"chevron.left.forwardslash.chevron.right\""))
         XCTAssertTrue(topActionsSource.contains("systemName: \"square.grid.2x2\""))
+        XCTAssertTrue(topActionsSource.contains("systemName: \"dot.radiowaves.left.and.right\""))
+        XCTAssertTrue(topActionsSource.contains("present(menu: makeHAPIMenu(using: hapiInstallation), from: anchorView)"))
         XCTAssertTrue(topActionsSource.contains("systemName: sleepPreventionIconName"))
         XCTAssertTrue(topActionsSource.contains("systemName: \"globe\""))
         XCTAssertFalse(topActionsSource.contains("play.rectangle.on.rectangle"))

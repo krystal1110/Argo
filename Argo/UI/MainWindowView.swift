@@ -265,6 +265,18 @@ struct MainWindowView: View {
                     present(menu: makeWorkspaceActionsMenu(), from: anchorView)
                 }
 
+                if let hapiInstallation = availableHAPIInstallation, store.appSettings.showHAPIToolbarButton {
+                    HTMLReferenceTopActionButton(
+                        systemName: "dot.radiowaves.left.and.right",
+                        tint: ArgoTheme.secondaryText,
+                        isDisabled: !hasSelectedWorkspace,
+                        accessibilityLabel: hapiInstallation.primaryActionTitle,
+                        help: hapiInstallation.primaryActionHelpText
+                    ) { anchorView in
+                        present(menu: makeHAPIMenu(using: hapiInstallation), from: anchorView)
+                    }
+                }
+
                 HTMLReferenceTopActionButton(
                     systemName: sleepPreventionIconName,
                     tint: store.sleepPreventionSession == nil ? ArgoTheme.secondaryText : ArgoTheme.warning,

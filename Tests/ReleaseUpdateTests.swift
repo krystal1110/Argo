@@ -188,6 +188,22 @@ final class ReleaseUpdateTests: XCTestCase {
         """))
     }
 
+    func testSigningToolsSignExecutableResourcesBeforeAppBundle() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let tools = try String(contentsOf: rootURL.appendingPathComponent("scripts/sparkle_tools.sh"), encoding: .utf8)
+
+        XCTAssertTrue(tools.contains("sparkle_sign_embedded_executables()"))
+        XCTAssertTrue(tools.contains("local resources_dir=\"$app_path/Contents/Resources\""))
+        XCTAssertTrue(tools.contains("[[ \"$file_type\" == Mach-O* ]] || continue"))
+        XCTAssertTrue(tools.contains("""
+          sparkle_sign_embedded_frameworks "$app_path" "$signing_identity" || return 1
+          sparkle_sign_embedded_bundle "$app_path" "$signing_identity" || return 1
+          sparkle_sign_embedded_executables "$app_path" "$signing_identity" || return 1
+        """))
+    }
+
     func testReleaseScriptsUseKeychainOnlyNotarizationCredentials() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

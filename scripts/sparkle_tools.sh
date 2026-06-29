@@ -132,6 +132,32 @@ sparkle_sign_embedded_frameworks() {
   done < <(find "$frameworks_dir" -mindepth 1 -maxdepth 1 -type d -name '*.framework' ! -name 'Sparkle.framework' -print0)
 }
 
+sparkle_sign_embedded_executables() {
+  local app_path="$1"
+  local signing_identity="$2"
+  local resources_dir="$app_path/Contents/Resources"
+
+  [[ -d "$resources_dir" ]] || return 0
+  sparkle_require_cmd codesign || return 1
+  sparkle_require_cmd file || return 1
+
+  local sign_runtime=(
+    /usr/bin/codesign
+    --force
+    --sign "$signing_identity"
+    --options runtime
+    --timestamp
+  )
+
+  local executable_path
+  local file_type
+  while IFS= read -r -d '' executable_path; do
+    file_type="$(/usr/bin/file -b "$executable_path")" || return 1
+    [[ "$file_type" == Mach-O* ]] || continue
+    "${sign_runtime[@]}" "$executable_path"
+  done < <(find "$resources_dir" -type f -perm -111 -print0)
+}
+
 sparkle_codesign_app() {
   local app_path="$1"
   local signing_identity="$2"
@@ -139,6 +165,7 @@ sparkle_codesign_app() {
 
   sparkle_sign_embedded_frameworks "$app_path" "$signing_identity" || return 1
   sparkle_sign_embedded_bundle "$app_path" "$signing_identity" || return 1
+  sparkle_sign_embedded_executables "$app_path" "$signing_identity" || return 1
 
   local sign_args=(
     /usr/bin/codesign

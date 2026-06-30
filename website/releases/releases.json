@@ -1,6 +1,11 @@
 {
   "releases": [
     {
+      "version": "1.0.11",
+      "date": "June 30, 2026",
+      "summary": "Adds website updates."
+    },
+    {
       "version": "1.0.10",
       "date": "June 29, 2026",
       "summary": "Adds website updates, add states, and add cli."
@@ -14,11 +19,6 @@
       "version": "1.0.8",
       "date": "June 26, 2026",
       "summary": "Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way."
-    },
-    {
-      "version": "1.0.7",
-      "date": "June 25, 2026",
-      "summary": "Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging."
     }
   ]
 }

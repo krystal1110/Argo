@@ -3,80 +3,650 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
     <title>Release Notes - Argo</title>
     <meta name="description" content="Release notes for Argo, a native macOS terminal workspace for repositories, worktrees, split panes, previews, SSH sessions, and coding agents.">
     <link rel="icon" href="../assets/app-icon-64.png" sizes="64x64">
-    <link rel="stylesheet" href="../styles.css">
+    <style>
+      :root {
+        --bg: #fbf4ea;
+        --paper: #fffaf2;
+        --ink: #27211c;
+        --muted: #695d52;
+        --line: #211c17;
+        --red: #f04437;
+        --green: #bdf3c9;
+        --mint: #87e5cc;
+        --blue: #cde8ff;
+        --yellow: #ffe4a8;
+        --purple: #d8ccff;
+        --shadow: #211c17;
+        --max: 1160px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 110px;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 8%, rgba(240, 68, 55, 0.11), transparent 28rem),
+          radial-gradient(circle at 84% 18%, rgba(135, 229, 204, 0.2), transparent 28rem),
+          linear-gradient(180deg, #fff9ef 0%, var(--bg) 46%, #f7ead9 100%);
+        font-family: Nunito, ui-rounded, "SF Pro Rounded", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        line-height: 1.6;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        border-bottom: 3px solid var(--line);
+        background: rgba(251, 244, 234, 0.92);
+        backdrop-filter: blur(14px);
+      }
+
+      .nav {
+        width: min(var(--max), calc(100% - 32px));
+        min-height: 74px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .nav-start {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 23px;
+        font-weight: 1000;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        border: 3px solid var(--line);
+        border-radius: 13px;
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .nav-links a,
+      .nav-links button,
+      .nav-lang-mobile,
+      .pill-link {
+        min-height: 38px;
+        padding: 7px 14px;
+        display: inline-flex;
+        align-items: center;
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        background: var(--paper);
+        color: inherit;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 900;
+        box-shadow: 2px 2px 0 transparent;
+        transition: transform 160ms ease, box-shadow 160ms ease;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .nav-links a:hover,
+      .nav-links button:hover,
+      .nav-lang-mobile:hover,
+      .pill-link:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .nav-lang-mobile {
+        display: none;
+      }
+
+      .lang {
+        display: none;
+      }
+
+      body[data-lang="zh"] .lang[data-lang="zh"],
+      body[data-lang="en"] .lang[data-lang="en"] {
+        display: inline;
+      }
+
+      body[data-lang="zh"] .lang.block[data-lang="zh"],
+      body[data-lang="en"] .lang.block[data-lang="en"] {
+        display: block;
+      }
+
+      .page {
+        width: min(var(--max), calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        min-height: min(760px, calc(100vh - 126px));
+        padding: 58px 0 46px;
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1fr);
+        gap: 28px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 15px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: var(--green);
+        font-weight: 1000;
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .dot {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--line);
+        border-radius: 50%;
+        background: #20d86d;
+      }
+
+      h1 {
+        margin: 24px 0 18px;
+        font-size: 86px;
+        line-height: 0.96;
+        font-weight: 1000;
+      }
+
+      .accent {
+        color: var(--red);
+      }
+
+      .lead {
+        max-width: 620px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 22px;
+        font-weight: 760;
+      }
+
+      .button {
+        min-height: 54px;
+        padding: 13px 23px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        font-weight: 1000;
+        box-shadow: 5px 5px 0 var(--shadow);
+      }
+
+      .button.primary {
+        color: white;
+        background: var(--red);
+      }
+
+      .button.secondary {
+        background: var(--yellow);
+      }
+
+      .button.ghost {
+        background: var(--paper);
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+      }
+
+      .latest-card {
+        padding: 26px;
+        border: 3px solid var(--line);
+        border-radius: 26px;
+        background: var(--yellow);
+        box-shadow: 8px 8px 0 var(--shadow);
+        transform: rotate(1deg);
+      }
+
+      .latest-card h2 {
+        margin: 14px 0 10px;
+        font-size: 56px;
+        line-height: 1.02;
+        font-weight: 1000;
+      }
+
+      .latest-card p,
+      .release-row p,
+      .resource-card p {
+        margin: 0;
+        color: var(--muted);
+        font-weight: 760;
+      }
+
+      .badge {
+        display: inline-flex;
+        width: fit-content;
+        min-height: 30px;
+        padding: 5px 10px;
+        align-items: center;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .command-box {
+        margin-top: 18px;
+        padding: 12px;
+        display: grid;
+        gap: 9px;
+        border: 2px solid var(--line);
+        border-radius: 16px;
+        background: #17130f;
+        color: #fff8ec;
+      }
+
+      .command-box strong {
+        display: block;
+        font-size: 13px;
+        line-height: 1;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .command-box code {
+        display: block;
+        overflow-x: auto;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 14px;
+        line-height: 1.45;
+        white-space: nowrap;
+      }
+
+      .section {
+        padding: 54px 0;
+      }
+
+      .section-head {
+        max-width: 760px;
+        margin-bottom: 24px;
+      }
+
+      .section-head h2 {
+        margin: 14px 0 0;
+        font-size: 58px;
+        line-height: 1.05;
+        font-weight: 1000;
+      }
+
+      .release-board {
+        display: grid;
+        gap: 16px;
+      }
+
+      .release-row {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: minmax(160px, 0.35fr) minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+        border: 3px solid var(--line);
+        border-radius: 22px;
+        background: var(--paper);
+        box-shadow: 6px 6px 0 var(--shadow);
+      }
+
+      .release-row:nth-child(2) {
+        background: #edf8ff;
+      }
+
+      .release-row:nth-child(3) {
+        background: #fff4e0;
+      }
+
+      .release-row:nth-child(4) {
+        background: var(--green);
+      }
+
+      .release-date {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 1000;
+      }
+
+      .release-row h3 {
+        margin: 4px 0 0;
+        font-size: 25px;
+        line-height: 1.1;
+        font-weight: 1000;
+      }
+
+      .resources {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .resource-card {
+        min-height: 210px;
+        padding: 20px;
+        display: grid;
+        align-content: space-between;
+        gap: 18px;
+        border: 3px solid var(--line);
+        border-radius: 22px;
+        background: var(--paper);
+        box-shadow: 6px 6px 0 var(--shadow);
+      }
+
+      .resource-card:nth-child(1) {
+        background: var(--red);
+        color: white;
+      }
+
+      .resource-card:nth-child(1) p {
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .resource-card:nth-child(2) {
+        background: var(--blue);
+      }
+
+      .resource-card:nth-child(3) {
+        background: var(--purple);
+      }
+
+      .resource-card h3 {
+        margin: 10px 0 8px;
+        font-size: 24px;
+        line-height: 1.12;
+        font-weight: 1000;
+      }
+
+      .footer-card {
+        margin: 24px 0 72px;
+        padding: 28px;
+        border: 3px solid var(--line);
+        border-radius: 26px;
+        background: var(--green);
+        box-shadow: 8px 8px 0 var(--shadow);
+      }
+
+      .footer-card h2 {
+        max-width: 760px;
+        margin: 0;
+        font-size: 58px;
+        line-height: 1.05;
+        font-weight: 1000;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .release-row,
+        .resources {
+          grid-template-columns: 1fr;
+        }
+
+        .release-row {
+          align-items: start;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .nav {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 10px;
+          padding: 12px 0;
+        }
+
+        .nav-start {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .nav-lang-mobile {
+          display: inline-flex;
+        }
+
+        .nav-links .nav-lang-desktop {
+          display: none;
+        }
+
+        .nav-links {
+          width: 100%;
+          flex-wrap: nowrap;
+          justify-content: flex-start;
+          overflow-x: auto;
+          padding-bottom: 4px;
+          scrollbar-width: none;
+        }
+
+        .nav-links::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nav-links a {
+          flex: 0 0 auto;
+        }
+
+        .hero {
+          min-height: 0;
+          padding-top: 38px;
+        }
+
+        h1 {
+          font-size: 48px;
+        }
+
+        .lead {
+          font-size: 18px;
+        }
+
+        .latest-card h2,
+        .section-head h2,
+        .footer-card h2 {
+          font-size: 34px;
+        }
+
+        .latest-card {
+          transform: none;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .command-box code {
+          overflow-x: visible;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+      }
+    </style>
   </head>
-  <body>
-    <header class="site-header">
-      <nav class="site-nav" aria-label="Primary navigation">
-        <a class="brand" href="../" aria-label="Argo home">
-          <img src="../assets/app-icon-64.png" srcset="../assets/app-icon-64.png 1x, ../assets/app-icon-128.png 2x" alt="" width="31" height="31" decoding="async">
-          <span>Argo</span>
-        </a>
+  <body data-lang="en">
+    <header class="topbar">
+      <nav class="nav" aria-label="页面导航">
+        <div class="nav-start">
+          <a class="brand" href="../#top" aria-label="Argo home">
+            <img src="../assets/app-icon-64.png" alt="" width="42" height="42" decoding="async">
+            <span>Argo</span>
+          </a>
+          <button class="nav-lang-mobile" type="button" data-lang-toggle aria-label="Switch language">中文</button>
+        </div>
         <div class="nav-links">
-          <a href="../">Home</a>
-          <a href="../#features">Features</a>
-          <a href="./" aria-current="page">Releases</a>
-          <a href="../#download">Download</a>
-          <a href="https://github.com/krystal1110/Argo">GitHub</a>
+          <a href="../#top" data-i18n="home"><span class="lang" data-lang="zh">首页</span><span class="lang" data-lang="en">Home</span></a>
+          <a href="../remote-preview.html" data-i18n="hapi"><span class="lang" data-lang="zh">远程预览</span><span class="lang" data-lang="en">Remote Preview</span></a>
+          <a href="./" data-i18n="release">Release</a>
+          <a href="https://github.com/krystal1110/Argo" data-i18n="github">Github</a>
+          <button class="nav-lang-desktop" type="button" data-lang-toggle aria-label="Switch language">中文</button>
         </div>
       </nav>
     </header>
 
-    <main class="releases-page" aria-labelledby="releases-title">
-      <header class="releases-header">
-        <p class="section-number">Releases</p>
-        <h1 id="releases-title">Release Notes</h1>
-        <p>Argo keeps the latest four releases here, with short notes focused on user-visible changes.</p>
-      </header>
-
-      <section class="latest-release" aria-labelledby="latest-release-title">
-        <span class="release-badge">Latest</span>
-        <div class="release-heading">
-          <div>
-            <p class="release-date">June 29, 2026</p>
-            <h2 id="latest-release-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.10">Argo 1.0.10</a></h2>
+    <main class="page">
+      <!-- RELEASE_NOTES_GENERATED_START -->
+      <section class="hero" aria-labelledby="release-title">
+        <div>
+          <h1 id="release-title"><span class="lang" data-lang="zh">版本记录</span><span class="lang" data-lang="en">Release Notes</span></h1>
+          <p class="lead"><span class="lang" data-lang="zh">查看 Argo 最近版本的日期、摘要、下载链接和 GitHub tag。</span><span class="lang" data-lang="en">Review recent Argo versions with dates, short user-facing notes, download links, and GitHub tags.</span></p>
+          <div class="cta-row">
+            <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.10/Argo-1.0.10.dmg">Download Argo</a>
+            <a class="button secondary" href="../#top"><span class="lang" data-lang="zh">返回首页</span><span class="lang" data-lang="en">Back to home</span></a>
+            <a class="button ghost" href="https://github.com/krystal1110/Argo/releases"><span class="lang" data-lang="zh">全部版本</span><span class="lang" data-lang="en">All releases</span></a>
           </div>
-          <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.10/Argo-1.0.10.dmg">Download</a>
         </div>
-        <p class="release-summary">Adds website updates, add states, and add cli.</p>
-        <p class="install-copy">Install through Homebrew:<br><code>brew install --cask krystal1110/argo/argo</code></p>
+
+        <article class="latest-card" aria-labelledby="latest-release-title">
+          <span class="badge">Latest</span>
+          <p class="release-date"><span class="lang" data-lang="zh">June 29, 2026</span><span class="lang" data-lang="en">June 29, 2026</span></p>
+          <h2 id="latest-release-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.10">Argo 1.0.10</a></h2>
+          <p><span class="lang" data-lang="zh">Adds website updates, add states, and add cli.</span><span class="lang" data-lang="en">Adds website updates, add states, and add cli.</span></p>
+          <div class="command-box">
+            <strong>Homebrew</strong>
+            <code>brew install --cask krystal1110/argo/argo</code>
+          </div>
+        </article>
       </section>
 
-      <section class="release-history" aria-label="Previous releases">
-        <article class="release-card" aria-labelledby="release-1-0-9-title">
-          <div class="release-heading">
+      <section id="history" class="section" aria-labelledby="history-title">
+        <div class="section-head">
+          <h2 id="history-title"><span class="lang" data-lang="zh">版本、日期、摘要和下载。</span><span class="lang" data-lang="en">Versions, dates, summaries, and downloads.</span></h2>
+        </div>
+        <div class="release-board" aria-label="Release history">
+          <article class="release-row" aria-labelledby="release-1-0-10-title">
             <div>
-              <p class="release-date">June 27, 2026</p>
-              <h2 id="release-1-0-9-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.9">Argo 1.0.9</a></h2>
+              <p class="release-date"><span class="lang" data-lang="zh">June 29, 2026</span><span class="lang" data-lang="en">June 29, 2026</span></p>
+              <h3 id="release-1-0-10-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.10">Argo 1.0.10</a></h3>
             </div>
-            <a class="button secondary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.9/Argo-1.0.9.dmg">Download</a>
-          </div>
-          <p class="release-summary">Adds shrink app icon, theme activity dot, and argo brand pill.</p>
-        </article>
-        <article class="release-card" aria-labelledby="release-1-0-8-title">
-          <div class="release-heading">
+            <p><span class="lang" data-lang="zh">Adds website updates, add states, and add cli.</span><span class="lang" data-lang="en">Adds website updates, add states, and add cli.</span></p>
+            <a class="pill-link" href="https://github.com/krystal1110/Argo/releases/download/v1.0.10/Argo-1.0.10.dmg">Download</a>
+          </article>
+          <article class="release-row" aria-labelledby="release-1-0-9-title">
             <div>
-              <p class="release-date">June 26, 2026</p>
-              <h2 id="release-1-0-8-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.8">Argo 1.0.8</a></h2>
+              <p class="release-date"><span class="lang" data-lang="zh">June 27, 2026</span><span class="lang" data-lang="en">June 27, 2026</span></p>
+              <h3 id="release-1-0-9-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.9">Argo 1.0.9</a></h3>
             </div>
-            <a class="button secondary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
-          </div>
-          <p class="release-summary">Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way.</p>
-        </article>
-        <article class="release-card" aria-labelledby="release-1-0-7-title">
-          <div class="release-heading">
+            <p><span class="lang" data-lang="zh">Adds shrink app icon, theme activity dot, and argo brand pill.</span><span class="lang" data-lang="en">Adds shrink app icon, theme activity dot, and argo brand pill.</span></p>
+            <a class="pill-link" href="https://github.com/krystal1110/Argo/releases/download/v1.0.9/Argo-1.0.9.dmg">Download</a>
+          </article>
+          <article class="release-row" aria-labelledby="release-1-0-8-title">
             <div>
-              <p class="release-date">June 25, 2026</p>
-              <h2 id="release-1-0-7-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.7">Argo 1.0.7</a></h2>
+              <p class="release-date"><span class="lang" data-lang="zh">June 26, 2026</span><span class="lang" data-lang="en">June 26, 2026</span></p>
+              <h3 id="release-1-0-8-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.8">Argo 1.0.8</a></h3>
             </div>
-            <a class="button secondary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg">Download</a>
-          </div>
-          <p class="release-summary">Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging.</p>
-        </article>
+            <p><span class="lang" data-lang="zh">Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way.</span><span class="lang" data-lang="en">Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way.</span></p>
+            <a class="pill-link" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
+          </article>
+          <article class="release-row" aria-labelledby="release-1-0-7-title">
+            <div>
+              <p class="release-date"><span class="lang" data-lang="zh">June 25, 2026</span><span class="lang" data-lang="en">June 25, 2026</span></p>
+              <h3 id="release-1-0-7-title"><a href="https://github.com/krystal1110/Argo/releases/tag/v1.0.7">Argo 1.0.7</a></h3>
+            </div>
+            <p><span class="lang" data-lang="zh">Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging.</span><span class="lang" data-lang="en">Terminal theming gets a broader Twilight pass with wallpaper support, theme controls, and token bridging.</span></p>
+            <a class="pill-link" href="https://github.com/krystal1110/Argo/releases/download/v1.0.7/Argo-1.0.7.dmg">Download</a>
+          </article>
+        </div>
+      </section>
+
+      <section id="resources" class="section" aria-labelledby="resources-title">
+        <div class="section-head">
+          <h2 id="resources-title"><span class="lang" data-lang="zh">下载、源码和全部版本。</span><span class="lang" data-lang="en">Downloads, source, and full history.</span></h2>
+        </div>
+        <div class="resources">
+          <article class="resource-card">
+            <div>
+              <span class="badge">DMG</span>
+              <h3>Download Argo</h3>
+              <p><span class="lang" data-lang="zh">下载最新 macOS 安装包。</span><span class="lang" data-lang="en">Download the latest macOS installer.</span></p>
+            </div>
+            <a class="button secondary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.10/Argo-1.0.10.dmg"><span class="lang" data-lang="zh">下载 DMG</span><span class="lang" data-lang="en">Download DMG</span></a>
+          </article>
+          <article class="resource-card">
+            <div>
+              <span class="badge">GitHub</span>
+              <h3><span class="lang" data-lang="zh">源码与 tag</span><span class="lang" data-lang="en">Source and tags</span></h3>
+              <p><span class="lang" data-lang="zh">查看源码、tag 和项目活动。</span><span class="lang" data-lang="en">Browse source code, tags, and project activity.</span></p>
+            </div>
+            <a class="button ghost" href="https://github.com/krystal1110/Argo"><span class="lang" data-lang="zh">打开 GitHub</span><span class="lang" data-lang="en">Open GitHub</span></a>
+          </article>
+          <article class="resource-card">
+            <div>
+              <span class="badge">Archive</span>
+              <h3><span class="lang" data-lang="zh">全部版本</span><span class="lang" data-lang="en">All releases</span></h3>
+              <p><span class="lang" data-lang="zh">进入完整版本记录页面。</span><span class="lang" data-lang="en">Open the complete release history page.</span></p>
+            </div>
+            <a class="button ghost" href="https://github.com/krystal1110/Argo/releases"><span class="lang" data-lang="zh">打开全部版本</span><span class="lang" data-lang="en">Open all releases</span></a>
+          </article>
+        </div>
+      </section>
+      <!-- RELEASE_NOTES_GENERATED_END -->
+
+      <section class="footer-card">
+        <h2><span class="lang" data-lang="zh">继续了解 Argo 工作台。</span><span class="lang" data-lang="en">Continue exploring the Argo workspace.</span></h2>
+        <div class="cta-row">
+          <a class="button primary" href="../#top"><span class="lang" data-lang="zh">返回首页</span><span class="lang" data-lang="en">Back to home</span></a>
+          <a class="button ghost" href="https://github.com/krystal1110/Argo">GitHub</a>
+        </div>
       </section>
     </main>
+    <script>
+      (() => {
+        const storageKey = "argo-site-language";
+        const applyLanguage = (language) => {
+          const nextLanguage = language === "zh" ? "zh" : "en";
+          document.body.dataset.lang = nextLanguage;
+          document.documentElement.lang = nextLanguage === "zh" ? "zh-CN" : "en";
+          document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+            button.textContent = nextLanguage === "zh" ? "EN" : "中文";
+            button.setAttribute("aria-label", nextLanguage === "zh" ? "Switch to English" : "切换到中文");
+          });
+        };
+
+        applyLanguage(localStorage.getItem(storageKey) || "en");
+        document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const nextLanguage = document.body.dataset.lang === "zh" ? "en" : "zh";
+            localStorage.setItem(storageKey, nextLanguage);
+            applyLanguage(nextLanguage);
+          });
+        });
+      })();
+    </script>
   </body>
 </html>

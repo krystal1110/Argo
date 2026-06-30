@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Remote Preview - Argo</title>
+    <meta name="description" content="Use Argo and HAPI to preview local HTML pages from your phone.">
+    <link rel="icon" href="./assets/app-icon-64.png" sizes="64x64">
+    <style>
+      :root {
+        --bg: #fbf4ea;
+        --paper: #fffaf2;
+        --ink: #27211c;
+        --muted: #695d52;
+        --line: #211c17;
+        --red: #f04437;
+        --green: #bdf3c9;
+        --mint: #87e5cc;
+        --blue: #cde8ff;
+        --yellow: #ffe4a8;
+        --purple: #d8ccff;
+        --shadow: #211c17;
+        --max: 1160px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 110px;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 8%, rgba(240, 68, 55, 0.12), transparent 28rem),
+          radial-gradient(circle at 86% 18%, rgba(135, 229, 204, 0.2), transparent 28rem),
+          linear-gradient(180deg, #fff9ef 0%, var(--bg) 48%, #f7ead9 100%);
+        font-family: Nunito, ui-rounded, "SF Pro Rounded", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        line-height: 1.6;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        border-bottom: 3px solid var(--line);
+        background: rgba(251, 244, 234, 0.92);
+        backdrop-filter: blur(14px);
+      }
+
+      .nav {
+        width: min(var(--max), calc(100% - 32px));
+        min-height: 74px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .nav-start {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 23px;
+        font-weight: 1000;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        border: 3px solid var(--line);
+        border-radius: 13px;
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .nav-links a,
+      .nav-links button,
+      .nav-lang-mobile {
+        min-height: 38px;
+        padding: 7px 14px;
+        display: inline-flex;
+        align-items: center;
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        background: var(--paper);
+        color: inherit;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 900;
+        box-shadow: 2px 2px 0 transparent;
+        transition: transform 160ms ease, box-shadow 160ms ease;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .nav-links a:hover,
+      .nav-links button:hover,
+      .nav-lang-mobile:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .nav-lang-mobile {
+        display: none;
+      }
+
+      .lang {
+        display: none;
+      }
+
+      body[data-lang="zh"] .lang[data-lang="zh"],
+      body[data-lang="en"] .lang[data-lang="en"] {
+        display: inline;
+      }
+
+      body[data-lang="zh"] .lang.block[data-lang="zh"],
+      body[data-lang="en"] .lang.block[data-lang="en"] {
+        display: block;
+      }
+
+      .page {
+        width: min(var(--max), calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        min-height: min(820px, calc(100vh - 126px));
+        padding: 46px 0 36px;
+        display: grid;
+        grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+        gap: 36px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 15px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: var(--green);
+        font-weight: 1000;
+        box-shadow: 3px 3px 0 var(--shadow);
+      }
+
+      .dot {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--line);
+        border-radius: 50%;
+        background: #20d86d;
+      }
+
+      h1 {
+        margin: 24px 0 18px;
+        font-size: 86px;
+        line-height: 0.96;
+        font-weight: 1000;
+      }
+
+      .accent {
+        color: var(--red);
+      }
+
+      .lead {
+        max-width: 640px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 21px;
+        font-weight: 760;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 26px;
+      }
+
+      .button {
+        min-height: 54px;
+        padding: 13px 23px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        font-weight: 1000;
+        box-shadow: 5px 5px 0 var(--shadow);
+        transition: transform 160ms ease, box-shadow 160ms ease;
+      }
+
+      .button:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 7px 7px 0 var(--shadow);
+      }
+
+      .button.primary {
+        color: white;
+        background: var(--red);
+      }
+
+      .button.secondary {
+        background: var(--yellow);
+      }
+
+      .hero-flow {
+        min-height: 520px;
+        padding: 28px;
+        display: grid;
+        align-content: center;
+        gap: 18px;
+        border: 3px solid var(--line);
+        border-radius: 28px;
+        background: var(--green);
+        box-shadow: 9px 9px 0 var(--shadow);
+        transform: rotate(0.7deg);
+      }
+
+      .flow-title {
+        margin: 0;
+        font-size: 36px;
+        line-height: 1.12;
+        font-weight: 1000;
+      }
+
+      .flow-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .flow-item {
+        min-height: 58px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 2px solid var(--line);
+        border-radius: 16px;
+        background: var(--paper);
+        font-weight: 1000;
+        box-shadow: 3px 3px 0 rgba(33, 28, 23, 0.18);
+      }
+
+      .flow-item:nth-child(2) {
+        background: var(--blue);
+      }
+
+      .flow-item:nth-child(4) {
+        background: var(--yellow);
+      }
+
+      .flow-dot {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        flex: none;
+        place-items: center;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        background: var(--red);
+        color: white;
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .section {
+        padding: 50px 0;
+      }
+
+      .section-head {
+        max-width: 760px;
+        margin-bottom: 24px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: 60px;
+        line-height: 1.05;
+        font-weight: 1000;
+      }
+
+      .section-head p {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+        font-weight: 760;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .step {
+        min-height: 254px;
+        padding: 18px;
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        border: 3px solid var(--line);
+        border-radius: 22px;
+        background: var(--paper);
+        box-shadow: 6px 6px 0 var(--shadow);
+      }
+
+      .step:nth-child(2) {
+        background: var(--blue);
+      }
+
+      .step:nth-child(3) {
+        background: var(--yellow);
+      }
+
+      .step:nth-child(4) {
+        background: var(--green);
+      }
+
+      .step:nth-child(5) {
+        background: var(--purple);
+      }
+
+      .step-index {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        background: var(--red);
+        color: white;
+        font-size: 14px;
+        font-weight: 1000;
+      }
+
+      .step h3 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.12;
+        font-weight: 1000;
+      }
+
+      .step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .inline-code {
+        display: inline-flex;
+        padding: 1px 6px;
+        border: 1.5px solid var(--line);
+        border-radius: 7px;
+        background: rgba(255, 250, 242, 0.88);
+        color: var(--ink);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+        font-weight: 900;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .note-panel,
+      .phone-panel {
+        border: 3px solid var(--line);
+        border-radius: 26px;
+        box-shadow: 8px 8px 0 var(--shadow);
+      }
+
+      .note-panel {
+        padding: 24px;
+        background: var(--yellow);
+      }
+
+      .note-panel h3 {
+        margin: 0 0 12px;
+        font-size: 32px;
+        line-height: 1.1;
+        font-weight: 1000;
+      }
+
+      .note-list {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .note-list li {
+        padding: 12px 14px;
+        border: 2px solid var(--line);
+        border-radius: 16px;
+        background: var(--paper);
+        font-weight: 900;
+      }
+
+      .phone-panel {
+        padding: 18px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        align-items: end;
+        background: var(--paper);
+      }
+
+      .phone-card {
+        position: relative;
+        border: 3px solid var(--line);
+        border-radius: 28px;
+        background: white;
+        box-shadow: 4px 4px 0 var(--shadow);
+        overflow: hidden;
+      }
+
+      .phone-card img {
+        width: 100%;
+        height: clamp(430px, 38vw, 560px);
+        object-fit: cover;
+        object-position: top;
+      }
+
+      .phone-card.small {
+        transform: rotate(-2deg);
+      }
+
+      .phone-card.large {
+        transform: rotate(1deg);
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .preview-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .steps {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .hero-flow {
+          min-height: 0;
+          transform: none;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .nav {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 10px;
+          padding: 12px 0;
+        }
+
+        .nav-start {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .nav-lang-mobile {
+          display: inline-flex;
+        }
+
+        .nav-links .nav-lang-desktop {
+          display: none;
+        }
+
+        .nav-links {
+          width: 100%;
+          flex-wrap: nowrap;
+          justify-content: flex-start;
+          overflow-x: auto;
+          padding-bottom: 4px;
+          scrollbar-width: none;
+        }
+
+        .nav-links::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nav-links a,
+        .nav-links button {
+          flex: 0 0 auto;
+        }
+
+        .hero {
+          min-height: auto;
+          padding: 42px 0 30px;
+        }
+
+        h1 {
+          font-size: 48px;
+        }
+
+        .lead {
+          font-size: 18px;
+        }
+
+        .flow-title {
+          font-size: 28px;
+        }
+
+        .section-head h2 {
+          font-size: 34px;
+        }
+
+        .note-panel,
+        .phone-panel {
+          padding: 20px;
+        }
+
+        .hero-flow {
+          padding: 20px;
+        }
+
+        .steps,
+        .phone-panel {
+          grid-template-columns: 1fr;
+        }
+
+        .step {
+          min-height: 0;
+        }
+
+        .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body data-lang="en">
+    <header class="topbar">
+      <nav class="nav" aria-label="页面导航">
+        <div class="nav-start">
+          <a class="brand" href="./#top" aria-label="Argo home">
+            <img src="./assets/app-icon-64.png" alt="" width="42" height="42" decoding="async">
+            <span>Argo</span>
+          </a>
+          <button class="nav-lang-mobile" type="button" data-lang-toggle aria-label="Switch language">中文</button>
+        </div>
+        <div class="nav-links">
+          <a href="./#top" data-i18n="home"><span class="lang" data-lang="zh">首页</span><span class="lang" data-lang="en">Home</span></a>
+          <a href="./remote-preview.html" data-i18n="hapi"><span class="lang" data-lang="zh">远程预览</span><span class="lang" data-lang="en">Remote Preview</span></a>
+          <a href="./releases/" data-i18n="release">Release</a>
+          <a href="https://github.com/krystal1110/Argo" data-i18n="github">Github</a>
+          <button class="nav-lang-desktop" type="button" data-lang-toggle aria-label="Switch language">中文</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div>
+          <h1>
+            <span class="lang" data-lang="zh">Preview local HTML<br><span class="accent">from your phone.</span></span>
+            <span class="lang" data-lang="en">Preview local HTML<br><span class="accent">from your phone.</span></span>
+          </h1>
+          <p class="lead">
+            <span class="lang" data-lang="zh">在 Argo 里打开 HAPI，把本机 Claude 会话接到手机上。你可以在手机浏览器继续交流，让 Claude 启动预览服务，再打开它给出的页面链接。</span>
+            <span class="lang" data-lang="en">Open HAPI from Argo and connect your local Claude session to your phone. Keep chatting from mobile, ask Claude to start the preview server, then open the page link it returns.</span>
+          </p>
+          <div class="cta-row">
+            <a class="button primary" href="#steps"><span class="lang" data-lang="zh">查看教程</span><span class="lang" data-lang="en">Read the guide</span></a>
+            <a class="button secondary" href="./#top"><span class="lang" data-lang="zh">返回首页</span><span class="lang" data-lang="en">Back to home</span></a>
+          </div>
+        </div>
+
+        <aside class="hero-flow" aria-label="Remote preview flow">
+          <h2 class="flow-title"><span class="lang" data-lang="zh">整个路径只围绕一件事：把本机会话带到手机上。</span><span class="lang" data-lang="en">The flow is simple: carry the local session to your phone.</span></h2>
+          <div class="flow-list">
+            <div class="flow-item"><span class="flow-dot">1</span><span>Argo workspace</span></div>
+            <div class="flow-item"><span class="flow-dot">2</span><span>HAPI Hub Host</span></div>
+            <div class="flow-item"><span class="flow-dot">3</span><span>Token login</span></div>
+            <div class="flow-item"><span class="flow-dot">4</span><span>HAPI Claude</span></div>
+            <div class="flow-item"><span class="flow-dot">5</span><span>HTML preview</span></div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="steps" class="section">
+        <div class="section-head">
+          <h2><span class="lang" data-lang="zh">从 Argo 到手机预览。</span><span class="lang" data-lang="en">From Argo to mobile preview.</span></h2>
+          <p><span class="lang" data-lang="zh">先在 Argo 里选中 workspace，再通过 HAPI 菜单启动服务、登录手机端，最后正常和 Claude 交流。</span><span class="lang" data-lang="en">Select the workspace in Argo, start the HAPI service, sign in from mobile, then talk to Claude as usual.</span></p>
+        </div>
+
+        <div class="steps" aria-label="HAPI remote preview guide">
+          <article class="step">
+            <span class="step-index">1</span>
+            <h3><span class="lang" data-lang="zh">打开 HAPI 菜单</span><span class="lang" data-lang="en">Open HAPI Menu</span></h3>
+            <p><span class="lang" data-lang="zh">先选中 Argo workspace，再点顶部网格按钮，在菜单里选择 <span class="inline-code">Open HAPI Menu</span>。</span><span class="lang" data-lang="en">Select an Argo workspace, click the top grid button, then choose <span class="inline-code">Open HAPI Menu</span>.</span></p>
+          </article>
+          <article class="step">
+            <span class="step-index">2</span>
+            <h3><span class="lang" data-lang="zh">启动 Hub 并复制 Host</span><span class="lang" data-lang="en">Start Hub and copy Host</span></h3>
+            <p><span class="lang" data-lang="zh">选择 <span class="inline-code">HAPI Hub</span> 或 relay 入口，复制生成的 <span class="inline-code">Host</span>，在手机浏览器里打开。</span><span class="lang" data-lang="en">Choose <span class="inline-code">HAPI Hub</span> or the relay entry, copy the generated <span class="inline-code">Host</span>, and open it in your phone browser.</span></p>
+          </article>
+          <article class="step">
+            <span class="step-index">3</span>
+            <h3><span class="lang" data-lang="zh">从 Settings 获取 token</span><span class="lang" data-lang="en">Get the token from Settings</span></h3>
+            <p><span class="lang" data-lang="zh">进入 HAPI 页面里的 <span class="inline-code">HAPI Show Settings</span>，复制 token，然后用它登录手机上的 HAPI 页面。</span><span class="lang" data-lang="en">Open <span class="inline-code">HAPI Show Settings</span>, copy the token, then use it to sign in on the phone.</span></p>
+          </article>
+          <article class="step">
+            <span class="step-index">4</span>
+            <h3><span class="lang" data-lang="zh">启动 HAPI Claude</span><span class="lang" data-lang="en">Start HAPI Claude</span></h3>
+            <p><span class="lang" data-lang="zh">回到 Argo 的 HAPI 菜单，选择 <span class="inline-code">HAPI Claude</span>，让手机连接当前 workspace 的 Claude session。</span><span class="lang" data-lang="en">Return to the Argo HAPI menu, choose <span class="inline-code">HAPI Claude</span>, and connect the phone to this workspace session.</span></p>
+          </article>
+          <article class="step">
+            <span class="step-index">5</span>
+            <h3><span class="lang" data-lang="zh">正常交流并查看 HTML</span><span class="lang" data-lang="en">Chat and view HTML</span></h3>
+            <p><span class="lang" data-lang="zh">在手机上正常描述你要改的页面，让 Claude 启动预览服务，再打开它给出的 <span class="inline-code">HTML preview</span>。</span><span class="lang" data-lang="en">Describe your page changes from the phone, ask Claude to start the preview server, then open the <span class="inline-code">HTML preview</span> it returns.</span></p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section preview-grid">
+        <article class="note-panel">
+          <h3><span class="lang" data-lang="zh">使用时注意这几件事。</span><span class="lang" data-lang="en">A few practical notes.</span></h3>
+          <ul class="note-list">
+            <li><span class="lang" data-lang="zh">Host 是手机访问 HAPI 的入口，优先复制 HAPI Hub 页面里展示的地址。</span><span class="lang" data-lang="en">Host is the mobile entry point. Copy the address shown by HAPI Hub.</span></li>
+            <li><span class="lang" data-lang="zh">token 用来登录你的 HAPI 页面，不要发给不信任的人。</span><span class="lang" data-lang="en">The token signs in to your HAPI page, so do not share it with untrusted people.</span></li>
+            <li><span class="lang" data-lang="zh">HTML preview 由 Claude 在当前 workspace 里启动，手机只需要打开它返回的链接。</span><span class="lang" data-lang="en">Claude starts the HTML preview in the current workspace; the phone only opens the returned link.</span></li>
+          </ul>
+        </article>
+        <div class="phone-panel" aria-label="HAPI phone screenshot">
+          <figure class="phone-card large">
+            <img src="https://hapi.run/images/app-chat-interface.png" alt="HAPI chat interface on phone" loading="eager" decoding="async">
+          </figure>
+        </div>
+      </section>
+
+    </main>
+
+    <script>
+      (() => {
+        const storageKey = "argo-site-language";
+        const applyLanguage = (language) => {
+          const nextLanguage = language === "zh" ? "zh" : "en";
+          document.body.dataset.lang = nextLanguage;
+          document.documentElement.lang = nextLanguage === "zh" ? "zh-CN" : "en";
+          document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+            button.textContent = nextLanguage === "zh" ? "EN" : "中文";
+            button.setAttribute("aria-label", nextLanguage === "zh" ? "Switch to English" : "切换到中文");
+          });
+        };
+
+        applyLanguage(localStorage.getItem(storageKey) || "en");
+        document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const nextLanguage = document.body.dataset.lang === "zh" ? "en" : "zh";
+            localStorage.setItem(storageKey, nextLanguage);
+            applyLanguage(nextLanguage);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

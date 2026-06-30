@@ -72,6 +72,29 @@ cat > "$tmp_dir/home.html" <<'HTML'
   <body>
     <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
     <a class="button primary" href="https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg">Download</a>
+    <a class="link-pill" href="./releases/">Latest 1.0.8</a>
+    <p>Get the Argo 1.0.8 macOS installer.</p>
+    <p>下载 Argo 1.0.8 的 macOS 安装包。</p>
+  </body>
+</html>
+HTML
+
+cat > "$tmp_dir/index.html" <<'HTML'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Release Notes - Argo</title>
+  </head>
+  <body data-lang="en">
+    <main class="page">
+      <!-- RELEASE_NOTES_GENERATED_START -->
+      <section class="old-release-page">old release notes</section>
+      <!-- RELEASE_NOTES_GENERATED_END -->
+    </main>
+    <script>
+      const storageKey = "argo-site-language";
+    </script>
   </body>
 </html>
 HTML
@@ -106,16 +129,32 @@ PY
 
 grep -Fq 'Argo 1.0.9' "$tmp_dir/index.html"
 grep -Fq 'Latest' "$tmp_dir/index.html"
+grep -Fq 'latest-card' "$tmp_dir/index.html"
+grep -Fq 'release-board' "$tmp_dir/index.html"
+grep -Fq 'RELEASE_NOTES_GENERATED_START' "$tmp_dir/index.html"
+grep -Fq 'RELEASE_NOTES_GENERATED_END' "$tmp_dir/index.html"
 grep -Fq 'June 27, 2026' "$tmp_dir/index.html"
 grep -Fq 'Argo-1.0.9.dmg' "$tmp_dir/index.html"
 grep -Fq 'Adds website release automation. Keeps the public release history fresh.' "$tmp_dir/index.html"
 grep -Fq 'https://github.com/krystal1110/Argo/releases/download/v1.0.9/Argo-1.0.9.dmg' "$tmp_dir/home.html"
+grep -Fq 'Latest 1.0.9' "$tmp_dir/home.html"
+grep -Fq 'Get the Argo 1.0.9 macOS installer.' "$tmp_dir/home.html"
+grep -Fq '下载 Argo 1.0.9 的 macOS 安装包。' "$tmp_dir/home.html"
 if grep -Fq 'https://github.com/krystal1110/Argo/releases/download/v1.0.8/Argo-1.0.8.dmg' "$tmp_dir/home.html"; then
   echo "Homepage release links should be updated to the latest release" >&2
   exit 1
 fi
+if grep -Fq 'old release notes' "$tmp_dir/index.html" || grep -Fq 'site-nav' "$tmp_dir/index.html"; then
+  echo "Generated website release page should replace the marked new-site block only" >&2
+  exit 1
+fi
 if grep -Fq 'Argo 1.0.5' "$tmp_dir/index.html"; then
   echo "Generated website release page should keep only the latest 4 releases" >&2
+  exit 1
+fi
+release_row_count="$(grep -c '<article class="release-row"' "$tmp_dir/index.html" || true)"
+if [[ "$release_row_count" != "4" ]]; then
+  echo "Generated website release page should keep exactly 4 release rows, found $release_row_count" >&2
   exit 1
 fi
 
@@ -124,6 +163,5 @@ grep -Fq 'website_release_notes_update' scripts/release_homebrew.sh
 grep -Fq 'WEBSITE_RELEASES_FILE' scripts/release_homebrew.sh
 grep -Fq 'WEBSITE_RELEASES_HTML_FILE' scripts/release_homebrew.sh
 grep -Fq 'WEBSITE_HOME_HTML_FILE' scripts/release_homebrew.sh
-grep -Fq '"$WEBSITE_RELEASES_FILE" "$WEBSITE_RELEASES_HTML_FILE" "$WEBSITE_HOME_HTML_FILE"' scripts/release_homebrew.sh
 
 echo "website release notes support ok"

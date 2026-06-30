@@ -56,88 +56,112 @@ def release_urls(version):
         f"{base}/download/{tag}/{app_name}-{version}.dmg",
     )
 
+def lang_text(value):
+    escaped = esc(value)
+    return f'<span class="lang" data-lang="zh">{escaped}</span><span class="lang" data-lang="en">{escaped}</span>'
+
+def release_row(release):
+    tag_url, dmg_url = release_urls(release["version"])
+    title_id = release_title_id(release["version"])
+    return [
+        f'          <article class="release-row" aria-labelledby="{esc(title_id)}">',
+        "            <div>",
+        f'              <p class="release-date">{lang_text(release["date"])}</p>',
+        f'              <h3 id="{esc(title_id)}"><a href="{esc(tag_url)}">Argo {esc(release["version"])}</a></h3>',
+        "            </div>",
+        f'            <p>{lang_text(release["summary"])}</p>',
+        f'            <a class="pill-link" href="{esc(dmg_url)}">Download</a>',
+        "          </article>",
+    ]
+
 latest = releases[0]
 latest_tag_url, latest_dmg_url = release_urls(latest["version"])
 
 parts = [
-    "<!doctype html>",
-    '<html lang="en">',
-    "  <head>",
-    '    <meta charset="utf-8">',
-    '    <meta name="viewport" content="width=device-width, initial-scale=1">',
-    "    <title>Release Notes - Argo</title>",
-    '    <meta name="description" content="Release notes for Argo, a native macOS terminal workspace for repositories, worktrees, split panes, previews, SSH sessions, and coding agents.">',
-    '    <link rel="icon" href="../assets/app-icon-64.png" sizes="64x64">',
-    '    <link rel="stylesheet" href="../styles.css">',
-    "  </head>",
-    "  <body>",
-    '    <header class="site-header">',
-    '      <nav class="site-nav" aria-label="Primary navigation">',
-    '        <a class="brand" href="../" aria-label="Argo home">',
-    '          <img src="../assets/app-icon-64.png" srcset="../assets/app-icon-64.png 1x, ../assets/app-icon-128.png 2x" alt="" width="31" height="31" decoding="async">',
-    "          <span>Argo</span>",
-    "        </a>",
-    '        <div class="nav-links">',
-    '          <a href="../">Home</a>',
-    '          <a href="../#features">Features</a>',
-    '          <a href="./" aria-current="page">Releases</a>',
-    '          <a href="../#download">Download</a>',
-    '          <a href="https://github.com/krystal1110/Argo">GitHub</a>',
-    "        </div>",
-    "      </nav>",
-    "    </header>",
-    "",
-    '    <main class="releases-page" aria-labelledby="releases-title">',
-    '      <header class="releases-header">',
-    '        <p class="section-number">Releases</p>',
-    '        <h1 id="releases-title">Release Notes</h1>',
-    "        <p>Argo keeps the latest four releases here, with short notes focused on user-visible changes.</p>",
-    "      </header>",
-    "",
-    '      <section class="latest-release" aria-labelledby="latest-release-title">',
-    '        <span class="release-badge">Latest</span>',
-    '        <div class="release-heading">',
-    "          <div>",
-    f'            <p class="release-date">{esc(latest["date"])}</p>',
-    f'            <h2 id="latest-release-title"><a href="{esc(latest_tag_url)}">Argo {esc(latest["version"])}</a></h2>',
+    "      <!-- RELEASE_NOTES_GENERATED_START -->",
+    '      <section class="hero" aria-labelledby="release-title">',
+    "        <div>",
+    '          <h1 id="release-title"><span class="lang" data-lang="zh">版本记录</span><span class="lang" data-lang="en">Release Notes</span></h1>',
+    '          <p class="lead"><span class="lang" data-lang="zh">查看 Argo 最近版本的日期、摘要、下载链接和 GitHub tag。</span><span class="lang" data-lang="en">Review recent Argo versions with dates, short user-facing notes, download links, and GitHub tags.</span></p>',
+    '          <div class="cta-row">',
+    f'            <a class="button primary" href="{esc(latest_dmg_url)}">Download Argo</a>',
+    '            <a class="button secondary" href="../#top"><span class="lang" data-lang="zh">返回首页</span><span class="lang" data-lang="en">Back to home</span></a>',
+    '            <a class="button ghost" href="https://github.com/krystal1110/Argo/releases"><span class="lang" data-lang="zh">全部版本</span><span class="lang" data-lang="en">All releases</span></a>',
     "          </div>",
-    f'          <a class="button primary" href="{esc(latest_dmg_url)}">Download</a>',
     "        </div>",
-    f'        <p class="release-summary">{esc(latest["summary"])}</p>',
-    f"        <p class=\"install-copy\">Install through Homebrew:<br><code>brew install --cask {esc(brew_install_ref)}</code></p>",
+    "",
+    '        <article class="latest-card" aria-labelledby="latest-release-title">',
+    '          <span class="badge">Latest</span>',
+    f'          <p class="release-date">{lang_text(latest["date"])}</p>',
+    f'          <h2 id="latest-release-title"><a href="{esc(latest_tag_url)}">Argo {esc(latest["version"])}</a></h2>',
+    f'          <p>{lang_text(latest["summary"])}</p>',
+    '          <div class="command-box">',
+    "            <strong>Homebrew</strong>",
+    f"            <code>brew install --cask {esc(brew_install_ref)}</code>",
+    "          </div>",
+    "        </article>",
     "      </section>",
+    "",
+    '      <section id="history" class="section" aria-labelledby="history-title">',
+    '        <div class="section-head">',
+    '          <h2 id="history-title"><span class="lang" data-lang="zh">版本、日期、摘要和下载。</span><span class="lang" data-lang="en">Versions, dates, summaries, and downloads.</span></h2>',
+    "        </div>",
+    '        <div class="release-board" aria-label="Release history">',
 ]
 
-if len(releases) > 1:
-    parts.extend([
-        "",
-        '      <section class="release-history" aria-label="Previous releases">',
-    ])
-    for release in releases[1:]:
-        tag_url, dmg_url = release_urls(release["version"])
-        title_id = release_title_id(release["version"])
-        parts.extend([
-            f'        <article class="release-card" aria-labelledby="{esc(title_id)}">',
-            '          <div class="release-heading">',
-            "            <div>",
-            f'              <p class="release-date">{esc(release["date"])}</p>',
-            f'              <h2 id="{esc(title_id)}"><a href="{esc(tag_url)}">Argo {esc(release["version"])}</a></h2>',
-            "            </div>",
-            f'            <a class="button secondary" href="{esc(dmg_url)}">Download</a>',
-            "          </div>",
-            f'          <p class="release-summary">{esc(release["summary"])}</p>',
-            "        </article>",
-        ])
-    parts.append("      </section>")
+for release in releases:
+    parts.extend(release_row(release))
 
 parts.extend([
-    "    </main>",
-    "  </body>",
-    "</html>",
+    "        </div>",
+    "      </section>",
     "",
+    '      <section id="resources" class="section" aria-labelledby="resources-title">',
+    '        <div class="section-head">',
+    '          <h2 id="resources-title"><span class="lang" data-lang="zh">下载、源码和全部版本。</span><span class="lang" data-lang="en">Downloads, source, and full history.</span></h2>',
+    "        </div>",
+    '        <div class="resources">',
+    '          <article class="resource-card">',
+    "            <div>",
+    '              <span class="badge">DMG</span>',
+    "              <h3>Download Argo</h3>",
+    '              <p><span class="lang" data-lang="zh">下载最新 macOS 安装包。</span><span class="lang" data-lang="en">Download the latest macOS installer.</span></p>',
+    "            </div>",
+    f'            <a class="button secondary" href="{esc(latest_dmg_url)}"><span class="lang" data-lang="zh">下载 DMG</span><span class="lang" data-lang="en">Download DMG</span></a>',
+    "          </article>",
+    '          <article class="resource-card">',
+    "            <div>",
+    '              <span class="badge">GitHub</span>',
+    '              <h3><span class="lang" data-lang="zh">源码与 tag</span><span class="lang" data-lang="en">Source and tags</span></h3>',
+    '              <p><span class="lang" data-lang="zh">查看源码、tag 和项目活动。</span><span class="lang" data-lang="en">Browse source code, tags, and project activity.</span></p>',
+    "            </div>",
+    '            <a class="button ghost" href="https://github.com/krystal1110/Argo"><span class="lang" data-lang="zh">打开 GitHub</span><span class="lang" data-lang="en">Open GitHub</span></a>',
+    "          </article>",
+    '          <article class="resource-card">',
+    "            <div>",
+    '              <span class="badge">Archive</span>',
+    '              <h3><span class="lang" data-lang="zh">全部版本</span><span class="lang" data-lang="en">All releases</span></h3>',
+    '              <p><span class="lang" data-lang="zh">进入完整版本记录页面。</span><span class="lang" data-lang="en">Open the complete release history page.</span></p>',
+    "            </div>",
+    '            <a class="button ghost" href="https://github.com/krystal1110/Argo/releases"><span class="lang" data-lang="zh">打开全部版本</span><span class="lang" data-lang="en">Open all releases</span></a>',
+    "          </article>",
+    "        </div>",
+    "      </section>",
+    "      <!-- RELEASE_NOTES_GENERATED_END -->",
 ])
 
-output_path.write_text("\n".join(parts), encoding="utf-8")
+start_marker = "      <!-- RELEASE_NOTES_GENERATED_START -->"
+end_marker = "      <!-- RELEASE_NOTES_GENERATED_END -->"
+if not output_path.is_file():
+    raise SystemExit(f"Missing website release page template: {output_path}")
+template = output_path.read_text(encoding="utf-8")
+start = template.find(start_marker)
+end = template.find(end_marker)
+if start == -1 or end == -1 or end < start:
+    raise SystemExit(f"Missing release notes generated markers in {output_path}")
+
+updated = template[:start] + "\n".join(parts) + template[end + len(end_marker):]
+output_path.write_text(updated, encoding="utf-8")
 PY
 }
 
@@ -165,6 +189,10 @@ replacement = f"https://github.com/{sys.argv[2]}/releases/download/v{version}/{s
 updated, count = re.subn(pattern, replacement, text)
 if count == 0:
     raise SystemExit(f"No homepage release download links found in {html_path}")
+
+updated = re.sub(r"Latest [0-9]+\.[0-9]+\.[0-9]+", f"Latest {version}", updated)
+updated = re.sub(r"Get the Argo [0-9]+\.[0-9]+\.[0-9]+ macOS installer", f"Get the Argo {version} macOS installer", updated)
+updated = re.sub(r"下载 Argo [0-9]+\.[0-9]+\.[0-9]+ 的 macOS 安装包", f"下载 Argo {version} 的 macOS 安装包", updated)
 
 html_path.write_text(updated, encoding="utf-8")
 PY

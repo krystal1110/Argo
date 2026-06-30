@@ -322,7 +322,7 @@
 
       .steps {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
       }
 
@@ -352,6 +352,10 @@
 
       .step:nth-child(5) {
         background: var(--purple);
+      }
+
+      .step:nth-child(6) {
+        background: var(--blue);
       }
 
       .step-index {
@@ -391,6 +395,26 @@
         font-family: "SFMono-Regular", Consolas, monospace;
         font-size: 0.92em;
         font-weight: 900;
+      }
+
+      .step a {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .command-line {
+        margin: 0;
+        padding: 10px 12px;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
 
       .preview-grid {
@@ -608,11 +632,12 @@
         <aside class="hero-flow" aria-label="Remote preview flow">
           <h2 class="flow-title"><span class="lang" data-lang="zh">整个路径只围绕一件事：把本机会话带到手机上。</span><span class="lang" data-lang="en">The flow is simple: carry the local session to your phone.</span></h2>
           <div class="flow-list">
-            <div class="flow-item"><span class="flow-dot">1</span><span>Argo workspace</span></div>
-            <div class="flow-item"><span class="flow-dot">2</span><span>HAPI Hub Host</span></div>
-            <div class="flow-item"><span class="flow-dot">3</span><span>Token login</span></div>
-            <div class="flow-item"><span class="flow-dot">4</span><span>HAPI Claude</span></div>
-            <div class="flow-item"><span class="flow-dot">5</span><span>HTML preview</span></div>
+            <div class="flow-item"><span class="flow-dot">1</span><span>HAPI install</span></div>
+            <div class="flow-item"><span class="flow-dot">2</span><span>Argo workspace</span></div>
+            <div class="flow-item"><span class="flow-dot">3</span><span>HAPI Hub Host</span></div>
+            <div class="flow-item"><span class="flow-dot">4</span><span>Token login</span></div>
+            <div class="flow-item"><span class="flow-dot">5</span><span>HAPI Claude</span></div>
+            <div class="flow-item"><span class="flow-dot">6</span><span>HTML preview</span></div>
           </div>
         </aside>
       </section>
@@ -620,32 +645,39 @@
       <section id="steps" class="section">
         <div class="section-head">
           <h2><span class="lang" data-lang="zh">从 Argo 到手机预览。</span><span class="lang" data-lang="en">From Argo to mobile preview.</span></h2>
-          <p><span class="lang" data-lang="zh">先在 Argo 里选中 workspace，再通过 HAPI 菜单启动服务、登录手机端，最后正常和 Claude 交流。</span><span class="lang" data-lang="en">Select the workspace in Argo, start the HAPI service, sign in from mobile, then talk to Claude as usual.</span></p>
+          <p><span class="lang" data-lang="zh">先安装 HAPI，再在 Argo 里选中 workspace，通过 HAPI 菜单启动服务、登录手机端，最后正常和 Claude 交流。</span><span class="lang" data-lang="en">Install HAPI first, select the workspace in Argo, start the HAPI service, sign in from mobile, then talk to Claude as usual.</span></p>
         </div>
 
         <div class="steps" aria-label="HAPI remote preview guide">
           <article class="step">
             <span class="step-index">1</span>
+            <h3><span class="lang" data-lang="zh">先安装 HAPI</span><span class="lang" data-lang="en">Install HAPI first</span></h3>
+            <p><span class="lang" data-lang="zh">如果 Mac 上还没有 <span class="inline-code">hapi</span> 命令，先在终端安装 HAPI；也可以按 <a href="https://hapi.run/docs/guide/installation" target="_blank" rel="noreferrer">HAPI Installation</a> 使用 Homebrew。</span><span class="lang" data-lang="en">If your Mac does not have the <span class="inline-code">hapi</span> command yet, install HAPI in Terminal first, or use Homebrew from <a href="https://hapi.run/docs/guide/installation" target="_blank" rel="noreferrer">HAPI Installation</a>.</span></p>
+            <pre class="command-line"><code>npm install -g --prefix "$HOME/.local" @twsxtd/hapi --registry=https://registry.npmjs.org</code></pre>
+            <p><span class="lang" data-lang="zh">安装后确认 <span class="inline-code">zsh -lic 'whence -p hapi; hapi --version'</span> 能输出路径和版本。</span><span class="lang" data-lang="en">After installing, confirm <span class="inline-code">zsh -lic 'whence -p hapi; hapi --version'</span> prints a path and version.</span></p>
+          </article>
+          <article class="step">
+            <span class="step-index">2</span>
             <h3><span class="lang" data-lang="zh">打开 HAPI 菜单</span><span class="lang" data-lang="en">Open HAPI Menu</span></h3>
             <p><span class="lang" data-lang="zh">先选中 Argo workspace，再点顶部网格按钮，在菜单里选择 <span class="inline-code">Open HAPI Menu</span>。</span><span class="lang" data-lang="en">Select an Argo workspace, click the top grid button, then choose <span class="inline-code">Open HAPI Menu</span>.</span></p>
           </article>
           <article class="step">
-            <span class="step-index">2</span>
+            <span class="step-index">3</span>
             <h3><span class="lang" data-lang="zh">启动 Hub 并复制 Host</span><span class="lang" data-lang="en">Start Hub and copy Host</span></h3>
             <p><span class="lang" data-lang="zh">选择 <span class="inline-code">HAPI Hub</span> 或 relay 入口，复制生成的 <span class="inline-code">Host</span>，在手机浏览器里打开。</span><span class="lang" data-lang="en">Choose <span class="inline-code">HAPI Hub</span> or the relay entry, copy the generated <span class="inline-code">Host</span>, and open it in your phone browser.</span></p>
           </article>
           <article class="step">
-            <span class="step-index">3</span>
+            <span class="step-index">4</span>
             <h3><span class="lang" data-lang="zh">从 Settings 获取 token</span><span class="lang" data-lang="en">Get the token from Settings</span></h3>
             <p><span class="lang" data-lang="zh">进入 HAPI 页面里的 <span class="inline-code">HAPI Show Settings</span>，复制 token，然后用它登录手机上的 HAPI 页面。</span><span class="lang" data-lang="en">Open <span class="inline-code">HAPI Show Settings</span>, copy the token, then use it to sign in on the phone.</span></p>
           </article>
           <article class="step">
-            <span class="step-index">4</span>
+            <span class="step-index">5</span>
             <h3><span class="lang" data-lang="zh">启动 HAPI Claude</span><span class="lang" data-lang="en">Start HAPI Claude</span></h3>
             <p><span class="lang" data-lang="zh">回到 Argo 的 HAPI 菜单，选择 <span class="inline-code">HAPI Claude</span>，让手机连接当前 workspace 的 Claude session。</span><span class="lang" data-lang="en">Return to the Argo HAPI menu, choose <span class="inline-code">HAPI Claude</span>, and connect the phone to this workspace session.</span></p>
           </article>
           <article class="step">
-            <span class="step-index">5</span>
+            <span class="step-index">6</span>
             <h3><span class="lang" data-lang="zh">正常交流并查看 HTML</span><span class="lang" data-lang="en">Chat and view HTML</span></h3>
             <p><span class="lang" data-lang="zh">在手机上正常描述你要改的页面，让 Claude 启动预览服务，再打开它给出的 <span class="inline-code">HTML preview</span>。</span><span class="lang" data-lang="en">Describe your page changes from the phone, ask Claude to start the preview server, then open the <span class="inline-code">HTML preview</span> it returns.</span></p>
           </article>

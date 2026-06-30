@@ -11,8 +11,8 @@ fi
 
 required_files=(
   "website/index.html"
+  "website/remote-preview.html"
   "website/releases/index.html"
-  "website/styles.css"
   "website/assets/app-icon.png"
   "website/assets/app-icon-64.png"
   "website/assets/app-icon-128.png"

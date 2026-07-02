@@ -2439,7 +2439,7 @@ final class WorkspaceStore: ObservableObject {
             name: "HAPI Hub",
             launchPath: installation.executablePath,
             arguments: arguments,
-            environment: hapiEnvironment(using: installation),
+            environment: hapiHubEnvironment(using: installation),
             workingDirectory: workingDirectory
         )
 
@@ -2471,6 +2471,10 @@ final class WorkspaceStore: ObservableObject {
             activityTitle: localized("activity.hapi.startedRunner"),
             environment: hapiEnvironment(using: installation)
         )
+    }
+
+    private func hapiHubEnvironment(using installation: HAPIInstallationStatus) -> [String: String] {
+        HAPILANHubEnvironment.environment(merging: hapiEnvironment(using: installation))
     }
 
     private func hapiEnvironment(using installation: HAPIInstallationStatus) -> [String: String] {

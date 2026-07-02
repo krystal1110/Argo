@@ -1,6 +1,11 @@
 {
   "releases": [
     {
+      "version": "1.0.13",
+      "date": "July 2, 2026",
+      "summary": "Adds website updates and lan hub."
+    },
+    {
       "version": "1.0.12",
       "date": "July 2, 2026",
       "summary": "Adds website updates and codex conv."
@@ -14,11 +19,6 @@
       "version": "1.0.10",
       "date": "June 29, 2026",
       "summary": "Adds website updates, add states, and add cli."
-    },
-    {
-      "version": "1.0.9",
-      "date": "June 27, 2026",
-      "summary": "Adds shrink app icon, theme activity dot, and argo brand pill."
     }
   ]
 }

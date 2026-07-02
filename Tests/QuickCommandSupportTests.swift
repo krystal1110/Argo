@@ -722,6 +722,34 @@ final class QuickCommandSupportTests: XCTestCase {
         XCTAssertFalse(railSource.contains("chromeTint.selectionFill.color"))
     }
 
+    func testHAPIMenuExposesCodexConversationsEntry() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainWindowSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(mainWindowSource.contains("localized(\"main.hapi.codexConversations\")"))
+        XCTAssertTrue(mainWindowSource.contains("store.startHAPICodexConversations(workspaceID: workspace.id)"))
+    }
+
+    func testWorkspaceStoreStartsCodexConversationsHubAndRunner() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let workspaceStoreSource = try String(
+            contentsOf: rootURL.appendingPathComponent("Argo/App/WorkspaceStore.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(workspaceStoreSource.contains("func startHAPICodexConversations(workspaceID: UUID)"))
+        XCTAssertTrue(workspaceStoreSource.contains("startHAPIHub(in: workspace, relay: true)"))
+        XCTAssertTrue(workspaceStoreSource.contains("arguments: [\"runner\", \"start\", \"--workspace-root\", workspace.activeWorktreePath]"))
+        XCTAssertTrue(workspaceStoreSource.contains("localized(\"status.hapi.codexConversationsReady\")"))
+    }
+
     func testTerminalWorkspaceChromeUsesDynamicTint() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

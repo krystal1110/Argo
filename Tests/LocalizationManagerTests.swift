@@ -137,6 +137,19 @@ final class LocalizationManagerTests: XCTestCase {
         XCTAssertEqual(L10nTable.string(for: "settings.shortcuts.action.minimizeWindow.title", language: .simplifiedChinese), "最小化窗口")
     }
 
+    func testHAPICodexConversationStringsResolve() {
+        XCTAssertEqual(L10nTable.string(for: "main.hapi.codexConversations", language: .english), "Codex Conversations")
+        XCTAssertEqual(L10nTable.string(for: "main.hapi.codexConversations", language: .simplifiedChinese), "Codex 对话")
+        XCTAssertTrue(
+            L10nTable.string(for: "status.hapi.codexConversationsReady", language: .english)
+                .contains("Import Codex sessions")
+        )
+        XCTAssertTrue(
+            L10nTable.string(for: "status.hapi.codexConversationsReady", language: .simplifiedChinese)
+                .contains("导入 Codex sessions")
+        )
+    }
+
     func testModelAndAppStringsResolveInSimplifiedChinese() {
         XCTAssertEqual(L10nTable.string(for: "workspace.kind.repository", language: .simplifiedChinese), "仓库")
         XCTAssertEqual(L10nTable.string(for: "workspace.kind.localTerminal", language: .simplifiedChinese), "本地终端")

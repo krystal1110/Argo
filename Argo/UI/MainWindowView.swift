@@ -763,6 +763,10 @@ struct MainWindowView: View {
             guard let workspace = store.selectedWorkspace else { return }
             store.startHAPIHubRelay(workspaceID: workspace.id)
         }
+        menu.addActionItem(title: localized("main.hapi.codexConversations"), imageSystemName: "bubble.left.and.bubble.right") {
+            guard let workspace = store.selectedWorkspace else { return }
+            store.startHAPICodexConversations(workspaceID: workspace.id)
+        }
 
         menu.addItem(.separator())
         menu.addActionItem(title: localized("main.hapi.claude"), imageSystemName: "play.circle") {

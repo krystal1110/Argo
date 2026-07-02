@@ -45,6 +45,7 @@ if ! grep -Fq "href=\"https://github.com/krystal1110/Argo/releases/download/v$la
   exit 1
 fi
 grep -Fq "Latest $latest_version" "$home"
+grep -Fq "最新版本 $latest_version" "$home"
 grep -Fq "Argo $latest_version macOS installer" "$home"
 
 grep -Fq 'Preview local HTML' "$remote"

@@ -191,6 +191,7 @@ if count == 0:
     raise SystemExit(f"No homepage release download links found in {html_path}")
 
 updated = re.sub(r"Latest [0-9]+\.[0-9]+\.[0-9]+", f"Latest {version}", updated)
+updated = re.sub(r"最新版本 [0-9]+\.[0-9]+\.[0-9]+", f"最新版本 {version}", updated)
 updated = re.sub(r"Get the Argo [0-9]+\.[0-9]+\.[0-9]+ macOS installer", f"Get the Argo {version} macOS installer", updated)
 updated = re.sub(r"下载 Argo [0-9]+\.[0-9]+\.[0-9]+ 的 macOS 安装包", f"下载 Argo {version} 的 macOS 安装包", updated)
 

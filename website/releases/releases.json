@@ -1,6 +1,11 @@
 {
   "releases": [
     {
+      "version": "1.0.12",
+      "date": "July 2, 2026",
+      "summary": "Adds website updates and codex conv."
+    },
+    {
       "version": "1.0.11",
       "date": "June 30, 2026",
       "summary": "Adds website updates."
@@ -14,11 +19,6 @@
       "version": "1.0.9",
       "date": "June 27, 2026",
       "summary": "Adds shrink app icon, theme activity dot, and argo brand pill."
-    },
-    {
-      "version": "1.0.8",
-      "date": "June 26, 2026",
-      "summary": "Top chrome double-click zoom and restore reliable across the full-size titlebar, with terminal drag handling kept out of the way."
     }
   ]
 }

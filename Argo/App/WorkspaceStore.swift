@@ -479,6 +479,17 @@ final class WorkspaceStore: ObservableObject {
                         kind: .command(.startHAPIHub(selectedWorkspace.id))
                     )
                 )
+                items.append(
+                    CommandPaletteItem(
+                        id: "workspace-selected-hapi-codex-conversations:\(selectedWorkspace.id.uuidString)",
+                        title: localizedFormat("main.hapi.commandPalette.codexConversationsInFormat", selectedWorkspace.name),
+                        subtitle: "hapi hub --relay + hapi runner start",
+                        group: .automation,
+                        keywords: ["hapi", "codex", "conversations", "desktop", "phone", "import"],
+                        isGlobal: false,
+                        kind: .command(.startHAPICodexConversations(selectedWorkspace.id))
+                    )
+                )
             }
         }
 
@@ -658,6 +669,17 @@ final class WorkspaceStore: ObservableObject {
                         keywords: ["hapi", "hub", "relay", "remote", workspace.name],
                         isGlobal: false,
                         kind: .command(.startHAPIHub(workspace.id))
+                    )
+                )
+                items.append(
+                    CommandPaletteItem(
+                        id: "workspace-hapi-codex-conversations:\(workspace.id.uuidString)",
+                        title: localizedFormat("main.hapi.commandPalette.codexConversationsInFormat", workspace.name),
+                        subtitle: "hapi hub --relay + hapi runner start",
+                        group: .automation,
+                        keywords: ["hapi", "codex", "conversations", "desktop", "phone", "import", workspace.name],
+                        isGlobal: false,
+                        kind: .command(.startHAPICodexConversations(workspace.id))
                     )
                 )
             }
@@ -2156,6 +2178,30 @@ final class WorkspaceStore: ObservableObject {
         startHAPIHub(in: workspace, relay: true)
     }
 
+    func startHAPICodexConversations(workspaceID: UUID) {
+        guard let workspace = workspaces.first(where: { $0.id == workspaceID }) else { return }
+        guard let installation = availableHAPIInstallation else {
+            receive(.statusMessage(localized("status.hapi.installToStartHub"), .warning, deliverSystemNotification: false))
+            return
+        }
+        guard installation.hasUsableCodexCLI else {
+            receive(.statusMessage(localized("status.hapi.installCodexToImportConversations"), .warning, deliverSystemNotification: false))
+            return
+        }
+
+        startHAPIHub(in: workspace, relay: true)
+        startHAPIRunner(in: workspace, using: installation)
+        receive(
+            .statusMessage(
+                localized("status.hapi.codexConversationsReady"),
+                .success,
+                deliverSystemNotification: false,
+                workspaceID: workspace.id,
+                worktreePath: workspace.activeWorktreePath
+            )
+        )
+    }
+
     func launchHAPICodex(workspaceID: UUID) {
         guard let workspace = workspaces.first(where: { $0.id == workspaceID }) else { return }
         launchHAPISubcommand(in: workspace, name: "HAPI Codex", arguments: ["codex"])
@@ -2266,7 +2312,7 @@ final class WorkspaceStore: ObservableObject {
             name: "HAPI",
             launchPath: installation.executablePath,
             arguments: [],
-            environment: [:],
+            environment: hapiEnvironment(using: installation),
             workingDirectory: workspace.activeWorktreePath
         )
 
@@ -2303,7 +2349,7 @@ final class WorkspaceStore: ObservableObject {
             name: name,
             launchPath: installation.executablePath,
             arguments: arguments,
-            environment: [:],
+            environment: hapiEnvironment(using: installation),
             workingDirectory: workspace.activeWorktreePath
         )
 
@@ -2332,6 +2378,7 @@ final class WorkspaceStore: ObservableObject {
         executablePath: String?,
         arguments: [String],
         activityTitle: String,
+        environment: [String: String] = [:],
         missingExecutableMessage: String? = nil
     ) {
         guard let executablePath else {
@@ -2357,7 +2404,7 @@ final class WorkspaceStore: ObservableObject {
             name: name,
             launchPath: "/bin/zsh",
             arguments: ["-lc", shellScript],
-            environment: ["SHELL": loginShellPath],
+            environment: environment.merging(["SHELL": loginShellPath]) { _, new in new },
             workingDirectory: workingDirectory
         )
 
@@ -2392,7 +2439,7 @@ final class WorkspaceStore: ObservableObject {
             name: "HAPI Hub",
             launchPath: installation.executablePath,
             arguments: arguments,
-            environment: [:],
+            environment: hapiEnvironment(using: installation),
             workingDirectory: workingDirectory
         )
 
@@ -2413,6 +2460,29 @@ final class WorkspaceStore: ObservableObject {
                 workingDirectory: workingDirectory
             )
         )
+    }
+
+    private func startHAPIRunner(in workspace: WorkspaceModel, using installation: HAPIInstallationStatus) {
+        launchWrappedHomeCommand(
+            in: workspace,
+            name: "HAPI Runner",
+            executablePath: installation.executablePath,
+            arguments: ["runner", "start", "--workspace-root", workspace.activeWorktreePath],
+            activityTitle: localized("activity.hapi.startedRunner"),
+            environment: hapiEnvironment(using: installation)
+        )
+    }
+
+    private func hapiEnvironment(using installation: HAPIInstallationStatus) -> [String: String] {
+        guard let codexPathDirectory = installation.codexPathDirectory else {
+            return [:]
+        }
+        let basePath = argoAugmentedExecutablePath(ProcessInfo.processInfo.environment["PATH"])
+        var seenDirectories = Set<String>()
+        let path = ([codexPathDirectory] + basePath.split(separator: ":").map(String.init))
+            .filter { seenDirectories.insert($0).inserted }
+            .joined(separator: ":")
+        return ["PATH": path]
     }
 
     @discardableResult
@@ -2695,6 +2765,10 @@ final class WorkspaceStore: ObservableObject {
         case .startHAPIHub(let id):
             dismissCommandPalette()
             startHAPIHub(workspaceID: id)
+
+        case .startHAPICodexConversations(let id):
+            dismissCommandPalette()
+            startHAPICodexConversations(workspaceID: id)
 
         case .openRemoteTargetShell(let workspaceID, let targetID):
             dismissCommandPalette()

@@ -31,6 +31,7 @@ enum WorkspaceCommand: Hashable {
     case createAgentSession(UUID, AgentPreset?)
     case launchHAPISession(UUID)
     case startHAPIHub(UUID)
+    case startHAPICodexConversations(UUID)
     case openRemoteTargetShell(UUID, UUID)
     case openRemoteTargetAgent(UUID, UUID)
     case browseRemoteTargetRepository(UUID, UUID)

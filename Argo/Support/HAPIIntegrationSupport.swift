@@ -5,6 +5,7 @@
 //  Author: Codex
 //
 
+import Darwin
 import Foundation
 
 private func argoLocalizedHAPIString(_ key: String) -> String {
@@ -57,6 +58,98 @@ struct HAPIInstallationStatus: Hashable {
 enum HAPIIntegrationState: Hashable {
     case unavailable
     case available(HAPIInstallationStatus)
+}
+
+struct HAPINetworkInterfaceAddress: Hashable {
+    var interfaceName: String
+    var ipAddress: String
+}
+
+enum HAPILANHubEnvironment {
+    private static let listenHost = "0.0.0.0"
+    private static let listenPort = "3006"
+    private static let preferredInterfaceNames = ["en0", "en1"]
+
+    static func environment(merging baseEnvironment: [String: String]) -> [String: String] {
+        environment(
+            merging: baseEnvironment,
+            localIPv4Address: preferredIPv4Address(from: currentInterfaceAddresses())
+        )
+    }
+
+    static func environment(
+        merging baseEnvironment: [String: String],
+        localIPv4Address: String?
+    ) -> [String: String] {
+        var environment = baseEnvironment
+        environment["HAPI_LISTEN_HOST"] = listenHost
+        environment["HAPI_LISTEN_PORT"] = listenPort
+        environment["HAPI_PUBLIC_URL"] = publicURL(for: localIPv4Address)
+        return environment
+    }
+
+    static func preferredIPv4Address(from addresses: [HAPINetworkInterfaceAddress]) -> String? {
+        let usableAddresses = addresses.filter { isUsableIPv4Address($0.ipAddress) }
+        for interfaceName in preferredInterfaceNames {
+            if let address = usableAddresses.first(where: { $0.interfaceName == interfaceName }) {
+                return address.ipAddress
+            }
+        }
+        return usableAddresses.first?.ipAddress
+    }
+
+    private static func publicURL(for localIPv4Address: String?) -> String {
+        "http://\(localIPv4Address ?? "localhost"):\(listenPort)"
+    }
+
+    private static func isUsableIPv4Address(_ ipAddress: String) -> Bool {
+        var socketAddress = in_addr()
+        guard inet_pton(AF_INET, ipAddress, &socketAddress) == 1 else {
+            return false
+        }
+        return ipAddress != "0.0.0.0" && !ipAddress.hasPrefix("127.")
+    }
+
+    private static func currentInterfaceAddresses() -> [HAPINetworkInterfaceAddress] {
+        var interfaceAddresses: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&interfaceAddresses) == 0, let firstAddress = interfaceAddresses else {
+            return []
+        }
+        defer { freeifaddrs(interfaceAddresses) }
+
+        var addresses: [HAPINetworkInterfaceAddress] = []
+        var cursor: UnsafeMutablePointer<ifaddrs>? = firstAddress
+        while let current = cursor {
+            defer { cursor = current.pointee.ifa_next }
+
+            let interface = current.pointee
+            guard let address = interface.ifa_addr,
+                  address.pointee.sa_family == UInt8(AF_INET),
+                  let name = interface.ifa_name else {
+                continue
+            }
+
+            var hostBuffer = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            let result = getnameinfo(
+                address,
+                socklen_t(address.pointee.sa_len),
+                &hostBuffer,
+                socklen_t(hostBuffer.count),
+                nil,
+                0,
+                NI_NUMERICHOST
+            )
+            guard result == 0 else { continue }
+
+            addresses.append(
+                HAPINetworkInterfaceAddress(
+                    interfaceName: String(cString: name),
+                    ipAddress: String(cString: hostBuffer)
+                )
+            )
+        }
+        return addresses
+    }
 }
 
 enum HAPIIntegrationCatalog {

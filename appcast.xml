@@ -6,6 +6,16 @@
         <description>Signed Sparkle updates for Argo.</description>
         <language>en</language>
         <item>
+            <title>1.0.15</title>
+            <pubDate>Mon, 06 Jul 2026 21:58:56 +0800</pubDate>
+            <link>https://github.com/krystal1110/Argo</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/krystal1110/Argo/releases/tag/v1.0.15</sparkle:fullReleaseNotesLink>
+            <sparkle:version>166</sparkle:version>
+            <sparkle:shortVersionString>1.0.15</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/krystal1110/Argo/releases/download/v1.0.15/Argo-1.0.15.app.zip" length="25490157" type="application/octet-stream" sparkle:edSignature="Quw1uybDU2JmNkY0h4rm+/6vQzN6Ky0EmpbEnFsrv/2/wTLZ97hdkxh0SDmGrb0TP1TMULmRXcDvjr6CtKf/AA=="/>
+        </item>
+        <item>
             <title>1.0.13</title>
             <pubDate>Thu, 02 Jul 2026 22:15:06 +0800</pubDate>
             <link>https://github.com/krystal1110/Argo</link>
@@ -94,16 +104,6 @@
             <sparkle:shortVersionString>1.0.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/krystal1110/Argo/releases/download/v1.0.5/Argo-1.0.5.app.zip" length="25690175" type="application/octet-stream" sparkle:edSignature="lOHJiU4cJkZq9+3p3BOFTCXCFAaXXREM/KwaM0tXbTDrxvpYkBDRgsm8y58xaETwHR+ctXfGg9X8xBP44ESwAw=="/>
-        </item>
-        <item>
-            <title>1.0.3</title>
-            <pubDate>Sun, 21 Jun 2026 20:55:58 +0800</pubDate>
-            <link>https://github.com/krystal1110/Argo</link>
-            <sparkle:fullReleaseNotesLink>https://github.com/krystal1110/Argo/releases/tag/v1.0.3</sparkle:fullReleaseNotesLink>
-            <sparkle:version>155</sparkle:version>
-            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.6</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/krystal1110/Argo/releases/download/v1.0.3/Argo-1.0.3.app.zip" length="26395519" type="application/octet-stream" sparkle:edSignature="OKCA3Tq/+feosDnLDsYoys2LXvPSEcAQyxzM7lG0+YqokxZ28KTCAM7OTrVD0EeXeHre7qlkLCQg7dDA9BydCA=="/>
         </item>
     </channel>
 </rss>

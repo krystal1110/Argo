@@ -17,5 +17,32 @@
       "Bash(git merge:*)",
       "Bash(rm -rf:*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-dev-tools.sh",
+            "timeout": 15,
+            "statusMessage": "校验 Argo 开发环境（superpowers + codegraph）"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-dev-tools.sh",
+            "timeout": 15,
+            "statusMessage": "校验 Argo 开发环境（superpowers + codegraph）"
+          }
+        ]
+      }
+    ]
   }
 }

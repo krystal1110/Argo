@@ -79,8 +79,6 @@ final class IslandUISourceTests: XCTestCase {
     }
 
     private func sourceFile(_ relativePath: String) throws -> String {
-        let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        let repositoryRoot = testsDirectory.deletingLastPathComponent()
-        return try String(contentsOf: repositoryRoot.appendingPathComponent(relativePath), encoding: .utf8)
+        try repositorySource(relativePath, from: #filePath)
     }
 }

@@ -13,10 +13,7 @@ final class PaneLayoutTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let splitNodeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
-            encoding: .utf8
-        )
+        let splitNodeSource = try repositorySource("Argo/UI/Workspace/SplitNodeView.swift", from: #filePath)
 
         XCTAssertTrue(splitNodeSource.contains("static let visualThickness: CGFloat = 6"))
         XCTAssertTrue(splitNodeSource.contains("static let hitTargetThickness: CGFloat = 18"))

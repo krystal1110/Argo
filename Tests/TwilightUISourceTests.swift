@@ -148,7 +148,7 @@ final class TwilightUISourceTests: XCTestCase {
     }
 
     private func read(_ path: String) throws -> String {
-        try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+        try repositorySource(path, from: #filePath)
     }
 
     private func extract(_ marker: String, from source: String, endingBefore endMarker: String) throws -> String {

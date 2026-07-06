@@ -13,14 +13,8 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let terminalPaneSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
-            encoding: .utf8
-        )
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
+        let terminalPaneSource = try repositorySource("Argo/UI/Workspace/TerminalPaneView.swift", from: #filePath)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
 
         XCTAssertFalse(terminalPaneSource.contains("TerminalLocalChrome("))
         XCTAssertTrue(workspaceDetailSource.contains("TerminalLocalChrome("))
@@ -30,18 +24,9 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let terminalPaneSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
-            encoding: .utf8
-        )
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let terminalPaneSource = try repositorySource("Argo/UI/Workspace/TerminalPaneView.swift", from: #filePath)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         let terminalChromeStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalLocalChrome(")?.lowerBound)
         let terminalSurfaceStart = try XCTUnwrap(workspaceDetailSource.range(of: "TerminalWorkspaceSurface(")?.lowerBound)
@@ -69,10 +54,7 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
 
         XCTAssertFalse(workspaceDetailSource.contains("RoundedRectangle(cornerRadius: 12"))
         XCTAssertTrue(workspaceDetailSource.contains("let shape = Rectangle()"))
@@ -87,18 +69,9 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let desktopApplicationSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/App/ArgoDesktopApplication.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let desktopApplicationSource = try repositorySource("Argo/App/ArgoDesktopApplication.swift", from: #filePath)
         let terminalSurfaceTypeStart = try XCTUnwrap(workspaceDetailSource.range(of: "private struct TerminalWorkspaceSurface")?.lowerBound)
         let terminalSurfaceTypeEnd = try XCTUnwrap(workspaceDetailSource.range(of: "private enum TerminalWorkspaceSurfaceStyle")?.lowerBound)
         let terminalSurfaceTypeBlock = String(workspaceDetailSource[terminalSurfaceTypeStart..<terminalSurfaceTypeEnd])
@@ -140,18 +113,9 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertTrue(workspaceDetailSource.contains("private var activeTerminalChromeTint: ArgoChromeTint"))
         XCTAssertTrue(workspaceDetailSource.contains("chromeTint: activeTerminalChromeTint"))
@@ -184,14 +148,8 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(workspaceDetailSource.contains("""
     private var showsTabStrip: Bool {
@@ -213,14 +171,8 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(terminalChromeSource.contains("let onRenameCategory: (UUID, String) -> Void"))
         XCTAssertTrue(terminalChromeSource.contains("@State private var editingCategoryID: UUID?"))
@@ -243,10 +195,7 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(terminalChromeSource.contains("renamePopoverBinding(for categoryID: UUID) -> Binding<Bool>"))
         XCTAssertTrue(terminalChromeSource.contains("renameDraft = category.title"))
@@ -260,10 +209,7 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(terminalChromeSource.contains("Button(action: onSelect)"))
         XCTAssertFalse(terminalChromeSource.contains(".onTapGesture(perform: onSelect)"))
@@ -274,10 +220,7 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
 
         XCTAssertTrue(workspaceDetailSource.contains("tab.panes.first?.preferredWorkingDirectory"))
         XCTAssertFalse(workspaceDetailSource.contains("return terminalChromePath"))
@@ -378,18 +321,9 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let terminalPaneSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalPaneView.swift"),
-            encoding: .utf8
-        )
-        let splitNodeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
-            encoding: .utf8
-        )
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
+        let terminalPaneSource = try repositorySource("Argo/UI/Workspace/TerminalPaneView.swift", from: #filePath)
+        let splitNodeSource = try repositorySource("Argo/UI/Workspace/SplitNodeView.swift", from: #filePath)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
 
         XCTAssertTrue(terminalPaneSource.contains("let dimsWhenInactive: Bool"))
         XCTAssertTrue(terminalPaneSource.contains("private var shouldDimInactivePane: Bool"))
@@ -409,14 +343,8 @@ final class WorkspaceTabsTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let splitNodeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/SplitNodeView.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let splitNodeSource = try repositorySource("Argo/UI/Workspace/SplitNodeView.swift", from: #filePath)
 
         XCTAssertTrue(workspaceDetailSource.contains("workspace.zoomedPaneID == nil && workspace.paneOrder.count > 1"))
         XCTAssertTrue(splitNodeSource.contains("dimsWhenInactive: false"))
@@ -544,7 +472,7 @@ final class WorkspaceTabsTests: XCTestCase {
 
     func testWorkspaceModeDoesNotPaintTwilightWallpaperBehindChrome() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertFalse(mainWindowSource.contains("TwilightWallpaperView("))
         XCTAssertFalse(mainWindowSource.contains("twilightWallpaperPreset"))
@@ -554,8 +482,8 @@ final class WorkspaceTabsTests: XCTestCase {
 
     func testSidebarUsesTwilightPromptAndSingleOuterSurface() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let sidebarSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"), encoding: .utf8)
-        let mainWindowSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"), encoding: .utf8)
+        let sidebarSource = try repositorySource("Argo/UI/Sidebar/WorkspaceSidebarView.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertTrue(sidebarSource.contains("Text(\"❯\")"))
         XCTAssertTrue(sidebarSource.contains("Text(\"/\")"))
@@ -575,7 +503,7 @@ final class WorkspaceTabsTests: XCTestCase {
 
     func testTerminalSurfaceUsesUniformTwilightBackground() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let workspaceDetailSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"), encoding: .utf8)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
         let terminalSurfaceSource = try extract(
             "private struct TerminalWorkspaceSurface<Content: View>: View",
             from: workspaceDetailSource,
@@ -592,7 +520,7 @@ final class WorkspaceTabsTests: XCTestCase {
 
     func testTerminalLocalChromeUsesPromptGlyph() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let terminalChromeSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"), encoding: .utf8)
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(terminalChromeSource.contains("Text(\"❯\")"))
         XCTAssertTrue(terminalChromeSource.contains("chromeTint.components.color"))
@@ -602,7 +530,7 @@ final class WorkspaceTabsTests: XCTestCase {
 
     func testSettingsExposeTwilightControlsBeforeGhosttyThemePicker() throws {
         let rootURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let settingsSource = try String(contentsOf: rootURL.appendingPathComponent("Argo/UI/Sheets/SettingsSheet.swift"), encoding: .utf8)
+        let settingsSource = try repositorySource("Argo/UI/Sheets/SettingsSheet.swift", from: #filePath)
 
         XCTAssertTrue(settingsSource.contains("Toggle(localized(\"settings.twilight.enabled\")"))
         XCTAssertTrue(settingsSource.contains("ForEach(TwilightTheme.presets)"))

@@ -146,16 +146,17 @@ final class TerminalInlineImageFilterTests: XCTestCase {
     }
 
     func testSettingsExposeInlineImageToggleWithLocalizedText() throws {
-        let rootURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let settingsSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Sheets/SettingsSheet.swift"),
-            encoding: .utf8
-        )
+        let settingsSource = try repositorySource("Argo/UI/Sheets/SettingsSheet.swift", from: #filePath)
 
         XCTAssertTrue(settingsSource.contains("@AppStorage(TerminalInlineImageFilter.defaultsKey) private var inlineImagesEnabled = true"))
         XCTAssertTrue(settingsSource.contains("Toggle(localized(\"settings.general.terminal.inlineImages\"), isOn: $inlineImagesEnabled)"))
         XCTAssertTrue(settingsSource.contains("Text(localized(\"settings.general.terminal.inlineImagesHint\"))"))
+    }
+
+    func testGhosttyResourcesAreCopiedFromRepositoryVendorRoot() throws {
+        let projectSource = try repositorySource("Argo.xcodeproj/project.pbxproj", from: #filePath)
+
+        XCTAssertTrue(projectSource.contains("GHOSTTY_RESOURCE_ROOT=\\\"$SRCROOT/Vendor/GhosttyResources\\\""))
+        XCTAssertFalse(projectSource.contains("GHOSTTY_RESOURCE_ROOT=\\\"$SRCROOT/Argo/Vendor/GhosttyResources\\\""))
     }
 }

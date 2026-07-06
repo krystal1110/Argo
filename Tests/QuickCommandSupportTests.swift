@@ -429,10 +429,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let source = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let source = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertFalse(source.contains("ellipsis.circle"))
         XCTAssertFalse(source.contains("main.menu.moreActions"))
@@ -442,14 +439,8 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let controlsSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlassChromeControls.swift"),
-            encoding: .utf8
-        )
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let controlsSource = try repositorySource("Argo/UI/Components/GlassChromeControls.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertTrue(controlsSource.contains("InsetToolbarCapsuleSurface"))
         XCTAssertTrue(controlsSource.contains("fillOpacity: Double = 0.12"))
@@ -484,10 +475,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertTrue(mainWindowSource.contains("enum WorkspaceChromeMetrics"))
         XCTAssertTrue(mainWindowSource.contains("static let topHeight: CGFloat = 52"))
@@ -531,14 +519,8 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
-        let railSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
+        let railSource = try repositorySource("Argo/UI/Components/GlobalModeRailView.swift", from: #filePath)
 
         XCTAssertTrue(mainWindowSource.contains("static let topHeight: CGFloat = 52"))
         XCTAssertTrue(mainWindowSource.contains("static let statusHeight: CGFloat = 32"))
@@ -563,10 +545,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
         let topChromeRange = try XCTUnwrap(
             mainWindowSource.range(
                 of: #"private var topGlassChrome: some View \{[\s\S]*?\n    var body: some View"#,
@@ -585,22 +564,10 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
-        let sidebarSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Sidebar/WorkspaceSidebarView.swift"),
-            encoding: .utf8
-        )
-        let railSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
-            encoding: .utf8
-        )
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
+        let sidebarSource = try repositorySource("Argo/UI/Sidebar/WorkspaceSidebarView.swift", from: #filePath)
+        let railSource = try repositorySource("Argo/UI/Components/GlobalModeRailView.swift", from: #filePath)
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
         let flushSidebarPattern = #"if layoutState\.isWorkspaceSidebarVisible\(in: store\.mainWindowMode\)\s*\{\s*WorkspaceSidebarView\(\)\s*\.frame\(width: workspaceSidebarWidth\)\s*\.background\(\s*store\.appSettings\.twilightThemeEnabled\s*\?\s*twilightSurfacePalette\.color\(\\\.glassSide, alpha: twilightOpacity\.glassSideAlpha\)\s*:\s*ArgoTheme\.glassSide\s*\)"#
 
         XCTAssertNotNil(
@@ -667,14 +634,8 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
-        let railSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Components/GlobalModeRailView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
+        let railSource = try repositorySource("Argo/UI/Components/GlobalModeRailView.swift", from: #filePath)
 
         XCTAssertTrue(mainWindowSource.contains("HTMLReferenceTopActionButton("))
         XCTAssertTrue(mainWindowSource.contains("""
@@ -727,10 +688,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertTrue(mainWindowSource.contains("localized(\"main.hapi.codexConversations\")"))
         XCTAssertTrue(mainWindowSource.contains("store.startHAPICodexConversations(workspaceID: workspace.id)"))
@@ -740,10 +698,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceStoreSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/App/WorkspaceStore.swift"),
-            encoding: .utf8
-        )
+        let workspaceStoreSource = try repositorySource("Argo/App/WorkspaceStore.swift", from: #filePath)
 
         XCTAssertTrue(workspaceStoreSource.contains("func startHAPICodexConversations(workspaceID: UUID)"))
         XCTAssertTrue(workspaceStoreSource.contains("startHAPIHub(in: workspace, relay: true)"))
@@ -755,18 +710,9 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let workspaceDetailSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/WorkspaceDetailView.swift"),
-            encoding: .utf8
-        )
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
-        let terminalChromeSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/Workspace/TerminalLocalChrome.swift"),
-            encoding: .utf8
-        )
+        let workspaceDetailSource = try repositorySource("Argo/UI/Workspace/WorkspaceDetailView.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
+        let terminalChromeSource = try repositorySource("Argo/UI/Workspace/TerminalLocalChrome.swift", from: #filePath)
 
         XCTAssertTrue(workspaceDetailSource.contains("private var activeTerminalChromeTint: ArgoChromeTint"))
         XCTAssertTrue(workspaceDetailSource.contains("ArgoChromeTint.resolved(for: store.currentTwilightTheme)"))
@@ -807,18 +753,9 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let appDelegateSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/AppDelegate.swift"),
-            encoding: .utf8
-        )
-        let desktopApplicationSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/App/ArgoDesktopApplication.swift"),
-            encoding: .utf8
-        )
-        let mainWindowSource = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let appDelegateSource = try repositorySource("Argo/AppDelegate.swift", from: #filePath)
+        let desktopApplicationSource = try repositorySource("Argo/App/ArgoDesktopApplication.swift", from: #filePath)
+        let mainWindowSource = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
 
         XCTAssertFalse(appDelegateSource.contains("NSSplitViewController.toggleSidebar"))
         XCTAssertTrue(appDelegateSource.contains("desktopApplication?.toggleWorkspaceSidebar()"))
@@ -836,10 +773,7 @@ final class QuickCommandSupportTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let source = try String(
-            contentsOf: rootURL.appendingPathComponent("Argo/UI/MainWindowView.swift"),
-            encoding: .utf8
-        )
+        let source = try repositorySource("Argo/UI/MainWindowView.swift", from: #filePath)
         let menuButtonPattern = #"HTMLReferenceTopActionButton\(\s*systemName: sleepPreventionIconName,[\s\S]*?\)\s*\{\s*anchorView in\s*present\(menu: makeSleepPreventionMenu\(\), from: anchorView\)\s*\}"#
 
         XCTAssertNotNil(

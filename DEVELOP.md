@@ -9,6 +9,21 @@ This guide is for contributors and maintainers working on the Argo codebase.
 - `gh` is required for GitHub release publishing; authenticate it with `gh auth login`, or supply `GH_TOKEN` / `GITHUB_TOKEN`
 - `curl` and `python3` are required for release publishing
 
+### CodeGraph (required for development)
+
+All contributors must install [CodeGraph](https://www.npmjs.com/package/@colbymchenry/codegraph) and build a local index before developing. A Claude Code hook (`.claude/hooks/require-dev-tools.sh`) blocks edits and shell commands until this is done:
+
+```bash
+npm install -g @colbymchenry/codegraph
+codegraph init   # run once at the repo root; builds .codegraph/ locally
+```
+
+The index database in `.codegraph/` is machine-local and intentionally not committed (see `.codegraph/.gitignore`); each contributor builds their own, and the file watcher keeps it in sync afterwards. The same hook also requires the `superpowers` Claude Code plugin:
+
+```bash
+claude plugin install superpowers@claude-plugins-official
+```
+
 Release builds also require the Metal toolchain component used by Ghostty:
 
 ```bash

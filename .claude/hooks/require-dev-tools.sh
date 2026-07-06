@@ -15,9 +15,10 @@ if ! command -v codegraph >/dev/null 2>&1; then
   errors+=("缺少 codegraph CLI。安装：npm install -g @colbymchenry/codegraph")
 fi
 
-# 2. 仓库必须已建立 CodeGraph 索引
-if [ ! -d "$REPO_ROOT/.codegraph" ]; then
-  errors+=("仓库缺少 CodeGraph 索引（.codegraph/ 不存在）。在仓库根目录运行：codegraph init")
+# 2. 仓库必须已建立 CodeGraph 索引（目录本身随 .codegraph/.gitignore 入库，
+#    所以要检查真正的数据库文件，而不是目录是否存在）
+if [ ! -s "$REPO_ROOT/.codegraph/codegraph.db" ]; then
+  errors+=("仓库缺少 CodeGraph 索引（.codegraph/codegraph.db 不存在）。在仓库根目录运行：codegraph init")
 fi
 
 # 3. superpowers 插件必须已启用（enabledPlugins 中存在 superpowers@* 且未被禁用）

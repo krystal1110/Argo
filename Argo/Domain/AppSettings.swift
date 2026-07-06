@@ -965,7 +965,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
     case hideFind
     case toggleCommandPalette
     case toggleSidebar
-    case toggleOverview
     case refreshSelectedWorkspace
     case refreshAllRepositories
     case nextWorkspace
@@ -1008,8 +1007,7 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
              .findPrevious,
              .hideFind,
              .toggleCommandPalette,
-             .toggleSidebar,
-             .toggleOverview:
+             .toggleSidebar:
             return .general
         case .refreshSelectedWorkspace,
              .refreshAllRepositories,
@@ -1077,8 +1075,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleCommandPalette.title")
         case .toggleSidebar:
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleSidebar.title")
-        case .toggleOverview:
-            return argoLocalizedSettingsString("settings.shortcuts.action.toggleOverview.title")
         case .refreshSelectedWorkspace:
             return argoLocalizedSettingsString("settings.shortcuts.action.refreshSelectedWorkspace.title")
         case .refreshAllRepositories:
@@ -1162,8 +1158,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleCommandPalette.subtitle")
         case .toggleSidebar:
             return argoLocalizedSettingsString("settings.shortcuts.action.toggleSidebar.subtitle")
-        case .toggleOverview:
-            return argoLocalizedSettingsString("settings.shortcuts.action.toggleOverview.subtitle")
         case .refreshSelectedWorkspace:
             return argoLocalizedSettingsString("settings.shortcuts.action.refreshSelectedWorkspace.subtitle")
         case .refreshAllRepositories:
@@ -1247,8 +1241,6 @@ enum ArgoShortcutAction: String, CaseIterable, Hashable, Identifiable {
             return StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
         case .toggleSidebar:
             return StoredShortcut(key: "b", command: true, shift: false, option: false, control: false)
-        case .toggleOverview:
-            return StoredShortcut(key: "o", command: true, shift: true, option: false, control: false)
         case .refreshSelectedWorkspace:
             return StoredShortcut(key: "r", command: true, shift: false, option: false, control: false)
         case .refreshAllRepositories:

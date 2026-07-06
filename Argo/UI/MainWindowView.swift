@@ -379,11 +379,6 @@ struct MainWindowView: View {
                             }
                             .environmentObject(store)
 
-                        case .overview:
-                            OverviewView {
-                                dismissGlobalMode(restoreFocus: false)
-                            }
-                            .environmentObject(store)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -115,7 +115,7 @@ struct RemoteSessionCoordinator {
     }
 
     nonisolated static func remoteRepositoryBrowserCommand(for target: RemoteWorkspaceTarget) -> String {
-        let overview = [
+        let browserCommand = [
             "pwd",
             "printf '\\n'",
             "ls -la",
@@ -127,8 +127,8 @@ struct RemoteSessionCoordinator {
 
         if let workingDirectory = target.ssh.remoteWorkingDirectory,
            !workingDirectory.isEmpty {
-            return "cd \(workingDirectory.shellQuoted) && \(overview)"
+            return "cd \(workingDirectory.shellQuoted) && \(browserCommand)"
         }
-        return overview
+        return browserCommand
     }
 }

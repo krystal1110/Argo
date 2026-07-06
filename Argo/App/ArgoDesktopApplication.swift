@@ -185,10 +185,6 @@ public final class ArgoDesktopApplication: NSObject {
         NotificationCenter.default.post(name: .argoToggleWorkspaceSidebarRequested, object: activeStore)
     }
 
-    public func toggleOverview() {
-        activeStore?.dispatch(.toggleOverview)
-    }
-
     public func presentSettings() {
         guard let store = activeStore else { return }
         store.presentSettings(for: store.selectedWorkspace)

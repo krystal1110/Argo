@@ -141,7 +141,6 @@ final class ApplicationMenuController: NSObject {
         viewMenuItem.submenu = viewMenu
         addShortcutItem(title: localized("menu.view.toggleSidebar"), shortcutAction: .toggleSidebar, to: viewMenu, target: target)
         addShortcutItem(title: localized("menu.view.commandPalette"), shortcutAction: .toggleCommandPalette, to: viewMenu, target: target)
-        addShortcutItem(title: localized("menu.view.workspaceOverview"), shortcutAction: .toggleOverview, to: viewMenu, target: target)
         viewMenu.addItem(.separator())
         addShortcutItem(title: localized("menu.view.nextTab"), shortcutAction: .nextTab, to: viewMenu, target: target)
         addShortcutItem(title: localized("menu.view.previousTab"), shortcutAction: .previousTab, to: viewMenu, target: target)

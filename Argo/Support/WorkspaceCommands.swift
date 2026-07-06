@@ -16,7 +16,6 @@ enum WorkspaceCommand: Hashable {
     case openArgoWebsite
     case submitArgoFeedback
     case toggleCommandPalette
-    case toggleOverview
     case presentSettings
     case dismissTransientUI
     case checkForUpdates

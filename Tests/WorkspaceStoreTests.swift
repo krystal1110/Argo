@@ -298,7 +298,7 @@ final class WorkspaceStoreTests: XCTestCase {
 
         let items = store.commandPaletteItems
 
-        XCTAssertTrue(items.contains(where: { $0.id == "overview" && $0.title == "打开工作区概览" }))
+        XCTAssertFalse(items.contains(where: { $0.id == "overview" }))
         XCTAssertTrue(items.contains(where: { $0.id == "settings" && $0.title == "打开设置" }))
         XCTAssertTrue(items.contains(where: { $0.id == "check-updates" && $0.title == "检查 Argo 更新" }))
     }
@@ -335,38 +335,6 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(store.mainWindowMode, .workspace)
     }
 
-    func testOverviewCommandTogglesMainWindowMode() {
-        let store = WorkspaceStore(persistsWorkspaceState: false)
-
-        store.dispatch(.toggleOverview)
-        XCTAssertEqual(store.mainWindowMode, .overview)
-
-        store.dispatch(.toggleOverview)
-        XCTAssertEqual(store.mainWindowMode, .workspace)
-    }
-
-    func testOverviewCommandDismissesCommandPalette() {
-        let store = WorkspaceStore(persistsWorkspaceState: false)
-
-        store.dispatch(.toggleCommandPalette)
-        XCTAssertTrue(store.isCommandPalettePresented)
-
-        store.dispatch(.toggleOverview)
-
-        XCTAssertEqual(store.mainWindowMode, .overview)
-        XCTAssertFalse(store.isCommandPalettePresented)
-    }
-
-    func testOverviewCommandPaletteTitleReflectsMainWindowMode() {
-        LocalizationManager.shared.updateSelectedLanguage(.english)
-        let store = WorkspaceStore(persistsWorkspaceState: false)
-        store.setMainWindowMode(.overview)
-
-        let overviewItem = store.commandPaletteItems.first { $0.id == "overview" }
-
-        XCTAssertEqual(overviewItem?.title, "Close Workspace Overview")
-    }
-
     func testPresentSettingsDoesNotChangeMainWindowMode() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
         store.setMainWindowMode(.canvas)
@@ -379,7 +347,7 @@ final class WorkspaceStoreTests: XCTestCase {
 
     func testDismissTransientUIReturnsToWorkspaceMode() {
         let store = WorkspaceStore(persistsWorkspaceState: false)
-        store.setMainWindowMode(.overview)
+        store.setMainWindowMode(.canvas)
 
         store.dispatch(.dismissTransientUI)
 
@@ -504,25 +472,23 @@ final class WorkspaceStoreTests: XCTestCase {
         var layoutState = MainWindowLayoutState()
         layoutState.workspaceColumnVisibility = .all
 
-        layoutState.selectMode(.overview)
+        layoutState.selectMode(.canvas)
         layoutState.selectMode(.workspace)
 
         XCTAssertEqual(layoutState.workspaceColumnVisibility, .all)
     }
 
     func testMainWindowLayoutHidesWorkspaceSidebarWhenEnteringGlobalModes() {
-        for newMode in [MainWindowMode.canvas, .overview] {
-            var layoutState = MainWindowLayoutState()
-            layoutState.workspaceColumnVisibility = .all
+        var layoutState = MainWindowLayoutState()
+        layoutState.workspaceColumnVisibility = .all
 
-            layoutState.selectMode(newMode)
+        layoutState.selectMode(.canvas)
 
-            XCTAssertEqual(
-                layoutState.workspaceColumnVisibility,
-                .detailOnly,
-                "Expected workspace -> \(newMode.rawValue) to hide the workspace sidebar column"
-            )
-        }
+        XCTAssertEqual(
+            layoutState.workspaceColumnVisibility,
+            .detailOnly,
+            "Expected workspace -> canvas to hide the workspace sidebar column"
+        )
     }
 
     func testMainWindowLayoutPreservesCollapsedWorkspaceSidebarAcrossGlobalModeRoundTrip() {
@@ -563,12 +529,12 @@ final class WorkspaceStoreTests: XCTestCase {
         layoutState.toggleWorkspaceSidebar()
         XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .workspace))
 
-        layoutState.selectMode(.overview)
-        XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .overview))
+        layoutState.selectMode(.canvas)
+        XCTAssertFalse(layoutState.isWorkspaceSidebarVisible(in: .canvas))
 
         layoutState.toggleWorkspaceSidebar()
         XCTAssertFalse(
-            layoutState.isWorkspaceSidebarVisible(in: .overview),
+            layoutState.isWorkspaceSidebarVisible(in: .canvas),
             "Global modes should not reveal the workspace sidebar."
         )
 
@@ -658,16 +624,13 @@ final class WorkspaceStoreTests: XCTestCase {
     }
 
     func testMainWindowModeMetadataIsStable() {
-        XCTAssertEqual(MainWindowMode.allCases, [.workspace, .canvas, .overview])
+        XCTAssertEqual(MainWindowMode.allCases, [.workspace, .canvas])
         XCTAssertEqual(MainWindowMode.workspace.id, "workspace")
         XCTAssertEqual(MainWindowMode.canvas.id, "canvas")
-        XCTAssertEqual(MainWindowMode.overview.id, "overview")
         XCTAssertEqual(MainWindowMode.workspace.titleLocalizationKey, "main.rail.workspace")
         XCTAssertEqual(MainWindowMode.canvas.titleLocalizationKey, "main.canvas.title")
-        XCTAssertEqual(MainWindowMode.overview.titleLocalizationKey, "main.overview.title")
         XCTAssertEqual(MainWindowMode.workspace.iconSystemName(selected: false), "sidebar.leading")
         XCTAssertEqual(MainWindowMode.canvas.iconSystemName(selected: true), "square.grid.3x2.fill")
-        XCTAssertEqual(MainWindowMode.overview.iconSystemName(selected: true), "building.2.fill")
     }
 
     func testMainRailStringsLocalizeForSimplifiedChinese() {

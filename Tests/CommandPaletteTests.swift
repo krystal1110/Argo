@@ -12,21 +12,21 @@ final class CommandPaletteTests: XCTestCase {
     func testPrefixMatchBeatsSubtitleOnlyMatch() {
         let direct = CommandPaletteItem(
             id: "direct",
-            title: "Open Workspace Overview",
+            title: "Open Workspace Settings",
             subtitle: "Dashboard",
-            group: .navigation,
-            keywords: ["overview"],
-            isGlobal: true,
-            kind: .command(.toggleOverview)
-        )
-        let indirect = CommandPaletteItem(
-            id: "indirect",
-            title: "Open Settings",
-            subtitle: "overview controls",
             group: .navigation,
             keywords: ["settings"],
             isGlobal: true,
             kind: .command(.presentSettings)
+        )
+        let indirect = CommandPaletteItem(
+            id: "indirect",
+            title: "Open Settings",
+            subtitle: "workspace settings controls",
+            group: .navigation,
+            keywords: ["preferences"],
+            isGlobal: true,
+            kind: .command(.checkForUpdates)
         )
 
         XCTAssertGreaterThan(direct.score(query: "open work", recency: nil) ?? 0, indirect.score(query: "open work", recency: nil) ?? 0)

@@ -413,6 +413,7 @@ final class QuickCommandSupportTests: XCTestCase {
 
         XCTAssertFalse(actionIDs.contains("openDiff"))
         XCTAssertFalse(actionIDs.contains("openHistory"))
+        XCTAssertFalse(actionIDs.contains("toggleOverview"))
     }
 
     func testCommandPaletteShortcutDefaultsToCommandShiftP() {
@@ -876,9 +877,9 @@ final class QuickCommandSupportTests: XCTestCase {
         var settings = AppSettings()
         let shortcut = StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
 
-        ArgoKeyboardShortcuts.setShortcut(shortcut, for: .toggleOverview, in: &settings)
+        ArgoKeyboardShortcuts.setShortcut(shortcut, for: .refreshAllRepositories, in: &settings)
 
-        XCTAssertEqual(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleOverview, in: settings), shortcut)
+        XCTAssertEqual(ArgoKeyboardShortcuts.effectiveShortcut(for: .refreshAllRepositories, in: settings), shortcut)
         XCTAssertNil(ArgoKeyboardShortcuts.effectiveShortcut(for: .toggleCommandPalette, in: settings))
         XCTAssertEqual(ArgoKeyboardShortcuts.state(for: .toggleCommandPalette, in: settings), .disabled)
     }

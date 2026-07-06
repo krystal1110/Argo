@@ -318,15 +318,6 @@ final class WorkspaceStore: ObservableObject {
     private var allCommandPaletteItems: [CommandPaletteItem] {
         var items: [CommandPaletteItem] = [
             CommandPaletteItem(
-                id: "overview",
-                title: mainWindowMode == .overview ? localized("main.commandPalette.overview.close") : localized("main.commandPalette.overview.open"),
-                subtitle: localizedFormat("main.commandPalette.workspacesCountFormat", workspaces.count),
-                group: .navigation,
-                keywords: ["overview", "dashboard", "summary"],
-                isGlobal: true,
-                kind: .command(.toggleOverview)
-            ),
-            CommandPaletteItem(
                 id: "settings",
                 title: localized("main.commandPalette.openSettings"),
                 subtitle: nil,
@@ -2689,10 +2680,6 @@ final class WorkspaceStore: ObservableObject {
             } else {
                 resetCommandPalette()
             }
-
-        case .toggleOverview:
-            dismissCommandPalette()
-            setMainWindowMode(mainWindowMode == .overview ? .workspace : .overview)
 
         case .presentSettings:
             dismissCommandPalette()

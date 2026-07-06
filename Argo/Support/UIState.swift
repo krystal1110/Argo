@@ -19,7 +19,6 @@ enum ArgoFeatureFlags {
 enum MainWindowMode: String, CaseIterable, Identifiable {
     case workspace
     case canvas
-    case overview
 
     var id: String { rawValue }
 
@@ -29,8 +28,6 @@ enum MainWindowMode: String, CaseIterable, Identifiable {
             return "main.rail.workspace"
         case .canvas:
             return "main.canvas.title"
-        case .overview:
-            return "main.overview.title"
         }
     }
 
@@ -40,8 +37,6 @@ enum MainWindowMode: String, CaseIterable, Identifiable {
             return "sidebar.leading"
         case .canvas:
             return selected ? "square.grid.3x2.fill" : "square.grid.3x2"
-        case .overview:
-            return selected ? "building.2.fill" : "building.2"
         }
     }
 }

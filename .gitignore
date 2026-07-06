@@ -20,5 +20,6 @@ DerivedData/
 *.dSYM
 *.dSYM.zip
 *.pkg
+*.profraw
 Argo.xcodeproj/project.xcworkspace/xcuserdata/
 Argo.xcodeproj/xcuserdata/

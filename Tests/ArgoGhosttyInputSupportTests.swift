@@ -705,6 +705,38 @@ final class ArgoGhosttyInputSupportTests: XCTestCase {
         )
     }
 
+    private func makeSampleTIFFData() -> Data {
+        let image = NSImage(size: NSSize(width: 4, height: 4))
+        image.lockFocus()
+        NSColor.systemRed.setFill()
+        NSRect(x: 0, y: 0, width: 4, height: 4).fill()
+        image.unlockFocus()
+        return image.tiffRepresentation!
+    }
+
+    private func assertIsPNG(_ data: Data, file: StaticString = #filePath, line: UInt = #line) {
+        let pngMagic: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        XCTAssertGreaterThanOrEqual(data.count, 8, file: file, line: line)
+        XCTAssertEqual([UInt8](data.prefix(8)), pngMagic, file: file, line: line)
+    }
+
+    func testPNGDataConvertsTIFFInputToPNG() {
+        let converted = argoGhosttyPNGData(fromImageData: makeSampleTIFFData())
+        XCTAssertNotNil(converted)
+        assertIsPNG(converted!)
+    }
+
+    func testPNGDataKeepsPNGInputAsPNG() {
+        let png = argoGhosttyPNGData(fromImageData: makeSampleTIFFData())!
+        let roundTripped = argoGhosttyPNGData(fromImageData: png)
+        XCTAssertNotNil(roundTripped)
+        assertIsPNG(roundTripped!)
+    }
+
+    func testPNGDataReturnsNilForGarbageInput() {
+        XCTAssertNil(argoGhosttyPNGData(fromImageData: Data([0x00, 0x01, 0x02, 0x03])))
+    }
+
     func testDeleteBackwardRemovesSingleComposedCharacter() {
         var state = ArgoGhosttyMarkedTextState(
             text: "你好",

@@ -59,3 +59,8 @@ extension NSPasteboard {
             ?? string(forType: NSPasteboard.PasteboardType("public.utf8-plain-text"))
     }
 }
+
+nonisolated func argoGhosttyPNGData(fromImageData data: Data) -> Data? {
+    guard let bitmap = NSBitmapImageRep(data: data) else { return nil }
+    return bitmap.representation(using: .png, properties: [:])
+}

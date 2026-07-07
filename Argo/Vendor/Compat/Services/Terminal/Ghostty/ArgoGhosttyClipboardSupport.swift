@@ -64,3 +64,23 @@ nonisolated func argoGhosttyPNGData(fromImageData data: Data) -> Data? {
     guard let bitmap = NSBitmapImageRep(data: data) else { return nil }
     return bitmap.representation(using: .png, properties: [:])
 }
+
+nonisolated func argoGhosttyWritePastedImage(
+    pngData: Data,
+    directory: URL,
+    now: Date = Date(),
+    uuid: UUID = UUID()
+) throws -> URL {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = .current
+    formatter.dateFormat = "yyyyMMdd-HHmmss"
+
+    let uuidPrefix = uuid.uuidString.replacingOccurrences(of: "-", with: "").prefix(8).lowercased()
+    let filename = "argo-paste-\(formatter.string(from: now))-\(uuidPrefix).png"
+    let url = directory.appendingPathComponent(filename)
+    try pngData.write(to: url, options: .atomic)
+    return url
+}

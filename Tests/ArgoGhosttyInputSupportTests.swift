@@ -737,6 +737,35 @@ final class ArgoGhosttyInputSupportTests: XCTestCase {
         XCTAssertNil(argoGhosttyPNGData(fromImageData: Data([0x00, 0x01, 0x02, 0x03])))
     }
 
+    func testWritePastedImageWritesPNGWithExpectedName() throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("argo-paste-tests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let png = argoGhosttyPNGData(fromImageData: makeSampleTIFFData())!
+        let now = Date(timeIntervalSince1970: 1_751_900_000)
+        let uuid = UUID(uuidString: "DEADBEEF-0000-0000-0000-000000000000")!
+
+        let url = try argoGhosttyWritePastedImage(pngData: png, directory: directory, now: now, uuid: uuid)
+
+        XCTAssertEqual(url.pathExtension, "png")
+        XCTAssertTrue(url.lastPathComponent.hasPrefix("argo-paste-"))
+        XCTAssertTrue(url.lastPathComponent.lowercased().contains("deadbeef"))
+        XCTAssertEqual(try Data(contentsOf: url), png)
+        XCTAssertEqual(url.deletingLastPathComponent().path, directory.path)
+    }
+
+    func testWritePastedImageCreatesMissingDirectory() throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("argo-paste-tests-\(UUID().uuidString)/nested")
+        defer { try? FileManager.default.removeItem(at: directory.deletingLastPathComponent()) }
+
+        let png = argoGhosttyPNGData(fromImageData: makeSampleTIFFData())!
+        let url = try argoGhosttyWritePastedImage(pngData: png, directory: directory)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
     func testDeleteBackwardRemovesSingleComposedCharacter() {
         var state = ArgoGhosttyMarkedTextState(
             text: "你好",

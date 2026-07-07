@@ -766,6 +766,50 @@ final class ArgoGhosttyInputSupportTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
     }
 
+    @MainActor
+    private func makeScratchPasteboard() -> NSPasteboard {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("com.argo.tests.paste-\(UUID().uuidString)"))
+        pasteboard.clearContents()
+        return pasteboard
+    }
+
+    @MainActor
+    func testPasteTextPrefersPlainText() {
+        let pasteboard = makeScratchPasteboard()
+        pasteboard.declareTypes([.string, .tiff], owner: nil)
+        pasteboard.setString("hello world", forType: .string)
+        pasteboard.setData(makeSampleTIFFData(), forType: .tiff)
+
+        XCTAssertEqual(pasteboard.argoGhosttyPasteText, "hello world")
+    }
+
+    @MainActor
+    func testPasteTextFallsBackToFileURLs() {
+        let pasteboard = makeScratchPasteboard()
+        pasteboard.writeObjects([URL(fileURLWithPath: "/tmp/argo screenshot.png") as NSURL])
+
+        XCTAssertEqual(pasteboard.argoGhosttyPasteText, "/tmp/argo\\ screenshot.png")
+    }
+
+    @MainActor
+    func testPasteTextWritesBitmapToTempPNGAndReturnsEscapedPath() throws {
+        let pasteboard = makeScratchPasteboard()
+        pasteboard.declareTypes([.tiff], owner: nil)
+        pasteboard.setData(makeSampleTIFFData(), forType: .tiff)
+
+        let text = try XCTUnwrap(pasteboard.argoGhosttyPasteText)
+        let path = text.replacingOccurrences(of: "\\", with: "")
+        XCTAssertTrue(path.hasSuffix(".png"))
+        XCTAssertTrue(path.contains("argo-paste"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
+        assertIsPNG(try Data(contentsOf: URL(fileURLWithPath: path)))
+    }
+
+    @MainActor
+    func testPasteTextReturnsNilForEmptyPasteboard() {
+        XCTAssertNil(makeScratchPasteboard().argoGhosttyPasteText)
+    }
+
     func testDeleteBackwardRemovesSingleComposedCharacter() {
         var state = ArgoGhosttyMarkedTextState(
             text: "你好",

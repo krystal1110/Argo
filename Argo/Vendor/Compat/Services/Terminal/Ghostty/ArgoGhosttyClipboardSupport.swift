@@ -58,6 +58,36 @@ extension NSPasteboard {
         string(forType: .string)
             ?? string(forType: NSPasteboard.PasteboardType("public.utf8-plain-text"))
     }
+
+    /// Paste resolution for the terminal, in priority order: plain text, then
+    /// file URLs (as shell-escaped paths), then bitmap data written to a temp
+    /// PNG whose escaped path is pasted. Returns nil when none applies.
+    @MainActor
+    var argoGhosttyPasteText: String? {
+        if let text = argoGhosttyBestString, !text.isEmpty {
+            return text
+        }
+
+        let fileURLs = readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL] ?? []
+        if let dropText = argoTerminalDropText(fileURLs: fileURLs, plainText: nil) {
+            return dropText
+        }
+
+        guard let imageData = data(forType: .png) ?? data(forType: .tiff),
+              let pngData = argoGhosttyPNGData(fromImageData: imageData) else {
+            return nil
+        }
+
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("argo-paste", isDirectory: true)
+        guard let url = try? argoGhosttyWritePastedImage(pngData: pngData, directory: directory) else {
+            return nil
+        }
+        return url.path.shellEscaped
+    }
 }
 
 nonisolated func argoGhosttyPNGData(fromImageData data: Data) -> Data? {

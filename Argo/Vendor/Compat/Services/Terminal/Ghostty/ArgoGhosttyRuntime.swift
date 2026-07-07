@@ -216,7 +216,7 @@ final class ArgoGhosttyRuntime: NSObject {
         return onMainSync {
             guard let controller = controller(fromAddress: controllerAddress),
                   let pasteboard = argoGhosttyPasteboard(for: location),
-                  let value = pasteboard.argoGhosttyBestString else {
+                  let value = pasteboard.argoGhosttyPasteText else {
                 return false
             }
 

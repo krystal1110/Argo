@@ -188,6 +188,19 @@ nonisolated struct IslandQuestionPromptResponse: Equatable, Codable, Sendable {
     }
 }
 
+nonisolated extension IslandQuestionPrompt {
+    func answerDisplayText(responseText: String? = nil, label: String? = nil) -> String? {
+        let trimmedResponse = responseText?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLabel = label?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return options.first { option in
+            option.responseText == responseText
+                || option.responseText.trimmingCharacters(in: .whitespacesAndNewlines) == trimmedResponse
+                || option.label == label
+                || option.label.trimmingCharacters(in: .whitespacesAndNewlines) == trimmedLabel
+        }?.label ?? trimmedLabel?.nilIfEmpty ?? trimmedResponse?.nilIfEmpty
+    }
+}
+
 nonisolated enum IslandPermissionResolution: Equatable, Codable, Sendable {
     case allowOnce
     case deny(message: String?)

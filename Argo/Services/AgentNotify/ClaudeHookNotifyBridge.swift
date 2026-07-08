@@ -170,6 +170,7 @@ nonisolated struct ClaudeQuestionPromptOption {
 
 nonisolated enum ClaudeHookEventName: String, Codable, Equatable, Sendable {
     case permissionRequest = "PermissionRequest"
+    case postToolUse = "PostToolUse"
     case other
 
     init(from decoder: Decoder) throws {
@@ -184,6 +185,7 @@ nonisolated struct ClaudeHookPayload: Codable, Equatable, Sendable {
     var sessionID: String
     var toolName: String?
     var toolInput: ClaudeHookJSONValue?
+    var toolResponse: ClaudeHookJSONValue?
     var permissionSuggestions: [ClaudePermissionUpdate]?
     var message: String?
     var title: String?
@@ -194,6 +196,7 @@ nonisolated struct ClaudeHookPayload: Codable, Equatable, Sendable {
         case sessionID = "session_id"
         case toolName = "tool_name"
         case toolInput = "tool_input"
+        case toolResponse = "tool_response"
         case permissionSuggestions = "permission_suggestions"
         case message
         case title
@@ -201,6 +204,12 @@ nonisolated struct ClaudeHookPayload: Codable, Equatable, Sendable {
 }
 
 nonisolated extension ClaudeHookPayload {
+    var questionCompletionAnswerLabel: String? {
+        guard hookEventName == .postToolUse,
+              toolName == "AskUserQuestion" else { return nil }
+        return Self.firstAnswerLabel(in: toolInput) ?? Self.firstAnswerLabel(in: toolResponse)
+    }
+
     var questionPrompt: ClaudeQuestionPrompt? {
         guard toolName == "AskUserQuestion",
               case let .object(root) = toolInput,
@@ -329,6 +338,34 @@ nonisolated extension ClaudeHookPayload {
         }
         updatedObject["answers"] = .object([selected.question: .string(selected.answer)])
         return .object(updatedObject)
+    }
+
+    private static func firstAnswerLabel(in value: ClaudeHookJSONValue?) -> String? {
+        guard case let .object(object) = value else { return nil }
+        if case let .object(answers)? = object["answers"] {
+            for answer in answers.values {
+                if let value = answer.stringValue?.nilIfEmpty {
+                    return value
+                }
+            }
+        }
+        for key in ["answer", "label", "content"] {
+            if let value = object[key]?.stringValue?.nilIfEmpty {
+                return value
+            }
+        }
+        if case let .array(content)? = object["content"] {
+            for item in content {
+                if let value = item.stringValue?.nilIfEmpty {
+                    return value
+                }
+                if case let .object(itemObject) = item,
+                   let value = itemObject["text"]?.stringValue?.nilIfEmpty {
+                    return value
+                }
+            }
+        }
+        return nil
     }
 }
 

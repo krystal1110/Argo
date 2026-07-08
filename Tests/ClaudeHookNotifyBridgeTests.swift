@@ -183,6 +183,42 @@ final class ClaudeHookNotifyBridgeTests: XCTestCase {
         XCTAssertNil(try ClaudeHookNotifyBridge.notifyRequest(from: Data(json.utf8), environment: [:]))
     }
 
+    func testAskUserQuestionPostToolUseExtractsAnswerLabel() throws {
+        let json = """
+        {
+          "cwd": "/tmp/demo",
+          "hook_event_name": "PostToolUse",
+          "session_id": "claude-session-post",
+          "tool_name": "AskUserQuestion",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Pick a deploy target?",
+                "header": "Target",
+                "options": [
+                  { "label": "Production" },
+                  { "label": "Staging" }
+                ]
+              }
+            ],
+            "answers": {
+              "Pick a deploy target?": "Staging"
+            }
+          },
+          "tool_response": {
+            "answers": {
+              "Pick a deploy target?": "Staging"
+            }
+          }
+        }
+        """
+
+        let payload = try JSONDecoder().decode(ClaudeHookPayload.self, from: Data(json.utf8))
+
+        XCTAssertEqual(payload.hookEventName, .postToolUse)
+        XCTAssertEqual(payload.questionCompletionAnswerLabel, "Staging")
+    }
+
     func testControlFrameWrapsHookPayloadWithCommandAndPane() throws {
         let json = #"{"cwd":"/tmp/demo","hook_event_name":"PermissionRequest","session_id":"s1"}"#
 

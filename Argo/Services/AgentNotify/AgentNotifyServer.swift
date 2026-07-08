@@ -337,6 +337,18 @@ nonisolated private enum ArgoClaudeHookControlHandler {
             return ClaudeHookNotifyBridge.encodeControlResponse(.failure("invalid-claude-hook-payload"))
         }
 
+        if let answerLabel = controlRequest.payload.questionCompletionAnswerLabel {
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    IslandNotificationState.shared.answerQuestion(
+                        sessionID: controlRequest.payload.sessionID,
+                        label: answerLabel
+                    )
+                }
+            }
+            return ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: nil))
+        }
+
         guard let notifyRequest = ClaudeHookNotifyBridge.notifyRequest(from: controlRequest) else {
             return ClaudeHookNotifyBridge.encodeControlResponse(.success(stdout: nil))
         }

@@ -38,11 +38,15 @@ struct IslandResponseDispatcher {
                 return sendText(paneID, text) ? nil : "Could not send response to the pane."
             }()
 
-            state.post(event: .actionableStateResolved(IslandActionableStateResolved(
-                sessionID: sessionID,
-                summary: "Response sent.",
-                timestamp: Date()
-            )))
+            if session.phase == .waitingForAnswer {
+                state.answerQuestion(sessionID: sessionID, responseText: text)
+            } else {
+                state.post(event: .actionableStateResolved(IslandActionableStateResolved(
+                    sessionID: sessionID,
+                    summary: "Response sent.",
+                    timestamp: Date()
+                )))
+            }
             if let mirroredApprovalError {
                 state.updateSessionError(id: sessionID, error: mirroredApprovalError)
             }

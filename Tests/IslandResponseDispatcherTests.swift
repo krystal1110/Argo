@@ -154,6 +154,8 @@ final class IslandResponseDispatcherTests: XCTestCase {
 
         XCTAssertTrue(sent.isEmpty)
         XCTAssertEqual(state.sessionState.session(id: "claude-session")?.phase, .running)
+        XCTAssertNil(state.sessionState.session(id: "claude-session")?.questionPrompt)
+        XCTAssertEqual(state.sessionState.session(id: "claude-session")?.summary, "Answered: Staging")
         let result = try XCTUnwrap(pending.wait(timeout: 0.1))
         let stdout = try ClaudeHookNotifyBridge.stdout(for: result)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(stdout.utf8)) as? [String: Any])

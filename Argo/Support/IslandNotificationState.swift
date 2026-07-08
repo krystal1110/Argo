@@ -97,6 +97,25 @@ nonisolated final class IslandNotificationState: ObservableObject {
         sessionState.replace(session)
     }
 
+    func answerQuestion(
+        sessionID: String,
+        responseText: String? = nil,
+        label: String? = nil,
+        at timestamp: Date? = nil
+    ) {
+        guard let session = sessionState.session(id: sessionID),
+              session.phase == .waitingForAnswer else { return }
+        let answer = session.questionPrompt?.answerDisplayText(
+            responseText: responseText,
+            label: label
+        ) ?? ""
+        sessionState.answerQuestion(
+            sessionID: sessionID,
+            response: IslandQuestionPromptResponse(answer: answer),
+            at: timestamp ?? now()
+        )
+    }
+
     private func upsertLegacyItem(_ item: IslandNotificationItem) {
         var next = item
         if next.updatedAt < next.startedAt {

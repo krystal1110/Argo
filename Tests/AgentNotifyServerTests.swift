@@ -300,6 +300,92 @@ final class AgentNotifyServerTests: XCTestCase {
         XCTAssertEqual(decision["behavior"] as? String, "allow")
         XCTAssertEqual(updatedInput["command"] as? String, "echo argo-smoke")
     }
+
+    @MainActor
+    func testClaudeHookQuestionPostToolUseClearsIslandQuestion() throws {
+        IslandNotificationState.shared.clearAll()
+        defer { IslandNotificationState.shared.clearAll() }
+
+        let socketURL = try XCTUnwrap(temporarySocketURL)
+        let sessionID = "claude-post-answer"
+        IslandNotificationState.shared.post(event: .sessionStarted(IslandSessionStarted(
+            sessionID: sessionID,
+            identity: IslandSessionIdentity(
+                workspaceID: UUID(),
+                worktreePath: "/tmp/demo",
+                paneID: nil,
+                sourceID: sessionID
+            ),
+            title: "Pick a deploy target?",
+            tool: .claudeCode,
+            initialPhase: .running,
+            summary: "Started",
+            timestamp: Date(timeIntervalSince1970: 10)
+        )))
+        IslandNotificationState.shared.post(event: .questionAsked(IslandQuestionAsked(
+            sessionID: sessionID,
+            prompt: IslandQuestionPrompt(
+                title: "Pick a deploy target?",
+                options: [
+                    IslandQuestionOption(label: "Production", responseText: "1\n"),
+                    IslandQuestionOption(label: "Staging", responseText: "2\n")
+                ]
+            ),
+            timestamp: Date(timeIntervalSince1970: 11)
+        )))
+
+        let server = AgentNotifyControlServer(
+            socketURL: socketURL,
+            host: nil,
+            tokenResolver: { nil },
+            executablePathProvider: { "/debug/Argo.app/Contents/MacOS/Argo" }
+        )
+        try server.start()
+        defer { server.stop() }
+
+        var frame = try JSONSerialization.data(withJSONObject: [
+            "cmd": "claude-hook",
+            "cwd": "/tmp/demo",
+            "hook_event_name": "PostToolUse",
+            "session_id": sessionID,
+            "tool_name": "AskUserQuestion",
+            "tool_input": [
+                "answers": [
+                    "Pick a deploy target?": "Staging",
+                ],
+            ],
+        ], options: [.sortedKeys])
+        frame.append(0x0A)
+
+        XCTAssertNotNil(try ArgoControlClient.sendRaw(
+            frame: frame,
+            socketURL: socketURL,
+            timeout: 1.0
+        ))
+
+        waitUntilIslandSession(sessionID: sessionID, phase: .running)
+        let session = try XCTUnwrap(IslandNotificationState.shared.sessionState.session(id: sessionID))
+        XCTAssertNil(session.questionPrompt)
+        XCTAssertEqual(session.summary, "Answered: Staging")
+    }
+
+    @MainActor
+    private func waitUntilIslandSession(
+        sessionID: String,
+        phase: IslandSessionPhase,
+        timeout: TimeInterval = 3.0,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if IslandNotificationState.shared.sessionState.session(id: sessionID)?.phase == phase {
+                return
+            }
+            _ = RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
+        }
+        XCTFail("Timed out waiting for island session \(sessionID) to reach \(phase)", file: file, line: line)
+    }
 }
 
 /// Captures the raw `Data` frame the server hands to its handler. The

@@ -31,7 +31,11 @@ private func vendoredSourceFallbacks(for relativePath: String) -> [String] {
         return ["Vendor/GhosttyResources/" + relativePath.dropPrefix("Argo/")]
     }
     if relativePath.hasPrefix("Argo/") {
-        return ["Argo/Vendor/LineyCompat/" + relativePath.dropPrefix("Argo/")]
+        let compatPath = relativePath.dropPrefix("Argo/")
+        return [
+            "Argo/Vendor/Compat/" + compatPath,
+            "Argo/Vendor/LineyCompat/" + compatPath
+        ]
     }
     return []
 }

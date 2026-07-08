@@ -35,6 +35,23 @@ final class ReleaseUpdateTests: XCTestCase {
         XCTAssertFalse(argoShouldReopenMainWindow(hasVisibleWindows: true))
     }
 
+    func testSparkleRelaunchBypassesQuitConfirmation() {
+        XCTAssertTrue(
+            argoShouldConfirmTermination(
+                confirmQuitWhenCommandsRunning: true,
+                needsConfirmQuit: true,
+                isUpdateRelaunchInProgress: false
+            )
+        )
+        XCTAssertFalse(
+            argoShouldConfirmTermination(
+                confirmQuitWhenCommandsRunning: true,
+                needsConfirmQuit: true,
+                isUpdateRelaunchInProgress: true
+            )
+        )
+    }
+
     func testAppUpdaterDefaultsToStableAppcastFeed() {
         XCTAssertEqual(
             AppUpdaterController.defaultFeedURLString,

@@ -20,13 +20,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let websiteURL = URL(string: "https://argo.dev")!
     private let repositoryURL = URL(string: "https://github.com/krystal1110/Argo")!
     private let quitConfirmationSuppressionInterval: TimeInterval = 0.5
+    private let updateRelaunchBypassInterval: TimeInterval = 120
 
     @MainActor private var desktopApplication: ArgoDesktopApplication?
     @MainActor private let applicationMenuController = ApplicationMenuController()
     private var appSettingsObserver: NSObjectProtocol?
     private var localizationObserver: NSObjectProtocol?
+    private var updateRelaunchObserver: NSObjectProtocol?
     private var isPresentingQuitConfirmation = false
     private var suppressQuitConfirmationUntil: Date?
+    private var updateRelaunchBypassUntil: Date?
     @MainActor private var pendingIncomingURLs: [URL] = []
     @MainActor private var isReadyToHandleURLs = false
     @MainActor private var agentNotifyServer: AgentNotifyControlServer?
@@ -34,6 +37,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         if argoIsRunningTests() {
             return
+        }
+
+        updateRelaunchObserver = NotificationCenter.default.addObserver(
+            forName: .argoUpdaterWillRelaunchApplication,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.beginUpdateRelaunchTerminationBypass()
         }
 
         Task { @MainActor in
@@ -227,6 +238,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             NotificationCenter.default.removeObserver(localizationObserver)
             self.localizationObserver = nil
         }
+        if let updateRelaunchObserver {
+            NotificationCenter.default.removeObserver(updateRelaunchObserver)
+            self.updateRelaunchObserver = nil
+        }
         guard Thread.isMainThread else { return }
         MainActor.assumeIsolated {
             agentNotifyServer?.stop()
@@ -274,6 +289,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard Thread.isMainThread else { return .terminateNow }
         return MainActor.assumeIsolated {
+            let isUpdateRelaunchInProgress = isUpdateRelaunchTerminationBypassActive()
+            if isUpdateRelaunchInProgress {
+                return .terminateNow
+            }
             if isPresentingQuitConfirmation {
                 return .terminateCancel
             }
@@ -284,7 +303,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             let needsConfirmQuit = desktopApplication?.needsConfirmQuit ?? false
             let shouldConfirm = argoShouldConfirmTermination(
                 confirmQuitWhenCommandsRunning: desktopApplication?.confirmQuitWhenCommandsRunning ?? true,
-                needsConfirmQuit: needsConfirmQuit
+                needsConfirmQuit: needsConfirmQuit,
+                isUpdateRelaunchInProgress: isUpdateRelaunchInProgress
             )
             guard shouldConfirm else { return .terminateNow }
 
@@ -311,6 +331,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             suppressQuitConfirmationUntil = Date().addingTimeInterval(quitConfirmationSuppressionInterval)
             return .terminateCancel
         }
+    }
+
+    private func beginUpdateRelaunchTerminationBypass() {
+        updateRelaunchBypassUntil = Date().addingTimeInterval(updateRelaunchBypassInterval)
+        suppressQuitConfirmationUntil = nil
+    }
+
+    private func isUpdateRelaunchTerminationBypassActive(now: Date = Date()) -> Bool {
+        guard let updateRelaunchBypassUntil else { return false }
+        if updateRelaunchBypassUntil > now {
+            return true
+        }
+        self.updateRelaunchBypassUntil = nil
+        return false
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -728,9 +762,10 @@ func argoShouldReopenMainWindow(hasVisibleWindows: Bool) -> Bool {
 
 func argoShouldConfirmTermination(
     confirmQuitWhenCommandsRunning: Bool,
-    needsConfirmQuit: Bool
+    needsConfirmQuit: Bool,
+    isUpdateRelaunchInProgress: Bool = false
 ) -> Bool {
-    confirmQuitWhenCommandsRunning && needsConfirmQuit
+    !isUpdateRelaunchInProgress && confirmQuitWhenCommandsRunning && needsConfirmQuit
 }
 
 func argoQuitConfirmationCopy(quitConfirmationSessionCount: Int) -> (title: String, message: String) {

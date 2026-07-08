@@ -8,6 +8,10 @@
 import Foundation
 import Sparkle
 
+extension Notification.Name {
+    nonisolated static let argoUpdaterWillRelaunchApplication = Notification.Name("ArgoUpdaterWillRelaunchApplication")
+}
+
 @MainActor
 private final class SparkleUpdaterDelegate: NSObject, SPUUpdaterDelegate {
     var updateChannel: ReleaseChannel = .stable
@@ -25,6 +29,14 @@ private final class SparkleUpdaterDelegate: NSObject, SPUUpdaterDelegate {
                 return ["preview"]
             }
         }
+    }
+
+    nonisolated func updaterShouldRelaunchApplication(_ updater: SPUUpdater) -> Bool {
+        true
+    }
+
+    nonisolated func updaterWillRelaunchApplication(_ updater: SPUUpdater) {
+        NotificationCenter.default.post(name: .argoUpdaterWillRelaunchApplication, object: updater)
     }
 }
 
